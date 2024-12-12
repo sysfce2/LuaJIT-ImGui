@@ -6127,6 +6127,7 @@ end
 M.GetMultiSelectState = lib.igGetMultiSelectState
 M.GetNavTweakPressedAmount = lib.igGetNavTweakPressedAmount
 M.GetPlatformIO = lib.igGetPlatformIO
+M.GetPlatformIOEx = lib.igGetPlatformIOEx
 function M.GetPopupAllowedExtentRect(window)
     local nonUDT_out = ffi.new("ImRect")
     lib.igGetPopupAllowedExtentRect(nonUDT_out,window)
@@ -6443,9 +6444,9 @@ function M.ImageButton(str_id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col
     uv1 = uv1 or ImVec2(1,1)
     return lib.igImageButton(str_id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
 end
-function M.ImageButtonEx(id,texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
+function M.ImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
     flags = flags or 0
-    return lib.igImageButtonEx(id,texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
+    return lib.igImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
 end
 function M.Indent(indent_w)
     indent_w = indent_w or 0.0
@@ -7061,7 +7062,10 @@ function M.ScrollToRectEx(window,rect,flags)
     return nonUDT_out
 end
 M.Scrollbar = lib.igScrollbar
-M.ScrollbarEx = lib.igScrollbarEx
+function M.ScrollbarEx(bb,id,axis,p_scroll_v,avail_v,contents_v,draw_rounding_flags)
+    draw_rounding_flags = draw_rounding_flags or 0
+    return lib.igScrollbarEx(bb,id,axis,p_scroll_v,avail_v,contents_v,draw_rounding_flags)
+end
 function M.Selectable_Bool(label,selected,flags,size)
     flags = flags or 0
     selected = selected or false

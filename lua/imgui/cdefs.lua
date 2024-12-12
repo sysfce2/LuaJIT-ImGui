@@ -291,12 +291,13 @@ typedef enum {
     ImGuiInputTextFlags_DisplayEmptyRefVal = 1 << 14,
     ImGuiInputTextFlags_NoHorizontalScroll = 1 << 15,
     ImGuiInputTextFlags_NoUndoRedo = 1 << 16,
-    ImGuiInputTextFlags_CallbackCompletion = 1 << 17,
-    ImGuiInputTextFlags_CallbackHistory = 1 << 18,
-    ImGuiInputTextFlags_CallbackAlways = 1 << 19,
-    ImGuiInputTextFlags_CallbackCharFilter = 1 << 20,
-    ImGuiInputTextFlags_CallbackResize = 1 << 21,
-    ImGuiInputTextFlags_CallbackEdit = 1 << 22,
+    ImGuiInputTextFlags_ElideLeft = 1 << 17,
+    ImGuiInputTextFlags_CallbackCompletion = 1 << 18,
+    ImGuiInputTextFlags_CallbackHistory = 1 << 19,
+    ImGuiInputTextFlags_CallbackAlways = 1 << 20,
+    ImGuiInputTextFlags_CallbackCharFilter = 1 << 21,
+    ImGuiInputTextFlags_CallbackResize = 1 << 22,
+    ImGuiInputTextFlags_CallbackEdit = 1 << 23,
 }ImGuiInputTextFlags_;
 typedef enum {
     ImGuiTreeNodeFlags_None = 0,
@@ -1403,8 +1404,8 @@ struct ImFontGlyphRangesBuilder
 typedef struct ImFontAtlasCustomRect ImFontAtlasCustomRect;
 struct ImFontAtlasCustomRect
 {
-    unsigned short Width, Height;
     unsigned short X, Y;
+    unsigned short Width, Height;
     unsigned int GlyphID : 31;
     unsigned int GlyphColored : 1;
     float GlyphAdvanceX;
@@ -1458,9 +1459,9 @@ struct ImFont
     ImFontAtlas* ContainerAtlas;
     const ImFontConfig* ConfigData;
     short ConfigDataCount;
-    ImWchar FallbackChar;
-    ImWchar EllipsisChar;
     short EllipsisCharCount;
+    ImWchar EllipsisChar;
+    ImWchar FallbackChar;
     float EllipsisWidth;
     float EllipsisCharStep;
    _Bool         DirtyLookupTables;
@@ -1658,6 +1659,7 @@ struct ImGuiTextIndex
 struct ImDrawListSharedData
 {
     ImVec2 TexUvWhitePixel;
+    const ImVec4* TexUvLines;
     ImFont* Font;
     float FontSize;
     float FontScale;
@@ -1669,7 +1671,6 @@ struct ImDrawListSharedData
     ImVec2 ArcFastVtx[48];
     float ArcFastRadiusCutoff;
     ImU8 CircleSegmentCounts[64];
-    const ImVec4* TexUvLines;
 };
 struct ImDrawDataBuilder
 {
@@ -2528,10 +2529,11 @@ typedef enum {
     ImGuiDebugLogFlags_EventClipper = 1 << 5,
     ImGuiDebugLogFlags_EventSelection = 1 << 6,
     ImGuiDebugLogFlags_EventIO = 1 << 7,
-    ImGuiDebugLogFlags_EventInputRouting = 1 << 8,
-    ImGuiDebugLogFlags_EventDocking = 1 << 9,
-    ImGuiDebugLogFlags_EventViewport = 1 << 10,
-    ImGuiDebugLogFlags_EventMask_ = ImGuiDebugLogFlags_EventError | ImGuiDebugLogFlags_EventActiveId | ImGuiDebugLogFlags_EventFocus | ImGuiDebugLogFlags_EventPopup | ImGuiDebugLogFlags_EventNav | ImGuiDebugLogFlags_EventClipper | ImGuiDebugLogFlags_EventSelection | ImGuiDebugLogFlags_EventIO | ImGuiDebugLogFlags_EventInputRouting | ImGuiDebugLogFlags_EventDocking | ImGuiDebugLogFlags_EventViewport,
+    ImGuiDebugLogFlags_EventFont = 1 << 8,
+    ImGuiDebugLogFlags_EventInputRouting = 1 << 9,
+    ImGuiDebugLogFlags_EventDocking = 1 << 10,
+    ImGuiDebugLogFlags_EventViewport = 1 << 11,
+    ImGuiDebugLogFlags_EventMask_ = ImGuiDebugLogFlags_EventError | ImGuiDebugLogFlags_EventActiveId | ImGuiDebugLogFlags_EventFocus | ImGuiDebugLogFlags_EventPopup | ImGuiDebugLogFlags_EventNav | ImGuiDebugLogFlags_EventClipper | ImGuiDebugLogFlags_EventSelection | ImGuiDebugLogFlags_EventIO | ImGuiDebugLogFlags_EventFont | ImGuiDebugLogFlags_EventInputRouting | ImGuiDebugLogFlags_EventDocking | ImGuiDebugLogFlags_EventViewport,
     ImGuiDebugLogFlags_OutputToTTY = 1 << 20,
     ImGuiDebugLogFlags_OutputToTestEngine = 1 << 21,
 }ImGuiDebugLogFlags_;
@@ -4396,6 +4398,7 @@ ImGuiTableSettings* ImGuiTableSettings_ImGuiTableSettings(void);
 void ImGuiTableSettings_destroy(ImGuiTableSettings* self);
 ImGuiTableColumnSettings* ImGuiTableSettings_GetColumnSettings(ImGuiTableSettings* self);
 ImGuiIO* igGetIOEx(ImGuiContext* ctx);
+ImGuiPlatformIO* igGetPlatformIOEx(ImGuiContext* ctx);
 ImGuiWindow* igGetCurrentWindowRead(void);
 ImGuiWindow* igGetCurrentWindow(void);
 ImGuiWindow* igFindWindowByID(ImGuiID id);
@@ -4746,7 +4749,7 @@ ImDrawFlags igCalcRoundingFlagsForRectInRect(const ImRect r_in,const ImRect r_ou
 void igTextEx(const char* text,const char* text_end,ImGuiTextFlags flags);
 _Bool                igButtonEx(const char* label,const ImVec2 size_arg,ImGuiButtonFlags flags);
 _Bool                igArrowButtonEx(const char* str_id,ImGuiDir dir,ImVec2 size_arg,ImGuiButtonFlags flags);
-_Bool                igImageButtonEx(ImGuiID id,ImTextureID texture_id,const ImVec2 image_size,const ImVec2 uv0,const ImVec2 uv1,const ImVec4 bg_col,const ImVec4 tint_col,ImGuiButtonFlags flags);
+_Bool                igImageButtonEx(ImGuiID id,ImTextureID user_texture_id,const ImVec2 image_size,const ImVec2 uv0,const ImVec2 uv1,const ImVec4 bg_col,const ImVec4 tint_col,ImGuiButtonFlags flags);
 void igSeparatorEx(ImGuiSeparatorFlags flags,float thickness);
 void igSeparatorTextEx(ImGuiID id,const char* label,const char* label_end,float extra_width);
 _Bool                igCheckboxFlags_S64Ptr(const char* label,ImS64* flags,ImS64 flags_value);
@@ -4754,7 +4757,7 @@ _Bool                igCheckboxFlags_U64Ptr(const char* label,ImU64* flags,ImU64
 _Bool                igCloseButton(ImGuiID id,const ImVec2 pos);
 _Bool                igCollapseButton(ImGuiID id,const ImVec2 pos,ImGuiDockNode* dock_node);
 void igScrollbar(ImGuiAxis axis);
-_Bool                igScrollbarEx(const ImRect bb,ImGuiID id,ImGuiAxis axis,ImS64* p_scroll_v,ImS64 avail_v,ImS64 contents_v,ImDrawFlags flags);
+_Bool                igScrollbarEx(const ImRect bb,ImGuiID id,ImGuiAxis axis,ImS64* p_scroll_v,ImS64 avail_v,ImS64 contents_v,ImDrawFlags draw_rounding_flags);
 void igGetWindowScrollbarRect(ImRect *pOut,ImGuiWindow* window,ImGuiAxis axis);
 ImGuiID igGetWindowScrollbarID(ImGuiWindow* window,ImGuiAxis axis);
 ImGuiID igGetWindowResizeCornerID(ImGuiWindow* window,int n);
