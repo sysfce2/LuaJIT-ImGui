@@ -283,7 +283,7 @@ local function CHK_types_p2(typ,va)
 end
 
 local badtypes = {}
-local function checktype(typ,va)
+local function checktype(typ,va,fname)
 	local cond = CHK_types(typ,va)
 	if cond then return cond end
 	
@@ -298,7 +298,7 @@ local function checktype(typ,va)
 	if cond then return cond end
 	
 	if not tostring(ffi.typeof(typ)):find"struct" then
-		badtypes[typ] = true
+		badtypes[typ] = fname or true
 	end
 	if typ:match"%*" and not typ:match"%(%*%)" then --pointer not function pointer
 		local typsinptr = typ:gsub("(%*)","")
@@ -477,7 +477,7 @@ local function create_generic(code,defs,method)
 					-- print("short",defs[1].cimguiname)
 				-- end
 			-----------------
-				local strcode = checktype(v,"a"..k)
+				local strcode = checktype(v,"a"..k,fname)
 				--if has a default take nil as valid check
 				--print("defs[i].defaults[k]",defs[i].ov_cimguiname,defs[i].defaults[defs[i].argsT[k].name])
 				if defs[i].defaults[defs[i].argsT[k].name]~=nil then
@@ -626,7 +626,7 @@ local function class_gen(sources, ft_gen)
 	------------------------------------
 	print"----------------------------"
 	for k,v in pairs(badtypes) do
-		print("badtype",k,ffi.typeof(k))
+		print("badtype",k,ffi.typeof(k),v)
 	end
 	print"----------------------------"
 	------------------------------------
