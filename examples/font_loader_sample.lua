@@ -60,6 +60,9 @@ local function ChangeFont(font,fontsize,merge)
 		fnt_cfg_def.PixelSnapH = true
 		fnt_cfg_def.OversampleH = 1
 		fnt_cfg_def.OversampleV = 1
+		--to make it monospace
+		--fnt_cfg_def.GlyphMinAdvanceX = fontsize 
+		--fnt_cfg_def.GlyphMaxAdvanceX = fontsize 
 	end
 	FontsAt:AddFontDefault(fnt_cfg_def)
 	
@@ -70,9 +73,11 @@ local function ChangeFont(font,fontsize,merge)
 	fnt_cfg.PixelSnapH = true
 	fnt_cfg.OversampleH = 1
 	fnt_cfg.OversampleV = 1
+	fnt_cfg.SizePixels = fontsize
+	--to make it monospace
 	--fnt_cfg.GlyphMinAdvanceX = fontsize -- 13.0
 	--fnt_cfg.GlyphMaxAdvanceX = fontsize --13.0
-	fnt_cfg.SizePixels = fontsize
+
 
 	
 	if ffi.string(ig.GetVersion()) >= "1.81" then
@@ -84,7 +89,7 @@ local function ChangeFont(font,fontsize,merge)
 	--maximal range allowed with ImWchar32
 	local ranges = ffi.new("ImWchar[3]",{0x0001,0xFFFF,0})
 
-	local theFONT= FontsAt:AddFontFromFileTTF(font, fontsize, fnt_cfg,ranges)
+	local theFONT= FontsAt:AddFontFromFileTTF(font, 0, fnt_cfg,ranges)
 	if (theFONT == nil) then return false end
 	
 	if use_freetype[0] then
@@ -126,6 +131,7 @@ local ffi = require"ffi"
 local fontsize = ffi.new("float[1]",13)
 local fontscale = ffi.new("float[1]",1)
 local fontcps 
+local txsizex
 local init_dir = jit.os=="Windows" and [[c:/windows/Fonts]] or "/"
 local font_file
 
@@ -133,8 +139,18 @@ local function FontChanger(file,size,merge)
 	return function()
 		fontcps = nil
 		if ChangeFont(file,size,merge) then
-			local last = win.ig.GetIO().Fonts.Fonts.Size-1
-			fontcps = GetVisibleCP(win.ig.GetIO().Fonts.Fonts.Data[last])
+			local Fonts = win.ig.GetIO().Fonts.Fonts
+			local last = Fonts.Size-1
+			local font = Fonts.Data[last]
+			fontcps = GetVisibleCP(font)
+			--win.ig.PushFont(font)
+			-- local maxx = 0
+			-- for i=1,#fontcps do
+				-- local chsiz = win.ig.CalcTextSize(codepoint_to_utf8(fontcps[i]))
+				-- maxx = maxx > chsiz.x and maxx or chsiz.x
+			-- end
+			txsizex = nil
+			--win.ig.PopFont()
 		end
 		win.preimgui=nil
 	end
@@ -187,10 +203,25 @@ function win:draw(ig)
 			font1 = Fonts.Data[Fonts.Size-1]
 			ig.Text(font1:GetDebugName());
 			ig.SameLine();ig.Text(#fontcps.." visible glyphs")
+			if not txsizex then
+				ig.PushFont(font1)
+				local maxx = 0
+				for i=1,#fontcps do
+					local chsiz = ig.CalcTextSize(codepoint_to_utf8(fontcps[i]))
+					maxx = maxx > chsiz.x and maxx or chsiz.x
+				end
+				txsizex = maxx
+				ig.PopFont()
+			end
 			ig.PushFont(font1)
 			if ig.BeginChild("glyphs",ig.ImVec2(0,ig.GetFrameHeightWithSpacing() * 12),true, ig.lib.ImGuiWindowFlags_HorizontalScrollbar) then
-				local txsize = ig.CalcTextSize(codepoint_to_utf8(fontcps[1]))
-				local cols = math.floor((ig.GetContentRegionAvail().x + ig.GetCursorPos().x)/(txsize.x + ig.GetStyle().ItemSpacing.x +2*ig.GetStyle().FramePadding.x ))
+				--local txsize = ig.CalcTextSize(codepoint_to_utf8(fontcps[1]))
+				--local txsizex2 = (txsizex + ig.GetStyle().ItemSpacing.x +2*ig.GetStyle().FramePadding.x )
+				local txsizex2 = (txsizex + ig.GetStyle().ItemSpacing.x)
+				--local txsizex2 = (txsizex +2*ig.GetStyle().FramePadding.x )
+				--local cols = math.floor((ig.GetContentRegionAvail().x + ig.GetCursorPos().x)/txsizex2)
+				local cols = math.ceil((ig.GetContentRegionAvail().x)/txsizex2)
+				cols = math.max(cols,1)
 				local base_pos = ig.GetCursorScreenPos();
 				local scrly = ig.GetScrollY()
 				local canvas_size = ig.GetContentRegionAvail()
@@ -206,7 +237,7 @@ function win:draw(ig)
 								local cp = fontcps[N]
 								local glyph = font1:FindGlyphNoFallback(cp);
 								if glyph~=nil and glyph.Visible == 1 then 
-									if ig.Button(codepoint_to_utf8(cp)) then
+									if ig.Button(codepoint_to_utf8(cp),ig.ImVec2(txsizex,txsizex)) then
 										AddCP(font1:GetDebugName(),cp)
 									end
 									if not ((N)%cols == 0) then ig.SameLine() end
