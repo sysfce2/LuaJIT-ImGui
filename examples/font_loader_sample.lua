@@ -1,6 +1,6 @@
 ﻿local igwin = require"imgui.window"
 --local win = igwin:SDL(800,400, "font loader")
-local win = igwin:GLFW(800,400, "font loader")
+local win = igwin:GLFW(800,600, "font loader")
 local ffi = require"ffi"
 
 local use_freetype = ffi.new("bool[?]",1)
@@ -87,7 +87,7 @@ local function ChangeFont(font,fontsize,merge)
 	end
 	
 	--maximal range allowed with ImWchar32
-	local ranges = ffi.new("ImWchar[3]",{0x0001,0xFFFF,0})
+	local ranges = ffi.new("ImWchar[3]",{0x0001,0x10FFFF,0})
 
 	local theFONT= FontsAt:AddFontFromFileTTF(font, 0, fnt_cfg,ranges)
 	if (theFONT == nil) then return false end
@@ -216,11 +216,9 @@ function win:draw(ig)
 			ig.PushFont(font1)
 			if ig.BeginChild("glyphs",ig.ImVec2(0,ig.GetFrameHeightWithSpacing() * 12),true, ig.lib.ImGuiWindowFlags_HorizontalScrollbar) then
 				--local txsize = ig.CalcTextSize(codepoint_to_utf8(fontcps[1]))
-				--local txsizex2 = (txsizex + ig.GetStyle().ItemSpacing.x +2*ig.GetStyle().FramePadding.x )
 				local txsizex2 = (txsizex + ig.GetStyle().ItemSpacing.x)
-				--local txsizex2 = (txsizex +2*ig.GetStyle().FramePadding.x )
-				--local cols = math.floor((ig.GetContentRegionAvail().x + ig.GetCursorPos().x)/txsizex2)
-				local cols = math.ceil((ig.GetContentRegionAvail().x)/txsizex2)
+				local txsizex3 = (txsizex2 +2*ig.GetStyle().FramePadding.x )
+				local cols = math.ceil((ig.GetContentRegionAvail().x)/txsizex3)
 				cols = math.max(cols,1)
 				local base_pos = ig.GetCursorScreenPos();
 				local scrly = ig.GetScrollY()
@@ -237,7 +235,7 @@ function win:draw(ig)
 								local cp = fontcps[N]
 								local glyph = font1:FindGlyphNoFallback(cp);
 								if glyph~=nil and glyph.Visible == 1 then 
-									if ig.Button(codepoint_to_utf8(cp),ig.ImVec2(txsizex,txsizex)) then
+									if ig.Button(codepoint_to_utf8(cp),ig.ImVec2(txsizex2,txsizex2)) then
 										AddCP(font1:GetDebugName(),cp)
 									end
 									if not ((N)%cols == 0) then ig.SameLine() end
