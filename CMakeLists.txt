@@ -35,6 +35,11 @@ set(IMGUI_SOURCES ./cimgui/cimgui.cpp
 ./cimnodes_r/cimnodes_r.cpp
 ./cimnodes_r/ImNodes/ImNodes.cpp
 ./cimnodes_r/ImNodes/ImNodesEz.cpp
+./cimplot3d/cimplot3d.cpp
+./cimplot3d/implot3d/implot3d.cpp
+./cimplot3d/implot3d/implot3d_demo.cpp
+./cimplot3d/implot3d/implot3d_items.cpp
+./cimplot3d/implot3d/implot3d_meshes.cpp
 ${cimCTE_SRCS}
 )
 
