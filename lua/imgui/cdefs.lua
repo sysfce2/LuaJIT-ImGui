@@ -4850,7 +4850,7 @@ void igImFontAtlasBuildMultiplyRectAlpha8(const unsigned char table[256],unsigne
 const ImFontBuilderIO* ImGuiFreeType_GetBuilderForFreeType(void);
 void ImGuiFreeType_SetAllocatorFunctions(void*(*alloc_func)(size_t sz,void* user_data),void(*free_func)(void* ptr,void* user_data),void* user_data);
 void igLogText(const char *fmt, ...);
-void ImGuiTextBuffer_appendf(struct ImGuiTextBuffer *buffer, const char *fmt, ...);
+void ImGuiTextBuffer_appendf(ImGuiTextBuffer *self, const char *fmt, ...);
 float igGET_FLT_MAX(void);
 float igGET_FLT_MIN(void);
 ImVector_ImWchar* ImVector_ImWchar_create(void);
