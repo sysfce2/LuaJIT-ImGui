@@ -224,7 +224,10 @@ function M.Curve(name,numpoints,LUTsize,pressed_on_modified)
 end
 
 
-function M.pad(label,value,sz)
+function M.pad(label,value,sz,minv,maxv)
+	minv = minv or -1
+	maxv = maxv or 1
+	local b = maxv - minv
 	local function clip(val,mini,maxi) return math.min(maxi,math.max(mini,val)) end
 	sz = sz or 200
 	local canvas_pos = M.GetCursorScreenPos();
@@ -237,16 +240,18 @@ function M.pad(label,value,sz)
 		local m = M.GetIO().MousePos
 		local md = M.GetIO().MouseDelta
 		if md.x == 0 and md.y == 0 and not M.IsMouseClicked(0,false) then touched=false end
-		value[0] = ((m.x - canvas_pos.x)/sz)*2 - 1
-		value[1] = (1.0 - (m.y - canvas_pos.y)/sz)*2 - 1
-		value[0] = clip(value[0], -1,1)
-		value[1] = clip(value[1], -1,1)
+		value[0] = ((m.x - canvas_pos.x)/sz)*b + minv
+		value[1] = (1.0 - (m.y - canvas_pos.y)/sz)*b + minv
+		value[0] = clip(value[0], minv,maxv)
+		value[1] = clip(value[1], minv,maxv)
 	end
+	local val0 = (value[0] - minv)/b 
+	local val1 = (value[1] - minv)/b 
 	local draw_list = M.GetWindowDrawList();
 	draw_list:AddRect(canvas_pos,canvas_pos+M.ImVec2(sz,sz),M.U32(1,0,0,1))
 	draw_list:AddLine(canvas_pos + M.ImVec2(0,sz/2),canvas_pos + M.ImVec2(sz,sz/2) ,M.U32(1,0,0,1))
 	draw_list:AddLine(canvas_pos + M.ImVec2(sz/2,0),canvas_pos + M.ImVec2(sz/2,sz) ,M.U32(1,0,0,1))
-	draw_list:AddCircleFilled(canvas_pos + M.ImVec2((1+value[0])*sz,((1-value[1])*sz)+1)*0.5,5,M.U32(1,0,0,1))
+	draw_list:AddCircleFilled(canvas_pos + M.ImVec2(val0*sz,(1-val1)*sz),5,M.U32(1,0,0,1))
 	return touched
 end
 
