@@ -76,6 +76,7 @@ typedef struct ImGuiColorMod ImGuiColorMod;
 typedef struct ImGuiContextHook ImGuiContextHook;
 typedef struct ImGuiDataVarInfo ImGuiDataVarInfo;
 typedef struct ImGuiDataTypeInfo ImGuiDataTypeInfo;
+typedef struct ImGuiDeactivatedItemData ImGuiDeactivatedItemData;
 typedef struct ImGuiDockContext ImGuiDockContext;
 typedef struct ImGuiDockRequest ImGuiDockRequest;
 typedef struct ImGuiDockNode ImGuiDockNode;
@@ -314,9 +315,10 @@ typedef enum {
     ImGuiTreeNodeFlags_FramePadding = 1 << 10,
     ImGuiTreeNodeFlags_SpanAvailWidth = 1 << 11,
     ImGuiTreeNodeFlags_SpanFullWidth = 1 << 12,
-    ImGuiTreeNodeFlags_SpanTextWidth = 1 << 13,
+    ImGuiTreeNodeFlags_SpanLabelWidth = 1 << 13,
     ImGuiTreeNodeFlags_SpanAllColumns = 1 << 14,
-    ImGuiTreeNodeFlags_NavLeftJumpsBackHere = 1 << 15,
+    ImGuiTreeNodeFlags_LabelSpanAllColumns = 1 << 15,
+    ImGuiTreeNodeFlags_NavLeftJumpsBackHere = 1 << 17,
     ImGuiTreeNodeFlags_CollapsingHeader = ImGuiTreeNodeFlags_Framed | ImGuiTreeNodeFlags_NoTreePushOnOpen | ImGuiTreeNodeFlags_NoAutoOpenOnLog,
 }ImGuiTreeNodeFlags_;
 typedef enum {
@@ -449,6 +451,7 @@ typedef enum {
     ImGuiDataType_Float,
     ImGuiDataType_Double,
     ImGuiDataType_Bool,
+    ImGuiDataType_String,
     ImGuiDataType_COUNT
 }ImGuiDataType_;
 typedef enum {
@@ -812,6 +815,7 @@ typedef enum {
     ImGuiSliderFlags_WrapAround = 1 << 8,
     ImGuiSliderFlags_ClampOnInput = 1 << 9,
     ImGuiSliderFlags_ClampZeroRange = 1 << 10,
+    ImGuiSliderFlags_NoSpeedTweaks = 1 << 11,
     ImGuiSliderFlags_AlwaysClamp = ImGuiSliderFlags_ClampOnInput | ImGuiSliderFlags_ClampZeroRange,
     ImGuiSliderFlags_InvalidMask_ = 0x7000000F,
 }ImGuiSliderFlags_;
@@ -1570,6 +1574,7 @@ struct ImGuiContext;
 struct ImGuiContextHook;
 struct ImGuiDataVarInfo;
 struct ImGuiDataTypeInfo;
+struct ImGuiDeactivatedItemData;
 struct ImGuiDockContext;
 struct ImGuiDockRequest;
 struct ImGuiDockNode;
@@ -1696,8 +1701,7 @@ struct ImGuiDataTypeInfo
     const char* ScanFmt;
 };
 typedef enum {
-    ImGuiDataType_String = ImGuiDataType_COUNT + 1,
-    ImGuiDataType_Pointer,
+    ImGuiDataType_Pointer = ImGuiDataType_COUNT + 1,
     ImGuiDataType_ID,
 }ImGuiDataTypePrivate_;
 typedef enum {
@@ -1849,7 +1853,7 @@ struct ImGuiGroupData
     ImVec2 BackupCurrLineSize;
     float BackupCurrLineTextBaseOffset;
     ImGuiID BackupActiveIdIsAlive;
-   _Bool         BackupActiveIdPreviousFrameIsAlive;
+   _Bool         BackupDeactivatedIdIsAlive;
    _Bool         BackupHoveredIdIsAlive;
    _Bool         BackupIsSameLine;
    _Bool         EmitItem;
@@ -1876,8 +1880,10 @@ struct ImGuiInputTextState
 {
     ImGuiContext* Ctx;
     ImStbTexteditState* Stb;
+    ImGuiInputTextFlags Flags;
     ImGuiID ID;
     int TextLen;
+    const char* TextSrc;
     ImVector_char TextA;
     ImVector_char TextToRevertTo;
     ImVector_char CallbackTextBackup;
@@ -1887,8 +1893,7 @@ struct ImGuiInputTextState
    _Bool         CursorFollow;
    _Bool         SelectedAllMouseLock;
    _Bool         Edited;
-    ImGuiInputTextFlags Flags;
-   _Bool         ReloadUserBuf;
+   _Bool         WantReloadUserBuf;
     int ReloadSelectionStart;
     int ReloadSelectionEnd;
 };
@@ -2013,6 +2018,13 @@ struct ImGuiPtrOrIndex
 {
     void* Ptr;
     int Index;
+};
+struct ImGuiDeactivatedItemData
+{
+    ImGuiID ID;
+    int ElapseFrame;
+   _Bool         HasBeenEditedBefore;
+   _Bool         IsAlive;
 };
 typedef enum {
     ImGuiPopupPositionPolicy_Default,
@@ -2646,9 +2658,9 @@ struct ImGuiContext
     int FrameCountEnded;
     int FrameCountPlatformEnded;
     int FrameCountRendered;
+    ImGuiID WithinEndChildID;
    _Bool         WithinFrameScope;
    _Bool         WithinFrameScopeWithImplicitWindow;
-   _Bool         WithinEndChild;
    _Bool         GcCompactAll;
    _Bool         TestEngineHookItems;
     void* TestEngine;
@@ -2702,9 +2714,8 @@ struct ImGuiContext
     ImGuiWindow* ActiveIdWindow;
     ImGuiInputSource ActiveIdSource;
     ImGuiID ActiveIdPreviousFrame;
-   _Bool         ActiveIdPreviousFrameIsAlive;
-   _Bool         ActiveIdPreviousFrameHasBeenEditedBefore;
-    ImGuiWindow* ActiveIdPreviousFrameWindow;
+    ImGuiDeactivatedItemData DeactivatedItemData;
+    ImGuiDataTypeStorage ActiveIdValueOnActivation;
     ImGuiID LastActiveId;
     float LastActiveIdTimer;
     double LastKeyModsChangeTime;
@@ -7412,6 +7423,7 @@ typedef enum { ImGui_ImplSDL3_GamepadMode_AutoFirst, ImGui_ImplSDL3_GamepadMode_
  bool ImGui_ImplSDL3_InitForD3D(SDL_Window* window);
  bool ImGui_ImplSDL3_InitForMetal(SDL_Window* window);
  bool ImGui_ImplSDL3_InitForSDLRenderer(SDL_Window* window,SDL_Renderer* renderer);
+ bool ImGui_ImplSDL3_InitForSDLGPU(SDL_Window* window);
  bool ImGui_ImplSDL3_InitForOther(SDL_Window* window);
  void ImGui_ImplSDL3_Shutdown(void);
  void ImGui_ImplSDL3_NewFrame(void);
