@@ -311,6 +311,56 @@ function M.Plotter(xmin,xmax,nvals)
 	Graph:init()
 	return Graph
 end
+------------------- LuaCombo
+function M.LuaCombo(label,strs,action,args)
+    args = args or {}
+    action = action or function() end
+    strs = strs or {"none"}
+    local combo = {}
+    local strings 
+    combo.currItem = ffi.new("int[?]",1)
+    local Items, anchors
+    local combowidth
+    local function calcwidth()
+        combowidth = 0
+        for i = 1,#strings  do
+            combowidth = math.max(combowidth, M.CalcTextSize(strings[i]).x)
+        end
+        combowidth = combowidth + M.GetStyle().FramePadding.x * 2.0 + M.GetFrameHeight() --for arrow width!!
+    end
+    function combo:set(strs, ini, newaction)
+        action = newaction and newaction or action
+        anchors = {}
+        strings = strs or strings
+        self.currItem[0] = ini or 0
+        Items = ffi.new("const char*[?]",#strs)
+        for i = 0,#strs-1  do
+            anchors[#anchors+1] = ffi.new("const char*",strs[i+1])
+            Items[i] = anchors[#anchors]
+        end
+        if args.calcwidth then combowidth = nil end
+        action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+    end
+    function combo:set_index(ind)
+        self.currItem[0] = ind or 0
+        action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+    end
+    combo:set(strs)
+    function combo:draw()
+        if args.calcwidth then 
+            if not combowidth then calcwidth() end
+            M.SetNextItemWidth(combowidth) 
+        end
+        if M.Combo(label,self.currItem,Items,#strings,-1) then
+            action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+        end
+    end
+    function combo:get()
+        return ffi.string(Items[self.currItem[0]]),self.currItem[0]
+    end
+    return combo
+end
+
 
 
 
