@@ -316,7 +316,8 @@ function M.LuaCombo(label,strs,action,args)
     action = action or function() end
     strs = strs or {"none"}
     local combo = {}
-    local strings 
+    local strings
+    local IDbyname
     combo.currItem = ffi.new("int[?]",1)
     local Items, anchors
     local combowidth
@@ -330,19 +331,24 @@ function M.LuaCombo(label,strs,action,args)
     function combo:set(strs, ini, newaction)
         action = newaction and newaction or action
         anchors = {}
+        IDbyname = {}
         strings = strs or strings
-        self.currItem[0] = ini or 0
-        Items = ffi.new("const char*[?]",#strs)
-        for i = 0,#strs-1  do
-            anchors[#anchors+1] = ffi.new("const char*",strs[i+1])
+        self.currItem[0] = ini and ini-1 or 0
+        Items = ffi.new("const char*[?]",#strings)
+        for i = 0,#strings-1  do
+            anchors[#anchors+1] = ffi.new("const char*",strings[i+1])
             Items[i] = anchors[#anchors]
+            IDbyname[strings[i+1]] = i+1
         end
         if args.calcwidth then combowidth = nil end
-        action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+        action(ffi.string(Items[self.currItem[0]]),self.currItem[0]+1)
     end
     function combo:set_index(ind)
-        self.currItem[0] = ind or 0
-        action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+        self.currItem[0] = ind and ind-1 or 0
+        action(ffi.string(Items[self.currItem[0]]),self.currItem[0]+1)
+    end
+    function combo:set_name(name)
+        self:set_index(IDbyname[name])
     end
     combo:set(strs)
     function combo:draw()
@@ -351,11 +357,14 @@ function M.LuaCombo(label,strs,action,args)
             M.SetNextItemWidth(combowidth) 
         end
         if M.Combo(label,self.currItem,Items,#strings,-1) then
-            action(ffi.string(Items[self.currItem[0]]),self.currItem[0])
+            action(ffi.string(Items[self.currItem[0]]),self.currItem[0]+1)
         end
     end
     function combo:get()
-        return ffi.string(Items[self.currItem[0]]),self.currItem[0]
+        return ffi.string(Items[self.currItem[0]]),self.currItem[0]+1
+    end
+    function combo:get_name()
+        return ffi.string(Items[self.currItem[0]])
     end
     return combo
 end

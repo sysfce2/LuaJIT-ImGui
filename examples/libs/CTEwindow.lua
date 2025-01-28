@@ -170,14 +170,14 @@ local function CTEwindow(file_name)
 
 	W.lang_combo = ig.LuaCombo("Lang",langNames,
 				function(name,ind) 
-					editor:SetLanguageDefinition(ind)
+					editor:SetLanguageDefinition(ind-1)
 				end,{calcwidth=true})
 	if ext == "cpp" or ext == "hpp" then
-		W.lang_combo:set_index(1)
-	elseif ext == "c" or ext == "h" then
 		W.lang_combo:set_index(2)
+	elseif ext == "c" or ext == "h" then
+		W.lang_combo:set_index(3)
 	elseif ext == "lua" then
-		W.lang_combo:set_index(5)
+		W.lang_combo:set_index(6)
 	else
 		W.lang_combo:set_index(0)
 		print"unknown language"
