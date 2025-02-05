@@ -3262,6 +3262,22 @@ function M.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
     cond = cond or 2
     return lib.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
 end
+function M.ImPlot3D_SetupAxisTicks_doublePtr(axis,values,n_ticks,labels,keep_default)
+    keep_default = keep_default or false
+    labels = labels or nil
+    return lib.ImPlot3D_SetupAxisTicks_doublePtr(axis,values,n_ticks,labels,keep_default)
+end
+function M.ImPlot3D_SetupAxisTicks_double(axis,v_min,v_max,n_ticks,labels,keep_default)
+    keep_default = keep_default or false
+    labels = labels or nil
+    return lib.ImPlot3D_SetupAxisTicks_double(axis,v_min,v_max,n_ticks,labels,keep_default)
+end
+function M.ImPlot3D_SetupAxisTicks(a1,a2,a3,a4,a5,a6) -- generic version
+    if (ffi.istype('double*',a2) or ffi.istype('double[]',a2)) then return M.ImPlot3D_SetupAxisTicks_doublePtr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('double',a2) or type(a2)=='number') then return M.ImPlot3D_SetupAxisTicks_double(a1,a2,a3,a4,a5,a6) end
+    print(a1,a2,a3,a4,a5,a6)
+    error'M.ImPlot3D_SetupAxisTicks could not find overloaded'
+end
 M.ImPlot3D_SetupBoxScale = lib.ImPlot3D_SetupBoxScale
 function M.ImPlot3D_SetupLegend(location,flags)
     flags = flags or 0
@@ -3580,6 +3596,7 @@ function M.ImPlot_GetLocationPos(outer_rect,inner_size,location,pad)
     return nonUDT_out
 end
 M.ImPlot_GetMarkerName = lib.ImPlot_GetMarkerName
+M.ImPlot_GetMonth = lib.ImPlot_GetMonth
 M.ImPlot_GetPlot = lib.ImPlot_GetPlot
 M.ImPlot_GetPlotDrawList = lib.ImPlot_GetPlotDrawList
 function M.ImPlot_GetPlotLimits(x_axis,y_axis)
@@ -3621,6 +3638,7 @@ function M.ImPlot_GetStyleColorVec4(idx)
     lib.ImPlot_GetStyleColorVec4(nonUDT_out,idx)
     return nonUDT_out
 end
+M.ImPlot_GetTime = lib.ImPlot_GetTime
 M.ImPlot_GetYear = lib.ImPlot_GetYear
 function M.ImPlot_HideNextItem(hidden,cond)
     cond = cond or 2
@@ -3946,6 +3964,11 @@ function M.ImPlot_MkLocTime(ptm)
     lib.ImPlot_MkLocTime(nonUDT_out,ptm)
     return nonUDT_out
 end
+function M.ImPlot_MkTime(ptm)
+    local nonUDT_out = ffi.new("ImPlotTime")
+    lib.ImPlot_MkTime(nonUDT_out,ptm)
+    return nonUDT_out
+end
 function M.ImPlot_NextColormapColor()
     local nonUDT_out = ffi.new("ImVec4")
     lib.ImPlot_NextColormapColor(nonUDT_out)
@@ -3953,6 +3976,11 @@ function M.ImPlot_NextColormapColor()
 end
 M.ImPlot_NextColormapColorU32 = lib.ImPlot_NextColormapColorU32
 M.ImPlot_NiceNum = lib.ImPlot_NiceNum
+function M.ImPlot_Now()
+    local nonUDT_out = ffi.new("ImPlotTime")
+    lib.ImPlot_Now(nonUDT_out)
+    return nonUDT_out
+end
 M.ImPlot_OrderOfMagnitude = lib.ImPlot_OrderOfMagnitude
 M.ImPlot_OrderToPrecision = lib.ImPlot_OrderToPrecision
 function M.ImPlot_PixelsToPlot_Vec2(pix,x_axis,y_axis)
@@ -6162,6 +6190,11 @@ function M.ImPlot_TagY(a1,a2,a3,...) -- generic version
     error'M.ImPlot_TagY could not find overloaded'
 end
 M.ImPlot_TagYV = lib.ImPlot_TagYV
+function M.ImPlot_Today()
+    local nonUDT_out = ffi.new("ImPlotTime")
+    lib.ImPlot_Today(nonUDT_out)
+    return nonUDT_out
+end
 M.ImPlot_TransformForward_Log10 = lib.ImPlot_TransformForward_Log10
 M.ImPlot_TransformForward_Logit = lib.ImPlot_TransformForward_Logit
 M.ImPlot_TransformForward_SymLog = lib.ImPlot_TransformForward_SymLog
@@ -7036,6 +7069,7 @@ function M.ImFloor(a1,a2) -- generic version
     error'M.ImFloor could not find overloaded'
 end
 M.ImFontAtlasBuildFinish = lib.igImFontAtlasBuildFinish
+M.ImFontAtlasBuildGetOversampleFactors = lib.igImFontAtlasBuildGetOversampleFactors
 M.ImFontAtlasBuildInit = lib.igImFontAtlasBuildInit
 M.ImFontAtlasBuildMultiplyCalcLookupTable = lib.igImFontAtlasBuildMultiplyCalcLookupTable
 M.ImFontAtlasBuildMultiplyRectAlpha8 = lib.igImFontAtlasBuildMultiplyRectAlpha8
@@ -7453,6 +7487,7 @@ function M.IsMouseReleased(a1,a2) -- generic version
     print(a1,a2)
     error'M.IsMouseReleased could not find overloaded'
 end
+M.IsMouseReleasedWithDelay = lib.igIsMouseReleasedWithDelay
 M.IsNamedKey = lib.igIsNamedKey
 M.IsNamedKeyOrMod = lib.igIsNamedKeyOrMod
 function M.IsPopupOpen_Str(str_id,flags)
@@ -7730,6 +7765,7 @@ M.PushItemFlag = lib.igPushItemFlag
 M.PushItemWidth = lib.igPushItemWidth
 M.PushMultiItemsWidths = lib.igPushMultiItemsWidths
 M.PushOverrideID = lib.igPushOverrideID
+M.PushPasswordFont = lib.igPushPasswordFont
 M.PushStyleColor_U32 = lib.igPushStyleColor_U32
 M.PushStyleColor_Vec4 = lib.igPushStyleColor_Vec4
 function M.PushStyleColor(a1,a2) -- generic version
@@ -8261,6 +8297,7 @@ function M.TabItemCalcSize(a2,a3) -- generic version
 end
 M.TabItemEx = lib.igTabItemEx
 M.TabItemLabelAndCloseButton = lib.igTabItemLabelAndCloseButton
+M.TabItemSpacing = lib.igTabItemSpacing
 M.TableAngledHeadersRow = lib.igTableAngledHeadersRow
 M.TableAngledHeadersRowEx = lib.igTableAngledHeadersRowEx
 M.TableBeginApplyRequests = lib.igTableBeginApplyRequests
