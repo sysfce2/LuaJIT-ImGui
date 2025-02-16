@@ -1745,6 +1745,11 @@ function ImPlot3DQuat:Conjugate()
     return nonUDT_out
 end
 ImPlot3DQuat.Dot = lib.ImPlot3DQuat_Dot
+function M.ImPlot3DQuat_FromElAz(elevation,azimuth)
+    local nonUDT_out = ffi.new("ImPlot3DQuat")
+    lib.ImPlot3DQuat_FromElAz(nonUDT_out,elevation,azimuth)
+    return nonUDT_out
+end
 function M.ImPlot3DQuat_FromTwoVectors(v0,v1)
     local nonUDT_out = ffi.new("ImPlot3DQuat")
     lib.ImPlot3DQuat_FromTwoVectors(nonUDT_out,v0,v1)
@@ -3277,6 +3282,30 @@ function M.ImPlot3D_SetupAxisTicks(a1,a2,a3,a4,a5,a6) -- generic version
     if (ffi.istype('double',a2) or type(a2)=='number') then return M.ImPlot3D_SetupAxisTicks_double(a1,a2,a3,a4,a5,a6) end
     print(a1,a2,a3,a4,a5,a6)
     error'M.ImPlot3D_SetupAxisTicks could not find overloaded'
+end
+M.ImPlot3D_SetupBoxInitialRotation_Float = lib.ImPlot3D_SetupBoxInitialRotation_Float
+M.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat = lib.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat
+function M.ImPlot3D_SetupBoxInitialRotation(a1,a2) -- generic version
+    if (ffi.istype('float',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxInitialRotation_Float(a1,a2) end
+    if ffi.istype('ImPlot3DQuat',a1) then return M.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat(a1) end
+    print(a1,a2)
+    error'M.ImPlot3D_SetupBoxInitialRotation could not find overloaded'
+end
+function M.ImPlot3D_SetupBoxRotation_Float(elevation,azimuth,animate,cond)
+    animate = animate or false
+    cond = cond or 2
+    return lib.ImPlot3D_SetupBoxRotation_Float(elevation,azimuth,animate,cond)
+end
+function M.ImPlot3D_SetupBoxRotation_Plot3DQuat(rotation,animate,cond)
+    animate = animate or false
+    cond = cond or 2
+    return lib.ImPlot3D_SetupBoxRotation_Plot3DQuat(rotation,animate,cond)
+end
+function M.ImPlot3D_SetupBoxRotation(a1,a2,a3,a4) -- generic version
+    if (ffi.istype('float',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxRotation_Float(a1,a2,a3,a4) end
+    if ffi.istype('ImPlot3DQuat',a1) then return M.ImPlot3D_SetupBoxRotation_Plot3DQuat(a1,a2,a3) end
+    print(a1,a2,a3,a4)
+    error'M.ImPlot3D_SetupBoxRotation could not find overloaded'
 end
 M.ImPlot3D_SetupBoxScale = lib.ImPlot3D_SetupBoxScale
 function M.ImPlot3D_SetupLegend(location,flags)

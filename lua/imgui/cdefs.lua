@@ -7250,6 +7250,10 @@ void ImPlot3D_SetupAxisTicks_doublePtr(ImAxis3D axis,const double* values,int n_
 void ImPlot3D_SetupAxisTicks_double(ImAxis3D axis,double v_min,double v_max,int n_ticks,const char* const labels[],                                                                                                                             _Bool                                                                                                                                   keep_default);
 void ImPlot3D_SetupAxes(const char* x_label,const char* y_label,const char* z_label,ImPlot3DAxisFlags x_flags,ImPlot3DAxisFlags y_flags,ImPlot3DAxisFlags z_flags);
 void ImPlot3D_SetupAxesLimits(double x_min,double x_max,double y_min,double y_max,double z_min,double z_max,ImPlot3DCond cond);
+void ImPlot3D_SetupBoxRotation_Float(float elevation,float azimuth,                                                                             _Bool                                                                                   animate,ImPlot3DCond cond);
+void ImPlot3D_SetupBoxRotation_Plot3DQuat(ImPlot3DQuat rotation,                                                                          _Bool                                                                                animate,ImPlot3DCond cond);
+void ImPlot3D_SetupBoxInitialRotation_Float(float elevation,float azimuth);
+void ImPlot3D_SetupBoxInitialRotation_Plot3DQuat(ImPlot3DQuat rotation);
 void ImPlot3D_SetupBoxScale(float x,float y,float z);
 void ImPlot3D_SetupLegend(ImPlot3DLocation location,ImPlot3DLegendFlags flags);
 void ImPlot3D_PlotScatter_FloatPtr(const char* label_id,const float* xs,const float* ys,const float* zs,int count,ImPlot3DScatterFlags flags,int offset,int stride);
@@ -7371,6 +7375,7 @@ void ImPlot3DQuat_destroy(ImPlot3DQuat* self);
 ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_FloatFloat(float _x,float _y,float _z,float _w);
 ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_FloatPlot3DPoInt(float _angle,const ImPlot3DPoint _axis);
 void ImPlot3DQuat_FromTwoVectors(ImPlot3DQuat *pOut,const ImPlot3DPoint v0,const ImPlot3DPoint v1);
+void ImPlot3DQuat_FromElAz(ImPlot3DQuat *pOut,float elevation,float azimuth);
 float ImPlot3DQuat_Length(ImPlot3DQuat* self);
 void ImPlot3DQuat_Normalized(ImPlot3DQuat *pOut,ImPlot3DQuat* self);
 void ImPlot3DQuat_Conjugate(ImPlot3DQuat *pOut,ImPlot3DQuat* self);
