@@ -71,7 +71,7 @@ function M:GLFW(w,h,title,args)
     W.lj_glfw.init()
     local window = W.lj_glfw.Window(w,h,title or "")
     window:makeContextCurrent()
-    if args.vsync then W.lj_glfw.swapInterval(1) end
+    W.lj_glfw.swapInterval(args.vsync or 1)
     
     if args.gl2 then
         W.ig_impl = W.ig.Imgui_Impl_glfw_opengl2()
@@ -190,7 +190,7 @@ function M:SDL(w,h,title,args)
     sdl.getCurrentDisplayMode(0, current);
     local window = sdl.createWindow(title or "", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, w, h, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE + sdl.SDL_WINDOW_ALLOW_HIGHDPI); 
     W.gl_context = sdl.gL_CreateContext(window);
-    if args.vsync then sdl.gL_SetSwapInterval(1) end
+    sdl.gL_SetSwapInterval(args.vsync or 1)
 
     if args.gl2 then
         W.ig_Impl = W.ig.Imgui_Impl_SDL_opengl2()
@@ -309,7 +309,7 @@ function M:SDL3(w,h,title,args)
 
     local window = sdl.createWindow(title or "", w, h, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE)-- + sdl.SDL_WINDOW_HIDDEN); 
     W.gl_context = sdl.gL_CreateContext(window);
-    if args.vsync then sdl.gL_SetSwapInterval(1) end
+    sdl.gL_SetSwapInterval(args.vsync or 1)
 
     if args.gl2 then
         W.ig_Impl = W.ig.Imgui_Impl_SDL3_opengl2()
