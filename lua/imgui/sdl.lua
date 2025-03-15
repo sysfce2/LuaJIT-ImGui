@@ -776,7 +776,6 @@ function ImFont:RenderText(draw_list,size,pos,col,clip_rect,text_begin,text_end,
     wrap_width = wrap_width or 0.0
     return lib.ImFont_RenderText(self,draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,cpu_fine_clip)
 end
-ImFont.SetGlyphVisible = lib.ImFont_SetGlyphVisible
 M.ImFont = ffi.metatype("ImFont",ImFont)
 --------------------------ImFontAtlas----------------------------
 local ImFontAtlas= {}
@@ -827,7 +826,6 @@ ImFontAtlas.GetGlyphRangesJapanese = lib.ImFontAtlas_GetGlyphRangesJapanese
 ImFontAtlas.GetGlyphRangesKorean = lib.ImFontAtlas_GetGlyphRangesKorean
 ImFontAtlas.GetGlyphRangesThai = lib.ImFontAtlas_GetGlyphRangesThai
 ImFontAtlas.GetGlyphRangesVietnamese = lib.ImFontAtlas_GetGlyphRangesVietnamese
-ImFontAtlas.GetMouseCursorTexData = lib.ImFontAtlas_GetMouseCursorTexData
 function ImFontAtlas:GetTexDataAsAlpha8(out_pixels,out_width,out_height,out_bytes_per_pixel)
     out_bytes_per_pixel = out_bytes_per_pixel or nil
     return lib.ImFontAtlas_GetTexDataAsAlpha8(self,out_pixels,out_width,out_height,out_bytes_per_pixel)
@@ -910,11 +908,6 @@ function ImGuiContextHook.__new(ctype)
     return ffi.gc(ptr,lib.ImGuiContextHook_destroy)
 end
 M.ImGuiContextHook = ffi.metatype("ImGuiContextHook",ImGuiContextHook)
---------------------------ImGuiDataVarInfo----------------------------
-local ImGuiDataVarInfo= {}
-ImGuiDataVarInfo.__index = ImGuiDataVarInfo
-ImGuiDataVarInfo.GetVarPtr = lib.ImGuiDataVarInfo_GetVarPtr
-M.ImGuiDataVarInfo = ffi.metatype("ImGuiDataVarInfo",ImGuiDataVarInfo)
 --------------------------ImGuiDebugAllocInfo----------------------------
 local ImGuiDebugAllocInfo= {}
 ImGuiDebugAllocInfo.__index = ImGuiDebugAllocInfo
@@ -1396,6 +1389,11 @@ function ImGuiStyleMod.__new(ctype,a1,a2) -- generic version
     error'ImGuiStyleMod.__new could not find overloaded'
 end
 M.ImGuiStyleMod = ffi.metatype("ImGuiStyleMod",ImGuiStyleMod)
+--------------------------ImGuiStyleVarInfo----------------------------
+local ImGuiStyleVarInfo= {}
+ImGuiStyleVarInfo.__index = ImGuiStyleVarInfo
+ImGuiStyleVarInfo.GetVarPtr = lib.ImGuiStyleVarInfo_GetVarPtr
+M.ImGuiStyleVarInfo = ffi.metatype("ImGuiStyleVarInfo",ImGuiStyleVarInfo)
 --------------------------ImGuiTabBar----------------------------
 local ImGuiTabBar= {}
 ImGuiTabBar.__index = ImGuiTabBar
@@ -1496,6 +1494,7 @@ ImGuiTextBuffer.clear = lib.ImGuiTextBuffer_clear
 ImGuiTextBuffer.empty = lib.ImGuiTextBuffer_empty
 ImGuiTextBuffer._end = lib.ImGuiTextBuffer_end
 ImGuiTextBuffer.reserve = lib.ImGuiTextBuffer_reserve
+ImGuiTextBuffer.resize = lib.ImGuiTextBuffer_resize
 ImGuiTextBuffer.size = lib.ImGuiTextBuffer_size
 M.ImGuiTextBuffer = ffi.metatype("ImGuiTextBuffer",ImGuiTextBuffer)
 --------------------------ImGuiTextFilter----------------------------
@@ -6335,6 +6334,7 @@ function M.BeginPopupContextWindow(str_id,popup_flags)
     return lib.igBeginPopupContextWindow(str_id,popup_flags)
 end
 M.BeginPopupEx = lib.igBeginPopupEx
+M.BeginPopupMenuEx = lib.igBeginPopupMenuEx
 function M.BeginPopupModal(name,p_open,flags)
     flags = flags or 0
     p_open = p_open or nil
@@ -6911,8 +6911,14 @@ function M.GetIDWithSeed(a1,a2,a3) -- generic version
     print(a1,a2,a3)
     error'M.GetIDWithSeed could not find overloaded'
 end
-M.GetIO = lib.igGetIO
-M.GetIOEx = lib.igGetIOEx
+M.GetIO_Nil = lib.igGetIO_Nil
+M.GetIO_ContextPtr = lib.igGetIO_ContextPtr
+function M.GetIO(a1) -- generic version
+    if a1==nil then return M.GetIO_Nil() end
+    if (ffi.istype('ImGuiContext*',a1) or ffi.istype('ImGuiContext',a1) or ffi.istype('ImGuiContext[]',a1)) then return M.GetIO_ContextPtr(a1) end
+    print(a1)
+    error'M.GetIO could not find overloaded'
+end
 M.GetInputTextState = lib.igGetInputTextState
 M.GetItemFlags = lib.igGetItemFlags
 M.GetItemID = lib.igGetItemID
@@ -6972,8 +6978,14 @@ function M.GetMousePosOnOpeningCurrentPopup()
 end
 M.GetMultiSelectState = lib.igGetMultiSelectState
 M.GetNavTweakPressedAmount = lib.igGetNavTweakPressedAmount
-M.GetPlatformIO = lib.igGetPlatformIO
-M.GetPlatformIOEx = lib.igGetPlatformIOEx
+M.GetPlatformIO_Nil = lib.igGetPlatformIO_Nil
+M.GetPlatformIO_ContextPtr = lib.igGetPlatformIO_ContextPtr
+function M.GetPlatformIO(a1) -- generic version
+    if a1==nil then return M.GetPlatformIO_Nil() end
+    if (ffi.istype('ImGuiContext*',a1) or ffi.istype('ImGuiContext',a1) or ffi.istype('ImGuiContext[]',a1)) then return M.GetPlatformIO_ContextPtr(a1) end
+    print(a1)
+    error'M.GetPlatformIO could not find overloaded'
+end
 function M.GetPopupAllowedExtentRect(window)
     local nonUDT_out = ffi.new("ImRect")
     lib.igGetPopupAllowedExtentRect(nonUDT_out,window)
@@ -7073,6 +7085,7 @@ function M.ImClamp(v,mn,mx)
     lib.igImClamp(nonUDT_out,v,mn,mx)
     return nonUDT_out
 end
+M.ImCountSetBits = lib.igImCountSetBits
 M.ImDot = lib.igImDot
 M.ImExponentialMovingAverage = lib.igImExponentialMovingAverage
 M.ImFileClose = lib.igImFileClose
@@ -7107,7 +7120,8 @@ M.ImFontAtlasBuildRender32bppRectFromString = lib.igImFontAtlasBuildRender32bppR
 M.ImFontAtlasBuildRender8bppRectFromString = lib.igImFontAtlasBuildRender8bppRectFromString
 M.ImFontAtlasBuildSetupFont = lib.igImFontAtlasBuildSetupFont
 M.ImFontAtlasGetBuilderForStbTruetype = lib.igImFontAtlasGetBuilderForStbTruetype
-M.ImFontAtlasUpdateConfigDataPointers = lib.igImFontAtlasUpdateConfigDataPointers
+M.ImFontAtlasGetMouseCursorTexData = lib.igImFontAtlasGetMouseCursorTexData
+M.ImFontAtlasUpdateSourcesPointers = lib.igImFontAtlasUpdateSourcesPointers
 M.ImFormatString = lib.igImFormatString
 M.ImFormatStringToTempBuffer = lib.igImFormatStringToTempBuffer
 M.ImFormatStringToTempBufferV = lib.igImFormatStringToTempBufferV
@@ -7277,12 +7291,10 @@ function M.ImTrunc(a1,a2) -- generic version
     error'M.ImTrunc could not find overloaded'
 end
 M.ImUpperPowerOfTwo = lib.igImUpperPowerOfTwo
-function M.Image(user_texture_id,image_size,uv0,uv1,tint_col,border_col)
-    border_col = border_col or ImVec4(0,0,0,0)
-    tint_col = tint_col or ImVec4(1,1,1,1)
+function M.Image(user_texture_id,image_size,uv0,uv1)
     uv0 = uv0 or ImVec2(0,0)
     uv1 = uv1 or ImVec2(1,1)
-    return lib.igImage(user_texture_id,image_size,uv0,uv1,tint_col,border_col)
+    return lib.igImage(user_texture_id,image_size,uv0,uv1)
 end
 function M.ImageButton(str_id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
     bg_col = bg_col or ImVec4(0,0,0,0)
@@ -7294,6 +7306,13 @@ end
 function M.ImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
     flags = flags or 0
     return lib.igImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
+end
+function M.ImageWithBg(user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
+    bg_col = bg_col or ImVec4(0,0,0,0)
+    tint_col = tint_col or ImVec4(1,1,1,1)
+    uv0 = uv0 or ImVec2(0,0)
+    uv1 = uv1 or ImVec2(1,1)
+    return lib.igImageWithBg(user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
 end
 function M.Indent(indent_w)
     indent_w = indent_w or 0.0
@@ -7402,6 +7421,7 @@ M.IsDragDropPayloadBeingAccepted = lib.igIsDragDropPayloadBeingAccepted
 M.IsGamepadKey = lib.igIsGamepadKey
 M.IsItemActivated = lib.igIsItemActivated
 M.IsItemActive = lib.igIsItemActive
+M.IsItemActiveAsInputText = lib.igIsItemActiveAsInputText
 function M.IsItemClicked(mouse_button)
     mouse_button = mouse_button or 0
     return lib.igIsItemClicked(mouse_button)
