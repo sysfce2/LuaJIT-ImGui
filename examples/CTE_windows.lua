@@ -44,7 +44,7 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 	end)
 	
 --add two editors
-addEditor(gui.pathut.abspath([[../cimgui/imgui/imgui.cpp]]))
+--addEditor(gui.pathut.abspath([[../cimgui/imgui/imgui.cpp]]))
 addEditor(gui.pathut.abspath("CTE_sample.lua"))
 
 function win:draw(ig)

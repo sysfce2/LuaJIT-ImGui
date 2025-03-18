@@ -179,7 +179,7 @@ local function CTEwindow(file_name)
 	elseif ext == "lua" then
 		W.lang_combo:set_index(6)
 	else
-		W.lang_combo:set_index(0)
+		W.lang_combo:set_index(1)
 		print"unknown language"
 	end
 	W.window_scale = ffi.new("float[?]",1,1)
