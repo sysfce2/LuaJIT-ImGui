@@ -2533,10 +2533,42 @@ function M.imguiGizmo_buildPlane(size,thickness)
 end
 M.imguiGizmo_buildPolygon = lib.imguiGizmo_buildPolygon
 M.imguiGizmo_buildSphere = lib.imguiGizmo_buildSphere
+imguiGizmo.checkTowards_vec3 = lib.imguiGizmo_checkTowards_vec3
+imguiGizmo.checkTowards_vec4 = lib.imguiGizmo_checkTowards_vec4
+imguiGizmo.checkTowards_quat = lib.imguiGizmo_checkTowards_quat
+function imguiGizmo:checkTowards(a2) -- generic version
+    if ffi.istype('const vec3',a2) then return self:checkTowards_vec3(a2) end
+    if ffi.istype('const vec4',a2) then return self:checkTowards_vec4(a2) end
+    if ffi.istype('const quat',a2) then return self:checkTowards_quat(a2) end
+    print(a2)
+    error'imguiGizmo:checkTowards could not find overloaded'
+end
 imguiGizmo.drawFunc = lib.imguiGizmo_drawFunc
+function M.imguiGizmo_flipRotOnX(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_flipRotOnX(b)
+end
+function M.imguiGizmo_flipRotOnY(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_flipRotOnY(b)
+end
+function M.imguiGizmo_flipRotOnZ(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_flipRotOnZ(b)
+end
 M.imguiGizmo_getDollyScale = lib.imguiGizmo_getDollyScale
+M.imguiGizmo_getDollyWheelScale = lib.imguiGizmo_getDollyWheelScale
+M.imguiGizmo_getFlipDolly = lib.imguiGizmo_getFlipDolly
+M.imguiGizmo_getFlipPanX = lib.imguiGizmo_getFlipPanX
+M.imguiGizmo_getFlipPanY = lib.imguiGizmo_getFlipPanY
+M.imguiGizmo_getFlipRotOnX = lib.imguiGizmo_getFlipRotOnX
+M.imguiGizmo_getFlipRotOnY = lib.imguiGizmo_getFlipRotOnY
+M.imguiGizmo_getFlipRotOnZ = lib.imguiGizmo_getFlipRotOnZ
 M.imguiGizmo_getGizmoFeelingRot = lib.imguiGizmo_getGizmoFeelingRot
 M.imguiGizmo_getPanScale = lib.imguiGizmo_getPanScale
+M.imguiGizmo_getReverseX = lib.imguiGizmo_getReverseX
+M.imguiGizmo_getReverseY = lib.imguiGizmo_getReverseY
+M.imguiGizmo_getReverseZ = lib.imguiGizmo_getReverseZ
 imguiGizmo.getTransforms_vec3Ptr = lib.imguiGizmo_getTransforms_vec3Ptr
 imguiGizmo.getTransforms_vec4Ptr = lib.imguiGizmo_getTransforms_vec4Ptr
 function imguiGizmo:getTransforms(a2,a3,a4,a5) -- generic version
@@ -2552,6 +2584,18 @@ M.imguiGizmo_restoreAxesSize = lib.imguiGizmo_restoreAxesSize
 M.imguiGizmo_restoreDirectionColor = lib.imguiGizmo_restoreDirectionColor
 M.imguiGizmo_restoreSolidSize = lib.imguiGizmo_restoreSolidSize
 M.imguiGizmo_restoreSphereColors = lib.imguiGizmo_restoreSphereColors
+function M.imguiGizmo_reverseX(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_reverseX(b)
+end
+function M.imguiGizmo_reverseY(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_reverseY(b)
+end
+function M.imguiGizmo_reverseZ(b)
+    if b == nil then b = true end
+    return lib.imguiGizmo_reverseZ(b)
+end
 M.imguiGizmo_setDirectionColor_U32U32 = lib.imguiGizmo_setDirectionColor_U32U32
 M.imguiGizmo_setDirectionColor_Vec4Vec4 = lib.imguiGizmo_setDirectionColor_Vec4Vec4
 M.imguiGizmo_setDirectionColor_U32 = lib.imguiGizmo_setDirectionColor_U32
@@ -2566,7 +2610,11 @@ function M.imguiGizmo_setDirectionColor(a1,a2) -- generic version
 end
 M.imguiGizmo_setDollyModifier = lib.imguiGizmo_setDollyModifier
 M.imguiGizmo_setDollyScale = lib.imguiGizmo_setDollyScale
+M.imguiGizmo_setDollyWheelScale = lib.imguiGizmo_setDollyWheelScale
 imguiGizmo.setDualMode = lib.imguiGizmo_setDualMode
+M.imguiGizmo_setFlipDolly = lib.imguiGizmo_setFlipDolly
+M.imguiGizmo_setFlipPanX = lib.imguiGizmo_setFlipPanX
+M.imguiGizmo_setFlipPanY = lib.imguiGizmo_setFlipPanY
 M.imguiGizmo_setGizmoFeelingRot = lib.imguiGizmo_setGizmoFeelingRot
 M.imguiGizmo_setPanModifier = lib.imguiGizmo_setPanModifier
 M.imguiGizmo_setPanScale = lib.imguiGizmo_setPanScale
@@ -8638,64 +8686,64 @@ function M.WindowRectRelToAbs(window,r)
     lib.igWindowRectRelToAbs(nonUDT_out,window,r)
     return nonUDT_out
 end
-function M.gizmo3D_quatPtrFloat(noname1,noname2,noname3,noname4)
-    noname4 = noname4 or 257
-    return lib.iggizmo3D_quatPtrFloat(noname1,noname2,noname3,noname4)
+function M.gizmo3D_quatPtrFloat(t,q,sz,flag)
+    flag = flag or 257
+    return lib.iggizmo3D_quatPtrFloat(t,q,sz,flag)
 end
-function M.gizmo3D_vec4Ptr(noname1,noname2,noname3,noname4)
-    noname4 = noname4 or 257
-    return lib.iggizmo3D_vec4Ptr(noname1,noname2,noname3,noname4)
+function M.gizmo3D_vec4Ptr(t,v,sz,flag)
+    flag = flag or 257
+    return lib.iggizmo3D_vec4Ptr(t,v,sz,flag)
 end
-function M.gizmo3D_vec3PtrFloat(noname1,noname2,noname3,noname4)
-    noname4 = noname4 or 2
-    return lib.iggizmo3D_vec3PtrFloat(noname1,noname2,noname3,noname4)
+function M.gizmo3D_vec3PtrFloat(t,v,sz,flag)
+    flag = flag or 2
+    return lib.iggizmo3D_vec3PtrFloat(t,v,sz,flag)
 end
-function M.gizmo3D_quatPtrquatPtr(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 264
-    return lib.iggizmo3D_quatPtrquatPtr(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_quatPtrquatPtr(t,q,ql,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_quatPtrquatPtr(t,q,ql,sz,flag)
 end
-function M.gizmo3D_quatPtrvec4Ptr(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 264
-    return lib.iggizmo3D_quatPtrvec4Ptr(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_quatPtrvec4Ptr(t,q,v,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_quatPtrvec4Ptr(t,q,v,sz,flag)
 end
-function M.gizmo3D_quatPtrvec3Ptr(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 264
-    return lib.iggizmo3D_quatPtrvec3Ptr(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_quatPtrvec3Ptr(t,q,v,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_quatPtrvec3Ptr(t,q,v,sz,flag)
 end
-function M.gizmo3D_vec3PtrquatPtrFloat(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 257
-    return lib.iggizmo3D_vec3PtrquatPtrFloat(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_vec3PtrquatPtrFloat(t,vm,q,sz,flag)
+    flag = flag or 257
+    return lib.iggizmo3D_vec3PtrquatPtrFloat(t,vm,q,sz,flag)
 end
-function M.gizmo3D_vec3Ptrvec4Ptr(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 257
-    return lib.iggizmo3D_vec3Ptrvec4Ptr(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_vec3Ptrvec4Ptr(t,vm,v,sz,flag)
+    flag = flag or 257
+    return lib.iggizmo3D_vec3Ptrvec4Ptr(t,vm,v,sz,flag)
 end
-function M.gizmo3D_vec3Ptrvec3Ptr(noname1,noname2,noname3,noname4,noname5)
-    noname5 = noname5 or 2
-    return lib.iggizmo3D_vec3Ptrvec3Ptr(noname1,noname2,noname3,noname4,noname5)
+function M.gizmo3D_vec3Ptrvec3Ptr(t,vm,v,sz,flag)
+    flag = flag or 2
+    return lib.iggizmo3D_vec3Ptrvec3Ptr(t,vm,v,sz,flag)
 end
-function M.gizmo3D_vec3PtrquatPtrquatPtr(noname1,noname2,noname3,noname4,noname5,noname6)
-    noname6 = noname6 or 264
-    return lib.iggizmo3D_vec3PtrquatPtrquatPtr(noname1,noname2,noname3,noname4,noname5,noname6)
+function M.gizmo3D_vec3PtrquatPtrquatPtr(t,vm,q,ql,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_vec3PtrquatPtrquatPtr(t,vm,q,ql,sz,flag)
 end
-function M.gizmo3D_vec3PtrquatPtrvec4Ptr(noname1,noname2,noname3,noname4,noname5,noname6)
-    noname6 = noname6 or 264
-    return lib.iggizmo3D_vec3PtrquatPtrvec4Ptr(noname1,noname2,noname3,noname4,noname5,noname6)
+function M.gizmo3D_vec3PtrquatPtrvec4Ptr(t,vm,q,v,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_vec3PtrquatPtrvec4Ptr(t,vm,q,v,sz,flag)
 end
-function M.gizmo3D_vec3PtrquatPtrvec3Ptr(noname1,noname2,noname3,noname4,noname5,noname6)
-    noname6 = noname6 or 264
-    return lib.iggizmo3D_vec3PtrquatPtrvec3Ptr(noname1,noname2,noname3,noname4,noname5,noname6)
+function M.gizmo3D_vec3PtrquatPtrvec3Ptr(t,vm,q,v,sz,flag)
+    flag = flag or 264
+    return lib.iggizmo3D_vec3PtrquatPtrvec3Ptr(t,vm,q,v,sz,flag)
 end
 function M.gizmo3D(a1,a2,a3,a4,a5,a6) -- generic version
-    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('float',a3) or type(a3)=='number') and ((ffi.istype('int32_t',a4) or type(a4)=='number') or type(a4)=='nil') and a5==nil then return M.gizmo3D_quatPtrFloat(a1,a2,a3,a4) end
+    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('float',a3) or type(a3)=='number') and ((ffi.istype('uint32_t',a4) or type(a4)=='number') or type(a4)=='nil') and a5==nil then return M.gizmo3D_quatPtrFloat(a1,a2,a3,a4) end
     if (ffi.istype('vec4*',a2) or ffi.istype('vec4',a2) or ffi.istype('vec4[]',a2)) then return M.gizmo3D_vec4Ptr(a1,a2,a3,a4) end
-    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('float',a3) or type(a3)=='number') and ((ffi.istype('int32_t',a4) or type(a4)=='number') or type(a4)=='nil') and a5==nil then return M.gizmo3D_vec3PtrFloat(a1,a2,a3,a4) end
-    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrquatPtr(a1,a2,a3,a4,a5) end
-    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('vec4*',a3) or ffi.istype('vec4',a3) or ffi.istype('vec4[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrvec4Ptr(a1,a2,a3,a4,a5) end
-    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('vec3*',a3) or ffi.istype('vec3',a3) or ffi.istype('vec3[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrvec3Ptr(a1,a2,a3,a4,a5) end
-    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3PtrquatPtrFloat(a1,a2,a3,a4,a5) end
-    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('vec4*',a3) or ffi.istype('vec4',a3) or ffi.istype('vec4[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3Ptrvec4Ptr(a1,a2,a3,a4,a5) end
-    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('vec3*',a3) or ffi.istype('vec3',a3) or ffi.istype('vec3[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('int32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3Ptrvec3Ptr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('float',a3) or type(a3)=='number') and ((ffi.istype('uint32_t',a4) or type(a4)=='number') or type(a4)=='nil') and a5==nil then return M.gizmo3D_vec3PtrFloat(a1,a2,a3,a4) end
+    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrquatPtr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('vec4*',a3) or ffi.istype('vec4',a3) or ffi.istype('vec4[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrvec4Ptr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('quat*',a2) or ffi.istype('quat',a2) or ffi.istype('quat[]',a2)) and (ffi.istype('vec3*',a3) or ffi.istype('vec3',a3) or ffi.istype('vec3[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_quatPtrvec3Ptr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3PtrquatPtrFloat(a1,a2,a3,a4,a5) end
+    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('vec4*',a3) or ffi.istype('vec4',a3) or ffi.istype('vec4[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3Ptrvec4Ptr(a1,a2,a3,a4,a5) end
+    if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('vec3*',a3) or ffi.istype('vec3',a3) or ffi.istype('vec3[]',a3)) and (ffi.istype('float',a4) or type(a4)=='number') and ((ffi.istype('uint32_t',a5) or type(a5)=='number') or type(a5)=='nil') then return M.gizmo3D_vec3Ptrvec3Ptr(a1,a2,a3,a4,a5) end
     if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('quat*',a4) or ffi.istype('quat',a4) or ffi.istype('quat[]',a4)) then return M.gizmo3D_vec3PtrquatPtrquatPtr(a1,a2,a3,a4,a5,a6) end
     if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('vec4*',a4) or ffi.istype('vec4',a4) or ffi.istype('vec4[]',a4)) then return M.gizmo3D_vec3PtrquatPtrvec4Ptr(a1,a2,a3,a4,a5,a6) end
     if (ffi.istype('vec3*',a2) or ffi.istype('vec3',a2) or ffi.istype('vec3[]',a2)) and (ffi.istype('quat*',a3) or ffi.istype('quat',a3) or ffi.istype('quat[]',a3)) and (ffi.istype('vec3*',a4) or ffi.istype('vec3',a4) or ffi.istype('vec3[]',a4)) then return M.gizmo3D_vec3PtrquatPtrvec3Ptr(a1,a2,a3,a4,a5,a6) end

@@ -9,7 +9,7 @@ endif(WIN32)
 include_directories(cimgui/imgui)
 include_directories(cimplot/implot)
 include_directories(cimguizmo/ImGuizmo)
-include_directories(./cimguizmo_quat/imGuIZMO.quat/imGuIZMO.quat)
+include_directories(./cimguizmo_quat/imGuIZMO.quat/imguizmo_quat)
 include_directories(cimnodes/imnodes)
 add_definitions("-DIMGUI_USER_CONFIG=\"../cimconfig.h\"")
 add_definitions("-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1")
@@ -29,7 +29,7 @@ set(IMGUI_SOURCES ./cimgui/cimgui.cpp
 ./cimguizmo/cimguizmo.cpp
 ./cimguizmo/ImGuizmo/ImGuizmo.cpp
 ./cimguizmo_quat/cimguizmo_quat.cpp
-./cimguizmo_quat/imGuIZMO.quat/imGuIZMO.quat/imGuIZMOquat.cpp  
+./cimguizmo_quat/imGuIZMO.quat/imguizmo_quat/imGuIZMOquat.cpp  
 ./cimnodes/cimnodes.cpp
 ./cimnodes/imnodes/imnodes.cpp
 ./cimnodes_r/cimnodes_r.cpp
