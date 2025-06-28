@@ -97,8 +97,9 @@ local function Render(self)
 		ig.SameLine()
 		ig.SetNextItemWidth(100)
 		if (ig.DragFloat("window scale", self.window_scale, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)) then
-            ig.SetWindowFontScale(self.window_scale[0]);
-		end		
+            --ig.SetWindowFontScale(self.window_scale[0]);
+		end	
+		ig.PushFont(nil, self.window_scale[0] * ig.GetStyle().FontSizeBase)
 		editor:Render("texteditor"..self.ID)
 		--ig.lib.TextEditor_ImGuiDebugPanel(editor,"deb##"..self.ID)
 	--ig.EndChild()
@@ -132,7 +133,7 @@ local function Render(self)
 				ig.EndPopup()
 			end
 		end
-
+		ig.PopFont()
 end
 local function Save(self,fname)
 	local editor = self.editor

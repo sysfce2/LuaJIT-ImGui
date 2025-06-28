@@ -80,6 +80,7 @@ option(IMPL_EXTRAS "knob and curve" ON)
 
 
 if(IMGUI_FREETYPE)
+	message(STATUS "Building with freetype")
 	if (DEFINED FREETYPE_PATH)
 	FIND_PACKAGE(freetype REQUIRED PATHS ${FREETYPE_PATH})
 	endif (DEFINED FREETYPE_PATH)

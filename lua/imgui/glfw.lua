@@ -608,23 +608,23 @@ function ImDrawList:AddEllipseFilled(center,radius,col,rot,num_segments)
     rot = rot or 0.0
     return lib.ImDrawList_AddEllipseFilled(self,center,radius,col,rot,num_segments)
 end
-function ImDrawList:AddImage(user_texture_id,p_min,p_max,uv_min,uv_max,col)
+function ImDrawList:AddImage(tex_ref,p_min,p_max,uv_min,uv_max,col)
     col = col or 4294967295
     uv_max = uv_max or ImVec2(1,1)
     uv_min = uv_min or ImVec2(0,0)
-    return lib.ImDrawList_AddImage(self,user_texture_id,p_min,p_max,uv_min,uv_max,col)
+    return lib.ImDrawList_AddImage(self,tex_ref,p_min,p_max,uv_min,uv_max,col)
 end
-function ImDrawList:AddImageQuad(user_texture_id,p1,p2,p3,p4,uv1,uv2,uv3,uv4,col)
+function ImDrawList:AddImageQuad(tex_ref,p1,p2,p3,p4,uv1,uv2,uv3,uv4,col)
     col = col or 4294967295
     uv1 = uv1 or ImVec2(0,0)
     uv2 = uv2 or ImVec2(1,0)
     uv3 = uv3 or ImVec2(1,1)
     uv4 = uv4 or ImVec2(0,1)
-    return lib.ImDrawList_AddImageQuad(self,user_texture_id,p1,p2,p3,p4,uv1,uv2,uv3,uv4,col)
+    return lib.ImDrawList_AddImageQuad(self,tex_ref,p1,p2,p3,p4,uv1,uv2,uv3,uv4,col)
 end
-function ImDrawList:AddImageRounded(user_texture_id,p_min,p_max,uv_min,uv_max,col,rounding,flags)
+function ImDrawList:AddImageRounded(tex_ref,p_min,p_max,uv_min,uv_max,col,rounding,flags)
     flags = flags or 0
-    return lib.ImDrawList_AddImageRounded(self,user_texture_id,p_min,p_max,uv_min,uv_max,col,rounding,flags)
+    return lib.ImDrawList_AddImageRounded(self,tex_ref,p_min,p_max,uv_min,uv_max,col,rounding,flags)
 end
 function ImDrawList:AddLine(p1,p2,col,thickness)
     thickness = thickness or 1.0
@@ -725,7 +725,7 @@ function ImDrawList:PathStroke(col,flags,thickness)
     return lib.ImDrawList_PathStroke(self,col,flags,thickness)
 end
 ImDrawList.PopClipRect = lib.ImDrawList_PopClipRect
-ImDrawList.PopTextureID = lib.ImDrawList_PopTextureID
+ImDrawList.PopTexture = lib.ImDrawList_PopTexture
 ImDrawList.PrimQuadUV = lib.ImDrawList_PrimQuadUV
 ImDrawList.PrimRect = lib.ImDrawList_PrimRect
 ImDrawList.PrimRectUV = lib.ImDrawList_PrimRectUV
@@ -739,17 +739,18 @@ function ImDrawList:PushClipRect(clip_rect_min,clip_rect_max,intersect_with_curr
     return lib.ImDrawList_PushClipRect(self,clip_rect_min,clip_rect_max,intersect_with_current_clip_rect)
 end
 ImDrawList.PushClipRectFullScreen = lib.ImDrawList_PushClipRectFullScreen
-ImDrawList.PushTextureID = lib.ImDrawList_PushTextureID
+ImDrawList.PushTexture = lib.ImDrawList_PushTexture
 ImDrawList._CalcCircleAutoSegmentCount = lib.ImDrawList__CalcCircleAutoSegmentCount
 ImDrawList._ClearFreeMemory = lib.ImDrawList__ClearFreeMemory
 ImDrawList._OnChangedClipRect = lib.ImDrawList__OnChangedClipRect
-ImDrawList._OnChangedTextureID = lib.ImDrawList__OnChangedTextureID
+ImDrawList._OnChangedTexture = lib.ImDrawList__OnChangedTexture
 ImDrawList._OnChangedVtxOffset = lib.ImDrawList__OnChangedVtxOffset
 ImDrawList._PathArcToFastEx = lib.ImDrawList__PathArcToFastEx
 ImDrawList._PathArcToN = lib.ImDrawList__PathArcToN
 ImDrawList._PopUnusedDrawCmd = lib.ImDrawList__PopUnusedDrawCmd
 ImDrawList._ResetForNewFrame = lib.ImDrawList__ResetForNewFrame
-ImDrawList._SetTextureID = lib.ImDrawList__SetTextureID
+ImDrawList._SetDrawListSharedData = lib.ImDrawList__SetDrawListSharedData
+ImDrawList._SetTexture = lib.ImDrawList__SetTexture
 ImDrawList._TryMergeDrawCmds = lib.ImDrawList__TryMergeDrawCmds
 M.ImDrawList = ffi.metatype("ImDrawList",ImDrawList)
 --------------------------ImDrawListSharedData----------------------------
@@ -777,12 +778,7 @@ M.ImDrawListSplitter = ffi.metatype("ImDrawListSplitter",ImDrawListSplitter)
 --------------------------ImFont----------------------------
 local ImFont= {}
 ImFont.__index = ImFont
-ImFont.AddGlyph = lib.ImFont_AddGlyph
-function ImFont:AddRemapChar(dst,src,overwrite_dst)
-    if overwrite_dst == nil then overwrite_dst = true end
-    return lib.ImFont_AddRemapChar(self,dst,src,overwrite_dst)
-end
-ImFont.BuildLookupTable = lib.ImFont_BuildLookupTable
+ImFont.AddRemapChar = lib.ImFont_AddRemapChar
 function ImFont:CalcTextSizeA(size,max_width,wrap_width,text_begin,text_end,remaining)
     remaining = remaining or nil
     text_end = text_end or nil
@@ -790,20 +786,24 @@ function ImFont:CalcTextSizeA(size,max_width,wrap_width,text_begin,text_end,rema
     lib.ImFont_CalcTextSizeA(nonUDT_out,self,size,max_width,wrap_width,text_begin,text_end,remaining)
     return nonUDT_out
 end
-ImFont.CalcWordWrapPositionA = lib.ImFont_CalcWordWrapPositionA
+ImFont.CalcWordWrapPosition = lib.ImFont_CalcWordWrapPosition
 ImFont.ClearOutputData = lib.ImFont_ClearOutputData
-ImFont.FindGlyph = lib.ImFont_FindGlyph
-ImFont.FindGlyphNoFallback = lib.ImFont_FindGlyphNoFallback
-ImFont.GetCharAdvance = lib.ImFont_GetCharAdvance
 ImFont.GetDebugName = lib.ImFont_GetDebugName
-ImFont.GrowIndex = lib.ImFont_GrowIndex
+function ImFont:GetFontBaked(font_size,density)
+    density = density or -1.0
+    return lib.ImFont_GetFontBaked(self,font_size,density)
+end
 function ImFont.__new(ctype)
     local ptr = lib.ImFont_ImFont()
     return ffi.gc(ptr,lib.ImFont_destroy)
 end
+ImFont.IsGlyphInFont = lib.ImFont_IsGlyphInFont
 ImFont.IsGlyphRangeUnused = lib.ImFont_IsGlyphRangeUnused
 ImFont.IsLoaded = lib.ImFont_IsLoaded
-ImFont.RenderChar = lib.ImFont_RenderChar
+function ImFont:RenderChar(draw_list,size,pos,col,c,cpu_fine_clip)
+    cpu_fine_clip = cpu_fine_clip or nil
+    return lib.ImFont_RenderChar(self,draw_list,size,pos,col,c,cpu_fine_clip)
+end
 function ImFont:RenderText(draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,cpu_fine_clip)
     cpu_fine_clip = cpu_fine_clip or false
     wrap_width = wrap_width or 0.0
@@ -813,11 +813,10 @@ M.ImFont = ffi.metatype("ImFont",ImFont)
 --------------------------ImFontAtlas----------------------------
 local ImFontAtlas= {}
 ImFontAtlas.__index = ImFontAtlas
-function ImFontAtlas:AddCustomRectFontGlyph(font,id,width,height,advance_x,offset)
-    offset = offset or ImVec2(0,0)
-    return lib.ImFontAtlas_AddCustomRectFontGlyph(self,font,id,width,height,advance_x,offset)
+function ImFontAtlas:AddCustomRect(width,height,out_r)
+    out_r = out_r or nil
+    return lib.ImFontAtlas_AddCustomRect(self,width,height,out_r)
 end
-ImFontAtlas.AddCustomRectRegular = lib.ImFontAtlas_AddCustomRectRegular
 ImFontAtlas.AddFont = lib.ImFontAtlas_AddFont
 function ImFontAtlas:AddFontDefault(font_cfg)
     font_cfg = font_cfg or nil
@@ -826,63 +825,70 @@ end
 function ImFontAtlas:AddFontFromFileTTF(filename,size_pixels,font_cfg,glyph_ranges)
     font_cfg = font_cfg or nil
     glyph_ranges = glyph_ranges or nil
+    size_pixels = size_pixels or 0.0
     return lib.ImFontAtlas_AddFontFromFileTTF(self,filename,size_pixels,font_cfg,glyph_ranges)
 end
 function ImFontAtlas:AddFontFromMemoryCompressedBase85TTF(compressed_font_data_base85,size_pixels,font_cfg,glyph_ranges)
     font_cfg = font_cfg or nil
     glyph_ranges = glyph_ranges or nil
+    size_pixels = size_pixels or 0.0
     return lib.ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(self,compressed_font_data_base85,size_pixels,font_cfg,glyph_ranges)
 end
 function ImFontAtlas:AddFontFromMemoryCompressedTTF(compressed_font_data,compressed_font_data_size,size_pixels,font_cfg,glyph_ranges)
     font_cfg = font_cfg or nil
     glyph_ranges = glyph_ranges or nil
+    size_pixels = size_pixels or 0.0
     return lib.ImFontAtlas_AddFontFromMemoryCompressedTTF(self,compressed_font_data,compressed_font_data_size,size_pixels,font_cfg,glyph_ranges)
 end
 function ImFontAtlas:AddFontFromMemoryTTF(font_data,font_data_size,size_pixels,font_cfg,glyph_ranges)
     font_cfg = font_cfg or nil
     glyph_ranges = glyph_ranges or nil
+    size_pixels = size_pixels or 0.0
     return lib.ImFontAtlas_AddFontFromMemoryTTF(self,font_data,font_data_size,size_pixels,font_cfg,glyph_ranges)
 end
-ImFontAtlas.Build = lib.ImFontAtlas_Build
-ImFontAtlas.CalcCustomRectUV = lib.ImFontAtlas_CalcCustomRectUV
 ImFontAtlas.Clear = lib.ImFontAtlas_Clear
 ImFontAtlas.ClearFonts = lib.ImFontAtlas_ClearFonts
 ImFontAtlas.ClearInputData = lib.ImFontAtlas_ClearInputData
 ImFontAtlas.ClearTexData = lib.ImFontAtlas_ClearTexData
-ImFontAtlas.GetCustomRectByIndex = lib.ImFontAtlas_GetCustomRectByIndex
-ImFontAtlas.GetGlyphRangesChineseFull = lib.ImFontAtlas_GetGlyphRangesChineseFull
-ImFontAtlas.GetGlyphRangesChineseSimplifiedCommon = lib.ImFontAtlas_GetGlyphRangesChineseSimplifiedCommon
-ImFontAtlas.GetGlyphRangesCyrillic = lib.ImFontAtlas_GetGlyphRangesCyrillic
+ImFontAtlas.CompactCache = lib.ImFontAtlas_CompactCache
+ImFontAtlas.GetCustomRect = lib.ImFontAtlas_GetCustomRect
 ImFontAtlas.GetGlyphRangesDefault = lib.ImFontAtlas_GetGlyphRangesDefault
-ImFontAtlas.GetGlyphRangesGreek = lib.ImFontAtlas_GetGlyphRangesGreek
-ImFontAtlas.GetGlyphRangesJapanese = lib.ImFontAtlas_GetGlyphRangesJapanese
-ImFontAtlas.GetGlyphRangesKorean = lib.ImFontAtlas_GetGlyphRangesKorean
-ImFontAtlas.GetGlyphRangesThai = lib.ImFontAtlas_GetGlyphRangesThai
-ImFontAtlas.GetGlyphRangesVietnamese = lib.ImFontAtlas_GetGlyphRangesVietnamese
-function ImFontAtlas:GetTexDataAsAlpha8(out_pixels,out_width,out_height,out_bytes_per_pixel)
-    out_bytes_per_pixel = out_bytes_per_pixel or nil
-    return lib.ImFontAtlas_GetTexDataAsAlpha8(self,out_pixels,out_width,out_height,out_bytes_per_pixel)
-end
-function ImFontAtlas:GetTexDataAsRGBA32(out_pixels,out_width,out_height,out_bytes_per_pixel)
-    out_bytes_per_pixel = out_bytes_per_pixel or nil
-    return lib.ImFontAtlas_GetTexDataAsRGBA32(self,out_pixels,out_width,out_height,out_bytes_per_pixel)
-end
 function ImFontAtlas.__new(ctype)
     local ptr = lib.ImFontAtlas_ImFontAtlas()
     return ffi.gc(ptr,lib.ImFontAtlas_destroy)
 end
-ImFontAtlas.IsBuilt = lib.ImFontAtlas_IsBuilt
-ImFontAtlas.SetTexID = lib.ImFontAtlas_SetTexID
+ImFontAtlas.RemoveCustomRect = lib.ImFontAtlas_RemoveCustomRect
+ImFontAtlas.RemoveFont = lib.ImFontAtlas_RemoveFont
 M.ImFontAtlas = ffi.metatype("ImFontAtlas",ImFontAtlas)
---------------------------ImFontAtlasCustomRect----------------------------
-local ImFontAtlasCustomRect= {}
-ImFontAtlasCustomRect.__index = ImFontAtlasCustomRect
-function ImFontAtlasCustomRect.__new(ctype)
-    local ptr = lib.ImFontAtlasCustomRect_ImFontAtlasCustomRect()
-    return ffi.gc(ptr,lib.ImFontAtlasCustomRect_destroy)
+--------------------------ImFontAtlasBuilder----------------------------
+local ImFontAtlasBuilder= {}
+ImFontAtlasBuilder.__index = ImFontAtlasBuilder
+function ImFontAtlasBuilder.__new(ctype)
+    local ptr = lib.ImFontAtlasBuilder_ImFontAtlasBuilder()
+    return ffi.gc(ptr,lib.ImFontAtlasBuilder_destroy)
 end
-ImFontAtlasCustomRect.IsPacked = lib.ImFontAtlasCustomRect_IsPacked
-M.ImFontAtlasCustomRect = ffi.metatype("ImFontAtlasCustomRect",ImFontAtlasCustomRect)
+M.ImFontAtlasBuilder = ffi.metatype("ImFontAtlasBuilder",ImFontAtlasBuilder)
+--------------------------ImFontAtlasRect----------------------------
+local ImFontAtlasRect= {}
+ImFontAtlasRect.__index = ImFontAtlasRect
+function ImFontAtlasRect.__new(ctype)
+    local ptr = lib.ImFontAtlasRect_ImFontAtlasRect()
+    return ffi.gc(ptr,lib.ImFontAtlasRect_destroy)
+end
+M.ImFontAtlasRect = ffi.metatype("ImFontAtlasRect",ImFontAtlasRect)
+--------------------------ImFontBaked----------------------------
+local ImFontBaked= {}
+ImFontBaked.__index = ImFontBaked
+ImFontBaked.ClearOutputData = lib.ImFontBaked_ClearOutputData
+ImFontBaked.FindGlyph = lib.ImFontBaked_FindGlyph
+ImFontBaked.FindGlyphNoFallback = lib.ImFontBaked_FindGlyphNoFallback
+ImFontBaked.GetCharAdvance = lib.ImFontBaked_GetCharAdvance
+function ImFontBaked.__new(ctype)
+    local ptr = lib.ImFontBaked_ImFontBaked()
+    return ffi.gc(ptr,lib.ImFontBaked_destroy)
+end
+ImFontBaked.IsGlyphLoaded = lib.ImFontBaked_IsGlyphLoaded
+M.ImFontBaked = ffi.metatype("ImFontBaked",ImFontBaked)
 --------------------------ImFontConfig----------------------------
 local ImFontConfig= {}
 ImFontConfig.__index = ImFontConfig
@@ -891,6 +897,14 @@ function ImFontConfig.__new(ctype)
     return ffi.gc(ptr,lib.ImFontConfig_destroy)
 end
 M.ImFontConfig = ffi.metatype("ImFontConfig",ImFontConfig)
+--------------------------ImFontGlyph----------------------------
+local ImFontGlyph= {}
+ImFontGlyph.__index = ImFontGlyph
+function ImFontGlyph.__new(ctype)
+    local ptr = lib.ImFontGlyph_ImFontGlyph()
+    return ffi.gc(ptr,lib.ImFontGlyph_destroy)
+end
+M.ImFontGlyph = ffi.metatype("ImFontGlyph",ImFontGlyph)
 --------------------------ImFontGlyphRangesBuilder----------------------------
 local ImFontGlyphRangesBuilder= {}
 ImFontGlyphRangesBuilder.__index = ImFontGlyphRangesBuilder
@@ -909,6 +923,14 @@ function ImFontGlyphRangesBuilder.__new(ctype)
 end
 ImFontGlyphRangesBuilder.SetBit = lib.ImFontGlyphRangesBuilder_SetBit
 M.ImFontGlyphRangesBuilder = ffi.metatype("ImFontGlyphRangesBuilder",ImFontGlyphRangesBuilder)
+--------------------------ImFontLoader----------------------------
+local ImFontLoader= {}
+ImFontLoader.__index = ImFontLoader
+function ImFontLoader.__new(ctype)
+    local ptr = lib.ImFontLoader_ImFontLoader()
+    return ffi.gc(ptr,lib.ImFontLoader_destroy)
+end
+M.ImFontLoader = ffi.metatype("ImFontLoader",ImFontLoader)
 --------------------------ImGuiBoxSelectState----------------------------
 local ImGuiBoxSelectState= {}
 ImGuiBoxSelectState.__index = ImGuiBoxSelectState
@@ -1645,7 +1667,6 @@ M.ImGuiViewportP = ffi.metatype("ImGuiViewportP",ImGuiViewportP)
 --------------------------ImGuiWindow----------------------------
 local ImGuiWindow= {}
 ImGuiWindow.__index = ImGuiWindow
-ImGuiWindow.CalcFontSize = lib.ImGuiWindow_CalcFontSize
 function ImGuiWindow:GetID_Str(str,str_end)
     str_end = str_end or nil
     return lib.ImGuiWindow_GetID_Str(self,str,str_end)
@@ -1848,10 +1869,26 @@ M.ImPlot3DRange = ffi.metatype("ImPlot3DRange",ImPlot3DRange)
 --------------------------ImPlot3DStyle----------------------------
 local ImPlot3DStyle= {}
 ImPlot3DStyle.__index = ImPlot3DStyle
-function ImPlot3DStyle.__new(ctype)
-    local ptr = lib.ImPlot3DStyle_ImPlot3DStyle()
+function ImPlot3DStyle:GetColor(idx)
+    local nonUDT_out = ffi.new("ImVec4")
+    lib.ImPlot3DStyle_GetColor(nonUDT_out,self,idx)
+    return nonUDT_out
+end
+function ImPlot3DStyle.ImPlot3DStyle_Nil()
+    local ptr = lib.ImPlot3DStyle_ImPlot3DStyle_Nil()
     return ffi.gc(ptr,lib.ImPlot3DStyle_destroy)
 end
+function ImPlot3DStyle.ImPlot3DStyle_Plot3DStyle(other)
+    local ptr = lib.ImPlot3DStyle_ImPlot3DStyle_Plot3DStyle(other)
+    return ffi.gc(ptr,lib.ImPlot3DStyle_destroy)
+end
+function ImPlot3DStyle.__new(ctype,a1) -- generic version
+    if a1==nil then return ImPlot3DStyle.ImPlot3DStyle_Nil() end
+    if ffi.istype('const ImPlot3DStyle',a1) then return ImPlot3DStyle.ImPlot3DStyle_Plot3DStyle(a1) end
+    print(ctype,a1)
+    error'ImPlot3DStyle.__new could not find overloaded'
+end
+ImPlot3DStyle.SetColor = lib.ImPlot3DStyle_SetColor
 M.ImPlot3DStyle = ffi.metatype("ImPlot3DStyle",ImPlot3DStyle)
 --------------------------ImPlotAlignmentData----------------------------
 local ImPlotAlignmentData= {}
@@ -2379,6 +2416,47 @@ ImRect.Translate = lib.ImRect_Translate
 ImRect.TranslateX = lib.ImRect_TranslateX
 ImRect.TranslateY = lib.ImRect_TranslateY
 M.ImRect = ffi.metatype("ImRect",ImRect)
+--------------------------ImTextureData----------------------------
+local ImTextureData= {}
+ImTextureData.__index = ImTextureData
+ImTextureData.Create = lib.ImTextureData_Create
+ImTextureData.DestroyPixels = lib.ImTextureData_DestroyPixels
+ImTextureData.GetPitch = lib.ImTextureData_GetPitch
+ImTextureData.GetPixels = lib.ImTextureData_GetPixels
+ImTextureData.GetPixelsAt = lib.ImTextureData_GetPixelsAt
+ImTextureData.GetSizeInBytes = lib.ImTextureData_GetSizeInBytes
+ImTextureData.GetTexID = lib.ImTextureData_GetTexID
+function ImTextureData:GetTexRef()
+    local nonUDT_out = ffi.new("ImTextureRef")
+    lib.ImTextureData_GetTexRef(nonUDT_out,self)
+    return nonUDT_out
+end
+function ImTextureData.__new(ctype)
+    local ptr = lib.ImTextureData_ImTextureData()
+    return ffi.gc(ptr,lib.ImTextureData_destroy)
+end
+ImTextureData.SetStatus = lib.ImTextureData_SetStatus
+ImTextureData.SetTexID = lib.ImTextureData_SetTexID
+M.ImTextureData = ffi.metatype("ImTextureData",ImTextureData)
+--------------------------ImTextureRef----------------------------
+local ImTextureRef= {}
+ImTextureRef.__index = ImTextureRef
+ImTextureRef.GetTexID = lib.ImTextureRef_GetTexID
+function ImTextureRef.ImTextureRef_Nil()
+    local ptr = lib.ImTextureRef_ImTextureRef_Nil()
+    return ffi.gc(ptr,lib.ImTextureRef_destroy)
+end
+function ImTextureRef.ImTextureRef_TextureID(tex_id)
+    local ptr = lib.ImTextureRef_ImTextureRef_TextureID(tex_id)
+    return ffi.gc(ptr,lib.ImTextureRef_destroy)
+end
+function ImTextureRef.__new(ctype,a1) -- generic version
+    if a1==nil then return ImTextureRef.ImTextureRef_Nil() end
+    if (ffi.istype('uint64_t',a1) or type(a1)=='number') then return ImTextureRef.ImTextureRef_TextureID(a1) end
+    print(ctype,a1)
+    error'ImTextureRef.__new could not find overloaded'
+end
+M.ImTextureRef = ffi.metatype("ImTextureRef",ImTextureRef)
 --------------------------ImVec1----------------------------
 local ImVec1= {}
 ImVec1.__index = ImVec1
@@ -2397,6 +2475,24 @@ function ImVec1.__new(ctype,a1) -- generic version
     error'ImVec1.__new could not find overloaded'
 end
 M.ImVec1 = ffi.metatype("ImVec1",ImVec1)
+--------------------------ImVec2i----------------------------
+local ImVec2i= {}
+ImVec2i.__index = ImVec2i
+function ImVec2i.ImVec2i_Nil()
+    local ptr = lib.ImVec2i_ImVec2i_Nil()
+    return ffi.gc(ptr,lib.ImVec2i_destroy)
+end
+function ImVec2i.ImVec2i_Int(_x,_y)
+    local ptr = lib.ImVec2i_ImVec2i_Int(_x,_y)
+    return ffi.gc(ptr,lib.ImVec2i_destroy)
+end
+function ImVec2i.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return ImVec2i.ImVec2i_Nil() end
+    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return ImVec2i.ImVec2i_Int(a1,a2) end
+    print(ctype,a1,a2)
+    error'ImVec2i.__new could not find overloaded'
+end
+M.ImVec2i = ffi.metatype("ImVec2i",ImVec2i)
 --------------------------ImVec2ih----------------------------
 local ImVec2ih= {}
 ImVec2ih.__index = ImVec2ih
@@ -2628,7 +2724,8 @@ function M.imguiGizmo_setSphereColors(a1,a2) -- generic version
 end
 M.imguiGizmo = ffi.metatype("imguiGizmo",imguiGizmo)
 ------------------------------------------------------
-M.ImGuiFreeType_GetBuilderForFreeType = lib.ImGuiFreeType_GetBuilderForFreeType
+M.ImGuiFreeType_DebugEditFontLoaderFlags = lib.ImGuiFreeType_DebugEditFontLoaderFlags
+M.ImGuiFreeType_GetFontLoader = lib.ImGuiFreeType_GetFontLoader
 function M.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
     user_data = user_data or nil
     return lib.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
@@ -2845,6 +2942,28 @@ function M.ImPlot3D_PixelsToPlotRay(a1,a2) -- generic version
     if (ffi.istype('double',a1) or type(a1)=='number') then return M.ImPlot3D_PixelsToPlotRay_double(a1,a2) end
     print(a1,a2)
     error'M.ImPlot3D_PixelsToPlotRay could not find overloaded'
+end
+function M.ImPlot3D_PlotImage_Vec2(label_id,tex_ref,center,axis_u,axis_v,uv0,uv1,tint_col,flags)
+    flags = flags or 0
+    tint_col = tint_col or ImVec4(1,1,1,1)
+    uv0 = uv0 or ImVec2(0,0)
+    uv1 = uv1 or ImVec2(1,1)
+    return lib.ImPlot3D_PlotImage_Vec2(label_id,tex_ref,center,axis_u,axis_v,uv0,uv1,tint_col,flags)
+end
+function M.ImPlot3D_PlotImage_Plot3DPoInt(label_id,tex_ref,p0,p1,p2,p3,uv0,uv1,uv2,uv3,tint_col,flags)
+    flags = flags or 0
+    tint_col = tint_col or ImVec4(1,1,1,1)
+    uv0 = uv0 or ImVec2(0,0)
+    uv1 = uv1 or ImVec2(1,0)
+    uv2 = uv2 or ImVec2(1,1)
+    uv3 = uv3 or ImVec2(0,1)
+    return lib.ImPlot3D_PlotImage_Plot3DPoInt(label_id,tex_ref,p0,p1,p2,p3,uv0,uv1,uv2,uv3,tint_col,flags)
+end
+function M.ImPlot3D_PlotImage(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) -- generic version
+    if (ffi.istype('const ImVec2',a6) or type(a6)=='nil') then return M.ImPlot3D_PlotImage_Vec2(a1,a2,a3,a4,a5,a6,a7,a8,a9) end
+    if ffi.istype('const ImPlot3DPoint',a6) then return M.ImPlot3D_PlotImage_Plot3DPoInt(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12) end
+    print(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11,a12)
+    error'M.ImPlot3D_PlotImage could not find overloaded'
 end
 function M.ImPlot3D_PlotLine_FloatPtr(label_id,xs,ys,zs,count,flags,offset,stride)
     flags = flags or 0
@@ -3324,6 +3443,7 @@ function M.ImPlot3D_SetNextMarkerStyle(marker,size,fill,weight,outline)
     weight = weight or -1
     return lib.ImPlot3D_SetNextMarkerStyle(marker,size,fill,weight,outline)
 end
+M.ImPlot3D_SetStyle = lib.ImPlot3D_SetStyle
 function M.ImPlot3D_SetupAxes(x_label,y_label,z_label,x_flags,y_flags,z_flags)
     x_flags = x_flags or 0
     y_flags = y_flags or 0
@@ -3339,14 +3459,15 @@ function M.ImPlot3D_SetupAxis(axis,label,flags)
     label = label or nil
     return lib.ImPlot3D_SetupAxis(axis,label,flags)
 end
-function M.ImPlot3D_SetupAxisFormat(idx,formatter,data)
+function M.ImPlot3D_SetupAxisFormat(axis,formatter,data)
     data = data or nil
-    return lib.ImPlot3D_SetupAxisFormat(idx,formatter,data)
+    return lib.ImPlot3D_SetupAxisFormat(axis,formatter,data)
 end
 function M.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
     cond = cond or 2
     return lib.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
 end
+M.ImPlot3D_SetupAxisLimitsConstraints = lib.ImPlot3D_SetupAxisLimitsConstraints
 function M.ImPlot3D_SetupAxisTicks_doublePtr(axis,values,n_ticks,labels,keep_default)
     keep_default = keep_default or false
     labels = labels or nil
@@ -3363,6 +3484,7 @@ function M.ImPlot3D_SetupAxisTicks(a1,a2,a3,a4,a5,a6) -- generic version
     print(a1,a2,a3,a4,a5,a6)
     error'M.ImPlot3D_SetupAxisTicks could not find overloaded'
 end
+M.ImPlot3D_SetupAxisZoomConstraints = lib.ImPlot3D_SetupAxisZoomConstraints
 M.ImPlot3D_SetupBoxInitialRotation_Float = lib.ImPlot3D_SetupBoxInitialRotation_Float
 M.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat = lib.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat
 function M.ImPlot3D_SetupBoxInitialRotation(a1,a2) -- generic version
@@ -3392,9 +3514,14 @@ function M.ImPlot3D_SetupLegend(location,flags)
     flags = flags or 0
     return lib.ImPlot3D_SetupLegend(location,flags)
 end
+M.ImPlot3D_ShowAllDemos = lib.ImPlot3D_ShowAllDemos
 function M.ImPlot3D_ShowDemoWindow(p_open)
     p_open = p_open or nil
     return lib.ImPlot3D_ShowDemoWindow(p_open)
+end
+function M.ImPlot3D_ShowMetricsWindow(p_popen)
+    p_popen = p_popen or nil
+    return lib.ImPlot3D_ShowMetricsWindow(p_popen)
 end
 function M.ImPlot3D_ShowStyleEditor(ref)
     ref = ref or nil
@@ -4852,12 +4979,12 @@ function M.ImPlot_PlotHistogram2D(a1,a2,a3,a4,a5,a6,a7,a8) -- generic version
     print(a1,a2,a3,a4,a5,a6,a7,a8)
     error'M.ImPlot_PlotHistogram2D could not find overloaded'
 end
-function M.ImPlot_PlotImage(label_id,user_texture_id,bounds_min,bounds_max,uv0,uv1,tint_col,flags)
+function M.ImPlot_PlotImage(label_id,tex_ref,bounds_min,bounds_max,uv0,uv1,tint_col,flags)
     flags = flags or 0
     tint_col = tint_col or ImVec4(1,1,1,1)
     uv0 = uv0 or ImVec2(0,0)
     uv1 = uv1 or ImVec2(1,1)
-    return lib.ImPlot_PlotImage(label_id,user_texture_id,bounds_min,bounds_max,uv0,uv1,tint_col,flags)
+    return lib.ImPlot_PlotImage(label_id,tex_ref,bounds_min,bounds_max,uv0,uv1,tint_col,flags)
 end
 function M.ImPlot_PlotInfLines_FloatPtr(label_id,values,count,flags,offset,stride)
     flags = flags or 0
@@ -6631,6 +6758,7 @@ M.DebugNodeDrawCmdShowMeshAndBoundingBox = lib.igDebugNodeDrawCmdShowMeshAndBoun
 M.DebugNodeDrawList = lib.igDebugNodeDrawList
 M.DebugNodeFont = lib.igDebugNodeFont
 M.DebugNodeFontGlyph = lib.igDebugNodeFontGlyph
+M.DebugNodeFontGlyphesForSrcMask = lib.igDebugNodeFontGlyphesForSrcMask
 M.DebugNodeInputTextState = lib.igDebugNodeInputTextState
 M.DebugNodeMultiSelectState = lib.igDebugNodeMultiSelectState
 M.DebugNodePlatformMonitor = lib.igDebugNodePlatformMonitor
@@ -6638,6 +6766,10 @@ M.DebugNodeStorage = lib.igDebugNodeStorage
 M.DebugNodeTabBar = lib.igDebugNodeTabBar
 M.DebugNodeTable = lib.igDebugNodeTable
 M.DebugNodeTableSettings = lib.igDebugNodeTableSettings
+function M.DebugNodeTexture(tex,int_id,highlight_rect)
+    highlight_rect = highlight_rect or nil
+    return lib.igDebugNodeTexture(tex,int_id,highlight_rect)
+end
 M.DebugNodeTypingSelectState = lib.igDebugNodeTypingSelectState
 M.DebugNodeViewport = lib.igDebugNodeViewport
 M.DebugNodeWindow = lib.igDebugNodeWindow
@@ -6951,6 +7083,8 @@ M.GetDrawData = lib.igGetDrawData
 M.GetDrawListSharedData = lib.igGetDrawListSharedData
 M.GetFocusID = lib.igGetFocusID
 M.GetFont = lib.igGetFont
+M.GetFontBaked = lib.igGetFontBaked
+M.GetFontRasterizerDensity = lib.igGetFontRasterizerDensity
 M.GetFontSize = lib.igGetFontSize
 function M.GetFontTexUvWhitePixel()
     local nonUDT_out = ffi.new("ImVec2")
@@ -7072,6 +7206,7 @@ function M.GetPopupAllowedExtentRect(window)
     lib.igGetPopupAllowedExtentRect(nonUDT_out,window)
     return nonUDT_out
 end
+M.GetRoundedFontSize = lib.igGetRoundedFontSize
 M.GetScrollMaxX = lib.igGetScrollMaxX
 M.GetScrollMaxY = lib.igGetScrollMaxY
 M.GetScrollX = lib.igGetScrollX
@@ -7191,18 +7326,70 @@ function M.ImFloor(a1,a2) -- generic version
     print(a1,a2)
     error'M.ImFloor could not find overloaded'
 end
-M.ImFontAtlasBuildFinish = lib.igImFontAtlasBuildFinish
+M.ImFontAtlasAddDrawListSharedData = lib.igImFontAtlasAddDrawListSharedData
+M.ImFontAtlasBakedAdd = lib.igImFontAtlasBakedAdd
+M.ImFontAtlasBakedAddFontGlyph = lib.igImFontAtlasBakedAddFontGlyph
+M.ImFontAtlasBakedDiscard = lib.igImFontAtlasBakedDiscard
+M.ImFontAtlasBakedDiscardFontGlyph = lib.igImFontAtlasBakedDiscardFontGlyph
+M.ImFontAtlasBakedGetClosestMatch = lib.igImFontAtlasBakedGetClosestMatch
+M.ImFontAtlasBakedGetId = lib.igImFontAtlasBakedGetId
+M.ImFontAtlasBakedGetOrAdd = lib.igImFontAtlasBakedGetOrAdd
+M.ImFontAtlasBakedSetFontGlyphBitmap = lib.igImFontAtlasBakedSetFontGlyphBitmap
+M.ImFontAtlasBuildClear = lib.igImFontAtlasBuildClear
+M.ImFontAtlasBuildDestroy = lib.igImFontAtlasBuildDestroy
+M.ImFontAtlasBuildDiscardBakes = lib.igImFontAtlasBuildDiscardBakes
 M.ImFontAtlasBuildGetOversampleFactors = lib.igImFontAtlasBuildGetOversampleFactors
 M.ImFontAtlasBuildInit = lib.igImFontAtlasBuildInit
-M.ImFontAtlasBuildMultiplyCalcLookupTable = lib.igImFontAtlasBuildMultiplyCalcLookupTable
-M.ImFontAtlasBuildMultiplyRectAlpha8 = lib.igImFontAtlasBuildMultiplyRectAlpha8
-M.ImFontAtlasBuildPackCustomRects = lib.igImFontAtlasBuildPackCustomRects
-M.ImFontAtlasBuildRender32bppRectFromString = lib.igImFontAtlasBuildRender32bppRectFromString
-M.ImFontAtlasBuildRender8bppRectFromString = lib.igImFontAtlasBuildRender8bppRectFromString
-M.ImFontAtlasBuildSetupFont = lib.igImFontAtlasBuildSetupFont
-M.ImFontAtlasGetBuilderForStbTruetype = lib.igImFontAtlasGetBuilderForStbTruetype
+M.ImFontAtlasBuildLegacyPreloadAllGlyphRanges = lib.igImFontAtlasBuildLegacyPreloadAllGlyphRanges
+M.ImFontAtlasBuildMain = lib.igImFontAtlasBuildMain
+M.ImFontAtlasBuildRenderBitmapFromString = lib.igImFontAtlasBuildRenderBitmapFromString
+M.ImFontAtlasBuildSetupFontLoader = lib.igImFontAtlasBuildSetupFontLoader
+M.ImFontAtlasBuildSetupFontSpecialGlyphs = lib.igImFontAtlasBuildSetupFontSpecialGlyphs
+M.ImFontAtlasBuildUpdatePointers = lib.igImFontAtlasBuildUpdatePointers
+M.ImFontAtlasDebugLogTextureRequests = lib.igImFontAtlasDebugLogTextureRequests
+M.ImFontAtlasFontDestroyOutput = lib.igImFontAtlasFontDestroyOutput
+M.ImFontAtlasFontDestroySourceData = lib.igImFontAtlasFontDestroySourceData
+M.ImFontAtlasFontDiscardBakes = lib.igImFontAtlasFontDiscardBakes
+M.ImFontAtlasFontInitOutput = lib.igImFontAtlasFontInitOutput
+M.ImFontAtlasFontSourceAddToFont = lib.igImFontAtlasFontSourceAddToFont
+M.ImFontAtlasFontSourceInit = lib.igImFontAtlasFontSourceInit
+M.ImFontAtlasGetFontLoaderForStbTruetype = lib.igImFontAtlasGetFontLoaderForStbTruetype
 M.ImFontAtlasGetMouseCursorTexData = lib.igImFontAtlasGetMouseCursorTexData
-M.ImFontAtlasUpdateSourcesPointers = lib.igImFontAtlasUpdateSourcesPointers
+function M.ImFontAtlasPackAddRect(atlas,w,h,overwrite_entry)
+    overwrite_entry = overwrite_entry or nil
+    return lib.igImFontAtlasPackAddRect(atlas,w,h,overwrite_entry)
+end
+M.ImFontAtlasPackDiscardRect = lib.igImFontAtlasPackDiscardRect
+M.ImFontAtlasPackGetRect = lib.igImFontAtlasPackGetRect
+M.ImFontAtlasPackGetRectSafe = lib.igImFontAtlasPackGetRectSafe
+M.ImFontAtlasPackInit = lib.igImFontAtlasPackInit
+M.ImFontAtlasRectId_GetGeneration = lib.igImFontAtlasRectId_GetGeneration
+M.ImFontAtlasRectId_GetIndex = lib.igImFontAtlasRectId_GetIndex
+M.ImFontAtlasRectId_Make = lib.igImFontAtlasRectId_Make
+M.ImFontAtlasRemoveDrawListSharedData = lib.igImFontAtlasRemoveDrawListSharedData
+M.ImFontAtlasTextureAdd = lib.igImFontAtlasTextureAdd
+M.ImFontAtlasTextureBlockConvert = lib.igImFontAtlasTextureBlockConvert
+M.ImFontAtlasTextureBlockCopy = lib.igImFontAtlasTextureBlockCopy
+M.ImFontAtlasTextureBlockFill = lib.igImFontAtlasTextureBlockFill
+M.ImFontAtlasTextureBlockPostProcess = lib.igImFontAtlasTextureBlockPostProcess
+M.ImFontAtlasTextureBlockPostProcessMultiply = lib.igImFontAtlasTextureBlockPostProcessMultiply
+M.ImFontAtlasTextureBlockQueueUpload = lib.igImFontAtlasTextureBlockQueueUpload
+M.ImFontAtlasTextureCompact = lib.igImFontAtlasTextureCompact
+function M.ImFontAtlasTextureGetSizeEstimate(atlas)
+    local nonUDT_out = ffi.new("ImVec2i")
+    lib.igImFontAtlasTextureGetSizeEstimate(nonUDT_out,atlas)
+    return nonUDT_out
+end
+function M.ImFontAtlasTextureGrow(atlas,old_w,old_h)
+    old_h = old_h or -1
+    old_w = old_w or -1
+    return lib.igImFontAtlasTextureGrow(atlas,old_w,old_h)
+end
+M.ImFontAtlasTextureMakeSpace = lib.igImFontAtlasTextureMakeSpace
+M.ImFontAtlasTextureRepack = lib.igImFontAtlasTextureRepack
+M.ImFontAtlasUpdateDrawListsSharedData = lib.igImFontAtlasUpdateDrawListsSharedData
+M.ImFontAtlasUpdateDrawListsTextures = lib.igImFontAtlasUpdateDrawListsTextures
+M.ImFontAtlasUpdateNewFrame = lib.igImFontAtlasUpdateNewFrame
 M.ImFormatString = lib.igImFormatString
 M.ImFormatStringToTempBuffer = lib.igImFormatStringToTempBuffer
 M.ImFormatStringToTempBufferV = lib.igImFormatStringToTempBufferV
@@ -7277,6 +7464,7 @@ function M.ImMax(lhs,rhs)
     lib.igImMax(nonUDT_out,lhs,rhs)
     return nonUDT_out
 end
+M.ImMemdup = lib.igImMemdup
 function M.ImMin(lhs,rhs)
     local nonUDT_out = ffi.new("ImVec2")
     lib.igImMin(nonUDT_out,lhs,rhs)
@@ -7308,6 +7496,7 @@ function M.ImRotate(v,cos_a,sin_a)
     lib.igImRotate(nonUDT_out,v,cos_a,sin_a)
     return nonUDT_out
 end
+M.ImRound64 = lib.igImRound64
 M.ImRsqrt_Float = lib.igImRsqrt_Float
 M.ImRsqrt_double = lib.igImRsqrt_double
 function M.ImRsqrt(a1) -- generic version
@@ -7349,6 +7538,9 @@ function M.ImTextStrFromUtf8(out_buf,out_buf_size,in_text,in_text_end,in_remaini
     return lib.igImTextStrFromUtf8(out_buf,out_buf_size,in_text,in_text_end,in_remaining)
 end
 M.ImTextStrToUtf8 = lib.igImTextStrToUtf8
+M.ImTextureDataGetFormatBytesPerPixel = lib.igImTextureDataGetFormatBytesPerPixel
+M.ImTextureDataGetFormatName = lib.igImTextureDataGetFormatName
+M.ImTextureDataGetStatusName = lib.igImTextureDataGetStatusName
 M.ImToUpper = lib.igImToUpper
 M.ImTriangleArea = lib.igImTriangleArea
 M.ImTriangleBarycentricCoords = lib.igImTriangleBarycentricCoords
@@ -7371,29 +7563,30 @@ function M.ImTrunc(a1,a2) -- generic version
     print(a1,a2)
     error'M.ImTrunc could not find overloaded'
 end
+M.ImTrunc64 = lib.igImTrunc64
 M.ImUpperPowerOfTwo = lib.igImUpperPowerOfTwo
-function M.Image(user_texture_id,image_size,uv0,uv1)
+function M.Image(tex_ref,image_size,uv0,uv1)
     uv0 = uv0 or ImVec2(0,0)
     uv1 = uv1 or ImVec2(1,1)
-    return lib.igImage(user_texture_id,image_size,uv0,uv1)
+    return lib.igImage(tex_ref,image_size,uv0,uv1)
 end
-function M.ImageButton(str_id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
+function M.ImageButton(str_id,tex_ref,image_size,uv0,uv1,bg_col,tint_col)
     bg_col = bg_col or ImVec4(0,0,0,0)
     tint_col = tint_col or ImVec4(1,1,1,1)
     uv0 = uv0 or ImVec2(0,0)
     uv1 = uv1 or ImVec2(1,1)
-    return lib.igImageButton(str_id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
+    return lib.igImageButton(str_id,tex_ref,image_size,uv0,uv1,bg_col,tint_col)
 end
-function M.ImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
+function M.ImageButtonEx(id,tex_ref,image_size,uv0,uv1,bg_col,tint_col,flags)
     flags = flags or 0
-    return lib.igImageButtonEx(id,user_texture_id,image_size,uv0,uv1,bg_col,tint_col,flags)
+    return lib.igImageButtonEx(id,tex_ref,image_size,uv0,uv1,bg_col,tint_col,flags)
 end
-function M.ImageWithBg(user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
+function M.ImageWithBg(tex_ref,image_size,uv0,uv1,bg_col,tint_col)
     bg_col = bg_col or ImVec4(0,0,0,0)
     tint_col = tint_col or ImVec4(1,1,1,1)
     uv0 = uv0 or ImVec2(0,0)
     uv1 = uv1 or ImVec2(1,1)
-    return lib.igImageWithBg(user_texture_id,image_size,uv0,uv1,bg_col,tint_col)
+    return lib.igImageWithBg(tex_ref,image_size,uv0,uv1,bg_col,tint_col)
 end
 function M.Indent(indent_w)
     indent_w = indent_w or 0.0
@@ -7860,6 +8053,7 @@ M.PopFont = lib.igPopFont
 M.PopID = lib.igPopID
 M.PopItemFlag = lib.igPopItemFlag
 M.PopItemWidth = lib.igPopItemWidth
+M.PopPasswordFont = lib.igPopPasswordFont
 function M.PopStyleColor(count)
     count = count or 1
     return lib.igPopStyleColor(count)
@@ -7926,6 +8120,8 @@ function M.RadioButton(a1,a2,a3) -- generic version
     print(a1,a2,a3)
     error'M.RadioButton could not find overloaded'
 end
+M.RegisterFontAtlas = lib.igRegisterFontAtlas
+M.RegisterUserTexture = lib.igRegisterUserTexture
 M.RemoveContextHook = lib.igRemoveContextHook
 M.RemoveSettingsHandler = lib.igRemoveSettingsHandler
 M.Render = lib.igRender
@@ -8062,6 +8258,7 @@ function M.SetDragDropPayload(type,data,sz,cond)
     return lib.igSetDragDropPayload(type,data,sz,cond)
 end
 M.SetFocusID = lib.igSetFocusID
+M.SetFontRasterizerDensity = lib.igSetFontRasterizerDensity
 M.SetHoveredID = lib.igSetHoveredID
 M.SetItemDefaultFocus = lib.igSetItemDefaultFocus
 M.SetItemKeyOwner_Nil = lib.igSetItemKeyOwner_Nil
@@ -8217,7 +8414,6 @@ function M.SetWindowFocus(a1) -- generic version
     print(a1)
     error'M.SetWindowFocus could not find overloaded'
 end
-M.SetWindowFontScale = lib.igSetWindowFontScale
 M.SetWindowHiddenAndSkipItemsForCurrentFrame = lib.igSetWindowHiddenAndSkipItemsForCurrentFrame
 M.SetWindowHitTestHole = lib.igSetWindowHitTestHole
 M.SetWindowParentWindowForFocusRoute = lib.igSetWindowParentWindowForFocusRoute
@@ -8503,7 +8699,9 @@ function M.TableOpenContextMenu(column_n)
     return lib.igTableOpenContextMenu(column_n)
 end
 M.TablePopBackgroundChannel = lib.igTablePopBackgroundChannel
+M.TablePopColumnChannel = lib.igTablePopColumnChannel
 M.TablePushBackgroundChannel = lib.igTablePushBackgroundChannel
+M.TablePushColumnChannel = lib.igTablePushColumnChannel
 M.TableRemove = lib.igTableRemove
 M.TableResetSettings = lib.igTableResetSettings
 M.TableSaveSettings = lib.igTableSaveSettings
@@ -8544,6 +8742,8 @@ M.TempInputText = lib.igTempInputText
 M.TestKeyOwner = lib.igTestKeyOwner
 M.TestShortcutRouting = lib.igTestShortcutRouting
 M.Text = lib.igText
+M.TextAligned = lib.igTextAligned
+M.TextAlignedV = lib.igTextAlignedV
 M.TextColored = lib.igTextColored
 M.TextColoredV = lib.igTextColoredV
 M.TextDisabled = lib.igTextDisabled
@@ -8580,6 +8780,8 @@ function M.TreeNodeBehavior(id,flags,label,label_end)
     label_end = label_end or nil
     return lib.igTreeNodeBehavior(id,flags,label,label_end)
 end
+M.TreeNodeDrawLineToChildNode = lib.igTreeNodeDrawLineToChildNode
+M.TreeNodeDrawLineToTreePop = lib.igTreeNodeDrawLineToTreePop
 function M.TreeNodeEx_Str(label,flags)
     flags = flags or 0
     return lib.igTreeNodeEx_Str(label,flags)
@@ -8629,6 +8831,9 @@ function M.Unindent(indent_w)
     indent_w = indent_w or 0.0
     return lib.igUnindent(indent_w)
 end
+M.UnregisterFontAtlas = lib.igUnregisterFontAtlas
+M.UnregisterUserTexture = lib.igUnregisterUserTexture
+M.UpdateCurrentFontSize = lib.igUpdateCurrentFontSize
 M.UpdateHoveredWindowAndCaptureFlags = lib.igUpdateHoveredWindowAndCaptureFlags
 M.UpdateInputEvents = lib.igUpdateInputEvents
 M.UpdateMouseMovingWindowEndFrame = lib.igUpdateMouseMovingWindowEndFrame
