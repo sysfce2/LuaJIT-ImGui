@@ -56,9 +56,9 @@ local function ChangeFont(font,fontsize,merge)
 	if merge then
 		local fnt_cfg_def = ig.ImFontConfig()
 		--fnt_cfg_def.SizePixels = fontsize
-		fnt_cfg_def.PixelSnapH = true
-		fnt_cfg_def.OversampleH = 1
-		fnt_cfg_def.OversampleV = 1
+		--fnt_cfg_def.PixelSnapH = true
+		--fnt_cfg_def.OversampleH = 1
+		--fnt_cfg_def.OversampleV = 1
 		--to make it monospace
 		--fnt_cfg_def.GlyphMinAdvanceX = fontsize 
 		--fnt_cfg_def.GlyphMaxAdvanceX = fontsize 
@@ -69,15 +69,16 @@ local function ChangeFont(font,fontsize,merge)
 	local fnt_cfg = ig.ImFontConfig()
 	--use merge to see results without changing font
 	fnt_cfg.MergeMode = merge
-	fnt_cfg.PixelSnapH = true
-	fnt_cfg.OversampleH = 1
-	fnt_cfg.OversampleV = 1
+	--fnt_cfg.PixelSnapH = true
+	--fnt_cfg.OversampleH = 1
+	--fnt_cfg.OversampleV = 1
 	--fnt_cfg.SizePixels = fontsize
 	--to make it monospace
 	--fnt_cfg.GlyphMinAdvanceX = fontsize -- 13.0
 	--fnt_cfg.GlyphMaxAdvanceX = fontsize --13.0
 
 	--fnt_cfg.FontLoaderFlags = use_freetype[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0
+	fnt_cfg.FontLoaderFlags = use_freetype[0] and bit.bor(fnt_cfg.FontLoaderFlags, ffi.C.ImGuiFreeTypeLoaderFlags_LoadColor) or fnt_cfg.FontLoaderFlags
 	
 	--maximal range allowed with ImWchar32
 	--local ranges = ffi.new("ImWchar[3]",{0x0001,0x10FFFF,0})
@@ -190,7 +191,7 @@ function win:draw(ig)
 		if fontcps then
 			ig.Text(font1:GetDebugName());
 			ig.SameLine();ig.Text(#fontcps.." visible glyphs")
-			if not txsizex then
+			--if not txsizex then
 				ig.PushFont(font1, 0)--fontscale[0] * ig.GetStyle().FontSizeBase)--0)
 				local maxx = 0
 				for i=1,#fontcps do
@@ -199,7 +200,7 @@ function win:draw(ig)
 				end
 				txsizex = maxx
 				ig.PopFont()
-			end
+			--end
 			ig.PushFont(font1, 0)--fontscale[0] * ig.GetStyle().FontSizeBase)--0)
 			if ig.BeginChild("glyphs",ig.ImVec2(0,ig.GetFrameHeightWithSpacing() * 12),true, ig.lib.ImGuiWindowFlags_HorizontalScrollbar) then
 				--local txsize = ig.CalcTextSize(codepoint_to_utf8(fontcps[1]))
@@ -265,7 +266,7 @@ function win:draw(ig)
 	ig.End()
 	ig.Begin("test_font")
 	if font1 then ig.Text(font1:GetDebugName()) end
-	ig.PushFont(font1, 0)--fontscale[0] * ig.GetStyle().FontSizeBase)--0)
+	ig.PushFont(font1, 0)--fontsize[0])--fontscale[0] * ig.GetStyle().FontSizeBase)--0)
 	ig.InputTextMultiline("test_i",tttest,#test_text,ig.ImVec2(-ig.FLT_MIN,ig.GetTextLineHeight() * 11))
 	ig.PopFont()
 	ig.End()

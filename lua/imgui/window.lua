@@ -72,7 +72,8 @@ function M:GLFW(w,h,title,args)
     end)
 
     W.lj_glfw.init()
-    local window = W.lj_glfw.Window(w,h,title or "")
+    local main_scale = W.ig.lib.ImGui_ImplGlfw_GetContentScaleForMonitor(W.lj_glfw.getPrimaryMonitor()); -- Valid on GLFW 3.3+ only
+    local window = W.lj_glfw.Window(w * main_scale, h * main_scale,title or "")
     window:makeContextCurrent()
     W.lj_glfw.swapInterval(args.vsync or 1)
 
@@ -84,6 +85,15 @@ function M:GLFW(w,h,title,args)
 
     local igio = W.ig.GetIO()
     igio.ConfigFlags = W.ig.lib.ImGuiConfigFlags_NavEnableKeyboard + igio.ConfigFlags
+    
+    -- Setup scaling
+    local style = W.ig.GetStyle();
+    style:ScaleAllSizes(main_scale);        -- Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = main_scale;        -- Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+    igio.ConfigDpiScaleFonts = true;          -- [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    igio.ConfigDpiScaleViewports = true;      -- [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+    
+    
     local ok = pcall(function() return W.ig.lib.ImGuiConfigFlags_ViewportsEnable end)
     if ok then
         W.has_imgui_viewport = true
@@ -173,6 +183,11 @@ function M:SDL(w,h,title,args)
     W.gllib.set_loader(W.sdl)
     --local gl, glc, glu, glext = gllib.libraries()
     W.ig = require"imgui.sdl"
+    
+    if jit.os == "Windows" then
+        ffi.cdef[[bool SetProcessDPIAware();]]
+        ffi.C.SetProcessDPIAware()
+    end
 
     if (sdl.init(sdl.INIT_VIDEO+sdl.INIT_TIMER) ~= 0) then
         print(string.format("Error: %s\n", sdl.getError()));
@@ -193,7 +208,8 @@ function M:SDL(w,h,title,args)
     sdl.gL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2);
     local current = ffi.new("SDL_DisplayMode[1]")
     sdl.getCurrentDisplayMode(0, current);
-    local window = sdl.createWindow(title or "", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, w, h, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE + sdl.SDL_WINDOW_ALLOW_HIGHDPI);
+    local main_scale = W.ig.lib.ImGui_ImplSDL2_GetContentScaleForDisplay(0);
+    local window = sdl.createWindow(title or "", sdl.WINDOWPOS_CENTERED, sdl.WINDOWPOS_CENTERED, w * main_scale, h * main_scale, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE + sdl.SDL_WINDOW_ALLOW_HIGHDPI);
     W.gl_context = sdl.gL_CreateContext(window);
     sdl.gL_SetSwapInterval(args.vsync or 1)
 
@@ -205,6 +221,14 @@ function M:SDL(w,h,title,args)
 
     local igio = W.ig.GetIO()
     igio.ConfigFlags = W.ig.lib.ImGuiConfigFlags_NavEnableKeyboard + igio.ConfigFlags
+    
+    -- Setup scaling
+    local style = W.ig.GetStyle();
+    style:ScaleAllSizes(main_scale);        -- Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = main_scale;        -- Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+    igio.ConfigDpiScaleFonts = true;          -- [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    igio.ConfigDpiScaleViewports = true;      -- [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+    
     local ok = pcall(function() return W.ig.lib.ImGuiConfigFlags_ViewportsEnable end)
     if ok then
         W.has_imgui_viewport = true
@@ -314,7 +338,8 @@ function M:SDL3(w,h,title,args)
     end
     sdl.gL_SetAttribute(sdl.GL_CONTEXT_MINOR_VERSION, 2);
 
-    local window = sdl.createWindow(title or "", w, h, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE)-- + sdl.SDL_WINDOW_HIDDEN);
+    local main_scale = sdl.getDisplayContentScale(sdl.getPrimaryDisplay());
+    local window = sdl.createWindow(title or "", w * main_scale, h * main_scale, sdl.WINDOW_OPENGL + sdl.WINDOW_RESIZABLE)-- + sdl.SDL_WINDOW_HIDDEN);
     W.gl_context = sdl.gL_CreateContext(window);
     sdl.gL_SetSwapInterval(args.vsync or 1)
 
@@ -326,6 +351,15 @@ function M:SDL3(w,h,title,args)
 
     local igio = W.ig.GetIO()
     igio.ConfigFlags = W.ig.lib.ImGuiConfigFlags_NavEnableKeyboard + igio.ConfigFlags
+    
+        -- Setup scaling
+    local style = W.ig.GetStyle();
+    style:ScaleAllSizes(main_scale);        -- Bake a fixed style scale. (until we have a solution for dynamic style scaling, changing this requires resetting Style + calling this again)
+    style.FontScaleDpi = main_scale;        -- Set initial font scale. (using io.ConfigDpiScaleFonts=true makes this unnecessary. We leave both here for documentation purpose)
+    igio.ConfigDpiScaleFonts = true;          -- [Experimental] Automatically overwrite style.FontScaleDpi in Begin() when Monitor DPI changes. This will scale fonts but _NOT_ scale sizes/padding for now.
+    igio.ConfigDpiScaleViewports = true;      -- [Experimental] Scale Dear ImGui and Platform Windows when Monitor DPI changes.
+    
+    
     local ok = pcall(function() return W.ig.lib.ImGuiConfigFlags_ViewportsEnable end)
     if ok then
         W.has_imgui_viewport = true
