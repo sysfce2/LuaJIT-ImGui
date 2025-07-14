@@ -87,11 +87,11 @@ local function ChangeFont(font,fontsize,merge)
 		if (theFONT == nil) then return false end
 	end
 	if use_freetype[0] then
-		ig.ImFontAtlasBuildSetupFontLoader(FontsAt, ig.ImGuiFreeType_GetFontLoader());
+		FontsAt:SetFontLoader(ig.ImGuiFreeType_GetFontLoader())
 	else
-		ig.ImFontAtlasBuildSetupFontLoader(FontsAt, ig.ImFontAtlasGetFontLoaderForStbTruetype());
+		FontsAt:SetFontLoader(ig.ImFontAtlasGetFontLoaderForStbTruetype())
 	end
-	ig.ImFontAtlasBuildClear(FontsAt)
+
 	return true
 end
 
@@ -224,9 +224,13 @@ function win:draw(ig)
 								local fontbaked = ig.GetFontBaked() --font1:GetFontBaked()
 								local glyph = fontbaked:FindGlyphNoFallback(cp);
 								if glyph~=nil and glyph.Visible == 1 then 
+									
 									if ig.Button(codepoint_to_utf8(cp),ig.ImVec2(txsizex2,txsizex2)) then
 										AddCP(font1:GetDebugName(),cp)
+										local st = codepoint_to_utf8(cp)
+										print("add",cp,string.byte(st, 1, #st))
 									end
+									if ig.IsItemHovered() then ig.SetTooltip("cp: %d",ffi.new("int",cp)) end
 									if not ((N)%cols == 0) then ig.SameLine() end
 								end
 							end

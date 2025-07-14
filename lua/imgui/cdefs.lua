@@ -1462,9 +1462,9 @@ struct ImFontConfig
    _Bool         MergeMode;
    _Bool         PixelSnapH;
    _Bool         PixelSnapV;
-    ImS8 FontNo;
     ImS8 OversampleH;
     ImS8 OversampleV;
+    ImWchar EllipsisChar;
     float SizePixels;
     const ImWchar* GlyphRanges;
     const ImWchar* GlyphExcludeRanges;
@@ -1472,10 +1472,10 @@ struct ImFontConfig
     float GlyphMinAdvanceX;
     float GlyphMaxAdvanceX;
     float GlyphExtraAdvanceX;
+    ImU32 FontNo;
     unsigned int FontLoaderFlags;
     float RasterizerMultiply;
     float RasterizerDensity;
-    ImWchar EllipsisChar;
     ImFontFlags Flags;
     ImFont* DstFont;
     const ImFontLoader* FontLoader;
@@ -2848,7 +2848,7 @@ struct ImGuiContext
     float WheelingWindowReleaseTimer;
     ImVec2 WheelingWindowWheelRemainder;
     ImVec2 WheelingAxisAvg;
-    ImGuiID DebugDrawIdConflicts;
+    ImGuiID DebugDrawIdConflictsId;
     ImGuiID DebugHookIdInfo;
     ImGuiID HoveredId;
     ImGuiID HoveredIdPreviousFrame;
@@ -3586,7 +3586,7 @@ struct ImFontLoader
    _Bool         (*FontSrcContainsGlyph)(ImFontAtlas* atlas, ImFontConfig* src, ImWchar codepoint);
    _Bool         (*FontBakedInit)(ImFontAtlas* atlas, ImFontConfig* src, ImFontBaked* baked, void* loader_data_for_baked_src);
     void (*FontBakedDestroy)(ImFontAtlas* atlas, ImFontConfig* src, ImFontBaked* baked, void* loader_data_for_baked_src);
-   _Bool         (*FontBakedLoadGlyph)(ImFontAtlas* atlas, ImFontConfig* src, ImFontBaked* baked, void* loader_data_for_baked_src, ImWchar codepoint, ImFontGlyph* out_glyph);
+   _Bool         (*FontBakedLoadGlyph)(ImFontAtlas* atlas, ImFontConfig* src, ImFontBaked* baked, void* loader_data_for_baked_src, ImWchar codepoint, ImFontGlyph* out_glyph, float* out_advance_x);
     size_t FontBakedSrcLoaderDataSize;
 };
 struct ImFontAtlasRectEntry
@@ -4315,6 +4315,7 @@ ImFont* ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(ImFontAtlas* self,const
 void ImFontAtlas_RemoveFont(ImFontAtlas* self,ImFont* font);
 void ImFontAtlas_Clear(ImFontAtlas* self);
 void ImFontAtlas_CompactCache(ImFontAtlas* self);
+void ImFontAtlas_SetFontLoader(ImFontAtlas* self,const ImFontLoader* font_loader);
 void ImFontAtlas_ClearInputData(ImFontAtlas* self);
 void ImFontAtlas_ClearFonts(ImFontAtlas* self);
 void ImFontAtlas_ClearTexData(ImFontAtlas* self);
@@ -5153,6 +5154,7 @@ ImFontBaked* igImFontAtlasBakedGetClosestMatch(ImFontAtlas* atlas,ImFont* font,f
 ImFontBaked* igImFontAtlasBakedAdd(ImFontAtlas* atlas,ImFont* font,float font_size,float font_rasterizer_density,ImGuiID baked_id);
 void igImFontAtlasBakedDiscard(ImFontAtlas* atlas,ImFont* font,ImFontBaked* baked);
 ImFontGlyph* igImFontAtlasBakedAddFontGlyph(ImFontAtlas* atlas,ImFontBaked* baked,ImFontConfig* src,const ImFontGlyph* in_glyph);
+void igImFontAtlasBakedAddFontGlyphAdvancedX(ImFontAtlas* atlas,ImFontBaked* baked,ImFontConfig* src,ImWchar codepoint,float advance_x);
 void igImFontAtlasBakedDiscardFontGlyph(ImFontAtlas* atlas,ImFont* font,ImFontBaked* baked,ImFontGlyph* glyph);
 void igImFontAtlasBakedSetFontGlyphBitmap(ImFontAtlas* atlas,ImFontBaked* baked,ImFontConfig* src,ImFontGlyph* glyph,ImTextureRect* r,const unsigned char* src_pixels,ImTextureFormat src_fmt,int src_pitch);
 void igImFontAtlasPackInit(ImFontAtlas* atlas);

@@ -826,6 +826,7 @@ function ImFontAtlas.__new(ctype)
 end
 ImFontAtlas.RemoveCustomRect = lib.ImFontAtlas_RemoveCustomRect
 ImFontAtlas.RemoveFont = lib.ImFontAtlas_RemoveFont
+ImFontAtlas.SetFontLoader = lib.ImFontAtlas_SetFontLoader
 M.ImFontAtlas = ffi.metatype("ImFontAtlas",ImFontAtlas)
 --------------------------ImFontAtlasBuilder----------------------------
 local ImFontAtlasBuilder= {}
@@ -7296,6 +7297,7 @@ end
 M.ImFontAtlasAddDrawListSharedData = lib.igImFontAtlasAddDrawListSharedData
 M.ImFontAtlasBakedAdd = lib.igImFontAtlasBakedAdd
 M.ImFontAtlasBakedAddFontGlyph = lib.igImFontAtlasBakedAddFontGlyph
+M.ImFontAtlasBakedAddFontGlyphAdvancedX = lib.igImFontAtlasBakedAddFontGlyphAdvancedX
 M.ImFontAtlasBakedDiscard = lib.igImFontAtlasBakedDiscard
 M.ImFontAtlasBakedDiscardFontGlyph = lib.igImFontAtlasBakedDiscardFontGlyph
 M.ImFontAtlasBakedGetClosestMatch = lib.igImFontAtlasBakedGetClosestMatch
