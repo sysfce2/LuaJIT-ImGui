@@ -746,11 +746,11 @@ M.ImDrawListSplitter = ffi.metatype("ImDrawListSplitter",ImDrawListSplitter)
 local ImFont= {}
 ImFont.__index = ImFont
 ImFont.AddRemapChar = lib.ImFont_AddRemapChar
-function ImFont:CalcTextSizeA(size,max_width,wrap_width,text_begin,text_end,remaining)
-    remaining = remaining or nil
+function ImFont:CalcTextSizeA(size,max_width,wrap_width,text_begin,text_end,out_remaining)
+    out_remaining = out_remaining or nil
     text_end = text_end or nil
     local nonUDT_out = ffi.new("ImVec2")
-    lib.ImFont_CalcTextSizeA(nonUDT_out,self,size,max_width,wrap_width,text_begin,text_end,remaining)
+    lib.ImFont_CalcTextSizeA(nonUDT_out,self,size,max_width,wrap_width,text_begin,text_end,out_remaining)
     return nonUDT_out
 end
 ImFont.CalcWordWrapPosition = lib.ImFont_CalcWordWrapPosition
@@ -771,10 +771,10 @@ function ImFont:RenderChar(draw_list,size,pos,col,c,cpu_fine_clip)
     cpu_fine_clip = cpu_fine_clip or nil
     return lib.ImFont_RenderChar(self,draw_list,size,pos,col,c,cpu_fine_clip)
 end
-function ImFont:RenderText(draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,cpu_fine_clip)
-    cpu_fine_clip = cpu_fine_clip or false
+function ImFont:RenderText(draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,flags)
+    flags = flags or 0
     wrap_width = wrap_width or 0.0
-    return lib.ImFont_RenderText(self,draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,cpu_fine_clip)
+    return lib.ImFont_RenderText(self,draw_list,size,pos,col,clip_rect,text_begin,text_end,wrap_width,flags)
 end
 M.ImFont = ffi.metatype("ImFont",ImFont)
 --------------------------ImFontAtlas----------------------------
@@ -1056,6 +1056,7 @@ ImGuiInputTextState.ClearText = lib.ImGuiInputTextState_ClearText
 ImGuiInputTextState.CursorAnimReset = lib.ImGuiInputTextState_CursorAnimReset
 ImGuiInputTextState.CursorClamp = lib.ImGuiInputTextState_CursorClamp
 ImGuiInputTextState.GetCursorPos = lib.ImGuiInputTextState_GetCursorPos
+ImGuiInputTextState.GetPreferredOffsetX = lib.ImGuiInputTextState_GetPreferredOffsetX
 ImGuiInputTextState.GetSelectionEnd = lib.ImGuiInputTextState_GetSelectionEnd
 ImGuiInputTextState.GetSelectionStart = lib.ImGuiInputTextState_GetSelectionStart
 ImGuiInputTextState.HasSelection = lib.ImGuiInputTextState_HasSelection
@@ -2296,6 +2297,7 @@ function ImRect:Add(a2) -- generic version
     print(a2)
     error'ImRect:Add could not find overloaded'
 end
+ImRect.AsVec4 = lib.ImRect_AsVec4
 ImRect.ClipWith = lib.ImRect_ClipWith
 ImRect.ClipWithFull = lib.ImRect_ClipWithFull
 ImRect.Contains_Vec2 = lib.ImRect_Contains_Vec2
@@ -6562,6 +6564,7 @@ function M.ButtonEx(label,size_arg,flags)
     size_arg = size_arg or ImVec2(0,0)
     return lib.igButtonEx(label,size_arg,flags)
 end
+M.CalcClipRectVisibleItemsY = lib.igCalcClipRectVisibleItemsY
 function M.CalcItemSize(size,default_w,default_h)
     local nonUDT_out = ffi.new("ImVec2")
     lib.igCalcItemSize(nonUDT_out,size,default_w,default_h)
@@ -7359,6 +7362,15 @@ M.ImFontAtlasTextureRepack = lib.igImFontAtlasTextureRepack
 M.ImFontAtlasUpdateDrawListsSharedData = lib.igImFontAtlasUpdateDrawListsSharedData
 M.ImFontAtlasUpdateDrawListsTextures = lib.igImFontAtlasUpdateDrawListsTextures
 M.ImFontAtlasUpdateNewFrame = lib.igImFontAtlasUpdateNewFrame
+function M.ImFontCalcTextSizeEx(font,size,max_width,wrap_width,text_begin,text_end_display,text_end,out_remaining,out_offset,flags)
+    local nonUDT_out = ffi.new("ImVec2")
+    lib.igImFontCalcTextSizeEx(nonUDT_out,font,size,max_width,wrap_width,text_begin,text_end_display,text_end,out_remaining,out_offset,flags)
+    return nonUDT_out
+end
+function M.ImFontCalcWordWrapPositionEx(font,size,text,text_end,wrap_width,flags)
+    flags = flags or 0
+    return lib.igImFontCalcWordWrapPositionEx(font,size,text,text_end,wrap_width,flags)
+end
 M.ImFormatString = lib.igImFormatString
 M.ImFormatStringToTempBuffer = lib.igImFormatStringToTempBuffer
 M.ImFormatStringToTempBufferV = lib.igImFormatStringToTempBufferV
@@ -7367,6 +7379,7 @@ function M.ImHashData(data,data_size,seed)
     seed = seed or 0
     return lib.igImHashData(data,data_size,seed)
 end
+M.ImHashSkipUncontributingPrefix = lib.igImHashSkipUncontributingPrefix
 function M.ImHashStr(data,data_size,seed)
     data_size = data_size or 0
     seed = seed or 0
@@ -7495,6 +7508,10 @@ M.ImStristr = lib.igImStristr
 M.ImStrlenW = lib.igImStrlenW
 M.ImStrncpy = lib.igImStrncpy
 M.ImStrnicmp = lib.igImStrnicmp
+function M.ImTextCalcWordWrapNextLineStart(text,text_end,flags)
+    flags = flags or 0
+    return lib.igImTextCalcWordWrapNextLineStart(text,text_end,flags)
+end
 M.ImTextCharFromUtf8 = lib.igImTextCharFromUtf8
 M.ImTextCharToUtf8 = lib.igImTextCharToUtf8
 M.ImTextCountCharsFromUtf8 = lib.igImTextCountCharsFromUtf8
@@ -8537,6 +8554,7 @@ function M.SplitterBehavior(bb,id,axis,size1,size2,min_size1,min_size2,hover_ext
 end
 M.StartMouseMovingWindow = lib.igStartMouseMovingWindow
 M.StartMouseMovingWindowOrNode = lib.igStartMouseMovingWindowOrNode
+M.StopMouseMovingWindow = lib.igStopMouseMovingWindow
 function M.StyleColorsClassic(dst)
     dst = dst or nil
     return lib.igStyleColorsClassic(dst)
@@ -8551,6 +8569,7 @@ function M.StyleColorsLight(dst)
 end
 M.TabBarAddTab = lib.igTabBarAddTab
 M.TabBarCloseTab = lib.igTabBarCloseTab
+M.TabBarFindByID = lib.igTabBarFindByID
 M.TabBarFindMostRecentlySelectedTabForActiveWindow = lib.igTabBarFindMostRecentlySelectedTabForActiveWindow
 M.TabBarFindTabByID = lib.igTabBarFindTabByID
 M.TabBarFindTabByOrder = lib.igTabBarFindTabByOrder
@@ -8568,6 +8587,7 @@ function M.TabBarQueueFocus(a1,a2) -- generic version
 end
 M.TabBarQueueReorder = lib.igTabBarQueueReorder
 M.TabBarQueueReorderFromMousePos = lib.igTabBarQueueReorderFromMousePos
+M.TabBarRemove = lib.igTabBarRemove
 M.TabBarRemoveTab = lib.igTabBarRemoveTab
 M.TabItemBackground = lib.igTabItemBackground
 function M.TabItemButton(label,flags)
