@@ -275,7 +275,7 @@ function win:draw(ig)
 	ig.Begin("test_font")
 	if font1 then ig.Text(font1:GetDebugName()) end
 	ig.PushFont(font1, 0)--fontsize[0])--fontscale[0] * ig.GetStyle().FontSizeBase)--0)
-	ig.InputTextMultiline("test_i",tttest,#test_text,ig.ImVec2(-ig.FLT_MIN,ig.GetTextLineHeight() * 11))
+	ig.InputTextMultiline("test_i",tttest,#test_text+1,ig.ImVec2(-ig.FLT_MIN,ig.GetTextLineHeight() * 11))
 	ig.PopFont()
 	ig.End()
 	ig.ShowDemoWindow()
