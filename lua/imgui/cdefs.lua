@@ -694,9 +694,10 @@ typedef enum {
     ImGuiBackendFlags_HasSetMousePos = 1 << 2,
     ImGuiBackendFlags_RendererHasVtxOffset = 1 << 3,
     ImGuiBackendFlags_RendererHasTextures = 1 << 4,
-    ImGuiBackendFlags_PlatformHasViewports = 1 << 10,
-    ImGuiBackendFlags_HasMouseHoveredViewport=1 << 11,
-    ImGuiBackendFlags_RendererHasViewports = 1 << 12,
+    ImGuiBackendFlags_RendererHasViewports = 1 << 10,
+    ImGuiBackendFlags_PlatformHasViewports = 1 << 11,
+    ImGuiBackendFlags_HasMouseHoveredViewport=1 << 12,
+    ImGuiBackendFlags_HasParentViewport = 1 << 13,
 }ImGuiBackendFlags_;
 typedef enum {
     ImGuiCol_Text,
@@ -755,6 +756,7 @@ typedef enum {
     ImGuiCol_TextSelectedBg,
     ImGuiCol_TreeLines,
     ImGuiCol_DragDropTarget,
+    ImGuiCol_UnsavedMarker,
     ImGuiCol_NavCursor,
     ImGuiCol_NavWindowingHighlight,
     ImGuiCol_NavWindowingDimBg,
@@ -1092,7 +1094,7 @@ struct ImGuiIO
    _Bool         ConfigViewportsNoTaskBarIcon;
    _Bool         ConfigViewportsNoDecoration;
    _Bool         ConfigViewportsNoDefaultParent;
-   _Bool         ConfigViewportPlatformFocusSetsImGuiFocus;
+   _Bool         ConfigViewportsPlatformFocusSetsImGuiFocus;
    _Bool         ConfigDpiScaleFonts;
    _Bool         ConfigDpiScaleViewports;
    _Bool         MouseDrawCursor;
@@ -1636,6 +1638,7 @@ struct ImGuiViewport
     ImVec2 WorkSize;
     float DpiScale;
     ImGuiID ParentViewportId;
+    ImGuiViewport* ParentViewport;
     ImDrawData* DrawData;
     void* RendererUserData;
     void* PlatformUserData;
@@ -2296,8 +2299,8 @@ struct ImGuiKeyRoutingData
 {
     ImGuiKeyRoutingIndex NextEntryIndex;
     ImU16 Mods;
-    ImU8 RoutingCurrScore;
-    ImU8 RoutingNextScore;
+    ImU16 RoutingCurrScore;
+    ImU16 RoutingNextScore;
     ImGuiID RoutingCurr;
     ImGuiID RoutingNext;
 };
@@ -3019,6 +3022,7 @@ struct ImGuiContext
     ImRect DragDropTargetRect;
     ImRect DragDropTargetClipRect;
     ImGuiID DragDropTargetId;
+    ImGuiID DragDropTargetFullViewport;
     ImGuiDragDropFlags DragDropAcceptFlags;
     float DragDropAcceptIdCurrRectSurface;
     ImGuiID DragDropAcceptIdCurr;
@@ -4386,6 +4390,8 @@ void ImGuiViewport_GetCenter(ImVec2 *pOut,ImGuiViewport* self);
 void ImGuiViewport_GetWorkCenter(ImVec2 *pOut,ImGuiViewport* self);
 ImGuiPlatformIO* ImGuiPlatformIO_ImGuiPlatformIO(void);
 void ImGuiPlatformIO_destroy(ImGuiPlatformIO* self);
+void ImGuiPlatformIO_ClearPlatformHandlers(ImGuiPlatformIO* self);
+void ImGuiPlatformIO_ClearRendererHandlers(ImGuiPlatformIO* self);
 ImGuiPlatformMonitor* ImGuiPlatformMonitor_ImGuiPlatformMonitor(void);
 void ImGuiPlatformMonitor_destroy(ImGuiPlatformMonitor* self);
 ImGuiPlatformImeData* ImGuiPlatformImeData_ImGuiPlatformImeData(void);
@@ -4946,9 +4952,11 @@ void igPopFocusScope(void);
 ImGuiID igGetCurrentFocusScope(void);
 _Bool                igIsDragDropActive(void);
 _Bool                igBeginDragDropTargetCustom(const ImRect bb,ImGuiID id);
+_Bool                igBeginDragDropTargetViewport(ImGuiViewport* viewport,const ImRect* p_bb);
 void igClearDragDrop(void);
 _Bool                igIsDragDropPayloadBeingAccepted(void);
-void igRenderDragDropTargetRect(const ImRect bb,const ImRect item_clip_rect);
+void igRenderDragDropTargetRectForItem(const ImRect bb);
+void igRenderDragDropTargetRectEx(ImDrawList* draw_list,const ImRect bb);
 ImGuiTypingSelectRequest* igGetTypingSelectRequest(ImGuiTypingSelectFlags flags);
 int igTypingSelectFindMatch(ImGuiTypingSelectRequest* req,int items_count,const char*(*get_item_name_func)(void*,int),void* user_data,int nav_item_idx);
 int igTypingSelectFindNextSingleCharMatch(ImGuiTypingSelectRequest* req,int items_count,const char*(*get_item_name_func)(void*,int),void* user_data,int nav_item_idx);

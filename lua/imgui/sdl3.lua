@@ -1231,6 +1231,8 @@ M.ImGuiPayload = ffi.metatype("ImGuiPayload",ImGuiPayload)
 --------------------------ImGuiPlatformIO----------------------------
 local ImGuiPlatformIO= {}
 ImGuiPlatformIO.__index = ImGuiPlatformIO
+ImGuiPlatformIO.ClearPlatformHandlers = lib.ImGuiPlatformIO_ClearPlatformHandlers
+ImGuiPlatformIO.ClearRendererHandlers = lib.ImGuiPlatformIO_ClearRendererHandlers
 function ImGuiPlatformIO.__new(ctype)
     local ptr = lib.ImGuiPlatformIO_ImGuiPlatformIO()
     return ffi.gc(ptr,lib.ImGuiPlatformIO_destroy)
@@ -6470,6 +6472,10 @@ function M.BeginDragDropSource(flags)
 end
 M.BeginDragDropTarget = lib.igBeginDragDropTarget
 M.BeginDragDropTargetCustom = lib.igBeginDragDropTargetCustom
+function M.BeginDragDropTargetViewport(viewport,p_bb)
+    p_bb = p_bb or nil
+    return lib.igBeginDragDropTargetViewport(viewport,p_bb)
+end
 M.BeginErrorTooltip = lib.igBeginErrorTooltip
 M.BeginGroup = lib.igBeginGroup
 M.BeginItemTooltip = lib.igBeginItemTooltip
@@ -8124,7 +8130,8 @@ function M.RenderColorRectWithAlphaCheckerboard(draw_list,p_min,p_max,fill_col,g
     rounding = rounding or 0.0
     return lib.igRenderColorRectWithAlphaCheckerboard(draw_list,p_min,p_max,fill_col,grid_step,grid_off,rounding,flags)
 end
-M.RenderDragDropTargetRect = lib.igRenderDragDropTargetRect
+M.RenderDragDropTargetRectEx = lib.igRenderDragDropTargetRectEx
+M.RenderDragDropTargetRectForItem = lib.igRenderDragDropTargetRectForItem
 function M.RenderFrame(p_min,p_max,fill_col,borders,rounding)
     if borders == nil then borders = true end
     rounding = rounding or 0.0
