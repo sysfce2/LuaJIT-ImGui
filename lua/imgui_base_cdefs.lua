@@ -8,8 +8,8 @@ cdecl = cdecl..[[
 //addons
 bool Knob(const char* label, float* value_p, float minv, float maxv);
 int Bezier( const char *label, float P[4] );
-bool Curve(const char *label, const struct ImVec2& size, struct ImVec2 *points, const int maxpoints, float *data, int datalen,bool pressed_on_modified);
-void CurveGetData(struct ImVec2 *points, const int maxpoints, float *data, int datalen);
+bool Curve(const char *label, const struct ImVec2_c& size, struct ImVec2_c *points, const int maxpoints, float *data, int datalen,bool pressed_on_modified);
+void CurveGetData(struct ImVec2_c *points, const int maxpoints, float *data, int datalen);
 
 
 

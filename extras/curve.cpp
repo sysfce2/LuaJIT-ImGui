@@ -672,6 +672,7 @@ namespace ImGui
 		return max;
 	}
 	
+	
 	void CurveGetData(ImVec2 *points, const int maxpoints, float *data, int datalen)
 	{
 		if (points[0].x < 0)
@@ -942,12 +943,24 @@ namespace ImGui
 
 };
 
-IMGUI_IMPL_API bool Curve(const char *label, const ImVec2& size, ImVec2 *points, const int maxpoints, float *data, int datalen,bool pressed_on_modified)
+typedef struct ImVec2_c ImVec2_c;
+struct ImVec2_c
 {
-	return ImGui::Curve(label, size, points, maxpoints, data, datalen,pressed_on_modified);
+	float x, y;
+};
+static inline ImVec2 ConvertToCPP_ImVec2(const ImVec2_c& src)
+{
+    ImVec2 dest;
+    dest.x = src.x;
+    dest.y = src.y;
+    return dest;
+}
+IMGUI_IMPL_API bool Curve(const char *label, const ImVec2_c& size, ImVec2_c *points, const int maxpoints, float *data, int datalen,bool pressed_on_modified)
+{
+	return ImGui::Curve(label, ConvertToCPP_ImVec2(size), reinterpret_cast<ImVec2*>(points), maxpoints, data, datalen,pressed_on_modified);
 }
 
-IMGUI_IMPL_API void CurveGetData(ImVec2 *points, const int maxpoints, float *data, int datalen)
+IMGUI_IMPL_API void CurveGetData(ImVec2_c *points, const int maxpoints, float *data, int datalen)
 {
-	return ImGui::CurveGetData(points, maxpoints, data, datalen);
+	return ImGui::CurveGetData(reinterpret_cast<ImVec2*>(points), maxpoints, data, datalen);
 }

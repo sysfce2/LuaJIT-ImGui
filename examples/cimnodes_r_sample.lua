@@ -114,7 +114,8 @@ local function show_editor(editor)
 	ig.SliderFloat("Zoom",ZoomPtr,0.25,5)
 
     ig.TextUnformatted("A -- add node");
-    ig.TextUnformatted("X -- delete selected node or link");
+    ig.TextUnformatted("X -- delete selected node");
+    ig.TextUnformatted("double left click to delete connection");
 
     --ig.ImNodes_BeginCanvas(editor.context);
 	ig.ImNodes_Ez_SetContext(editor.context)

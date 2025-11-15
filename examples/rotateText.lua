@@ -52,20 +52,21 @@ end
 
 function win:draw(ig)
 
---if ig.Begin"window" then
-	--ig.GetIO().FontGlobalScale = 2
-	--ig.GetStyle():ScaleAllSizes(2)
-	ig.SetWindowFontScale(2)
+	if ig.Begin"window" then
+		--ig.GetStyle().FontScaleMain = 2
+		ig.PushFont(nil, ig.GetStyle().FontSizeBase * 2)
+		
+		ImRotateStart();
+		ig.Text("ImRotateDemo");
+		ImRotateEnd(0.5*secs_now());
 	
-	ImRotateStart();
-	ig.Text("ImRotateDemo");
-	ImRotateEnd(0.5*secs_now());
-
-	ImRotateStart(); ig.SameLine();
-	if ig.Button("hola") then print"hola" end
-	ImRotateEnd(5*secs_now()*(ig.IsItemHovered() and 0 or 1)+ (ig.IsItemHovered() and math.pi*0.5 or 0));
---end
---ig.End()
+		ImRotateStart(); ig.SameLine();
+		if ig.Button("hola") then print"hola" end
+		ImRotateEnd(5*secs_now()*(ig.IsItemHovered() and 0 or 1)+ (ig.IsItemHovered() and math.pi*0.5 or 0));
+		
+		ig.PopFont()
+	end
+	ig.End()
 end
 
 win:start()

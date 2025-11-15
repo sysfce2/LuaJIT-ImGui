@@ -68,10 +68,10 @@ local function sanitize_reserved(def)
 	local words = {["in"]="_in",["repeat"]="_repeat"}
 	for k,w in pairs(words) do
 		local pat = "([%(,])("..k..")([,%)])"
-		if def.call_args:match(pat) then
-			--print("found",def.cimguiname,def.call_args,def.call_args:match(pat))
-			def.call_args = def.call_args:gsub(pat,"%1"..w.."%3")
-			--print(def.call_args)
+		if def.call_args_old:match(pat) then
+			--print("found",def.cimguiname,def.call_args_old,def.call_args_old:match(pat))
+			def.call_args_old = def.call_args_old:gsub(pat,"%1"..w.."%3")
+			--print(def.call_args_old)
 			--sanitize defaults
 			if def.defaults[k] then
 				def.defaults[w] = def.defaults[k]
@@ -141,20 +141,20 @@ local function make_function(method,def)
 	fname_m = fname_m:match("(.*)_nonUDT$") or fname_m --drop "_nonUDT" suffix
 	if fname_m == "end" then fname_m = "_end" end
 	--dump function code
-	if def.nonUDT == 1 or next(def.defaults) then
-		local call_args = def.call_args:gsub("%*","")
+	if def.nonUDTno == 1 or next(def.defaults) then
+		local call_args_old = def.call_args_old:gsub("%*","")
 		local code = {}
 		local args, fname_lua
-		local empty = call_args:match("^%(%)") --no args
+		local empty = call_args_old:match("^%(%)") --no args
 		if method and not def.is_static_function then
-			args = call_args:gsub("^%(","(self"..(empty and "" or ","))
+			args = call_args_old:gsub("^%(","(self"..(empty and "" or ","))
 			fname_lua = def.stname..":"..fname_m
 			empty = false
 		else
-			args = call_args
+			args = call_args_old
 			fname_lua = "M."..fname_m
 		end
-		table.insert(code,"function "..fname_lua..call_args)
+		table.insert(code,"function "..fname_lua..call_args_old)
 		--set defaults
 		cpp2ffi.table_do_sorted(def.defaults, function(k,v)
 		--for k,v in pairs(def.defaults) do
@@ -175,7 +175,7 @@ local function make_function(method,def)
 			end
 		--end
 		end)
-		if def.nonUDT == 1 then
+		if def.nonUDTno == 1 then
 			--allocate variable for return value
 			local out_type = def.argsT[1].type:gsub("*", "")
 			table.insert(code,'    local nonUDT_out = ffi.new("'..out_type..'")')
@@ -191,7 +191,7 @@ local function make_function(method,def)
 		table.insert(code,"end")
 		return table.concat(code,"\n")
 	end
-	--for no nonUDT and no defaults
+	--for no nonUDTno and no defaults
 	return (method and def.stname or "M").."."..fname_m.." = lib."..fname
 end
 
@@ -200,11 +200,11 @@ local function constructor_gen(code,def)
 	sanitize_reserved(def)
 	--dump function code
 	if def.cimguiname == def.ov_cimguiname then --default constructor
-		local args = (def.call_args == "()") and "(ctype)" or "(ctype,"..def.call_args:sub(2)
+		local args = (def.call_args_old == "()") and "(ctype)" or "(ctype,"..def.call_args_old:sub(2)
 		table.insert(code,"function "..def.stname..".__new"..args)
 	else
 		local name = def.ov_cimguiname:match(def.stname.."_(.*)") --drop struct name part
-		table.insert(code,"function "..def.stname.."."..name..def.call_args)
+		table.insert(code,"function "..def.stname.."."..name..def.call_args_old)
 	end
 	--set defaults
 	cpp2ffi.table_do_sorted(def.defaults, function(k,v)
@@ -213,7 +213,7 @@ local function constructor_gen(code,def)
 	--end
 	end)
 	local fname = def.ov_cimguiname or def.cimguiname
-	table.insert(code,"    local ptr = lib."..fname..def.call_args)
+	table.insert(code,"    local ptr = lib."..fname..def.call_args_old)
 	table.insert(code,"    return ffi.gc(ptr,lib."..def.stname.."_destroy)")
 	table.insert(code,"end")
 end
@@ -320,7 +320,7 @@ local function gen_args(method,def,minvararg)
 	end
 	local ini = 1
 	if method then ini = ini + 1 end
-	if def.nonUDT then ini = ini + 1 end
+	if def.nonUDTno then ini = ini + 1 end
 	for i=ini,n do
 		args = args.."a"..i..","
 	end
@@ -339,7 +339,7 @@ local function create_generic(code,defs,method)
 		method = nil
 	end
 	
-	if defs[1].nonUDT then print("create_generic nonUTD",defs[1].cimguiname) end
+	if defs[1].nonUDTno then print("create_generic nonUTD",defs[1].cimguiname) end
 	
 	local methodnotconst = method and not defs[1].constructor
 	--find max number of arguments
@@ -369,14 +369,14 @@ local function create_generic(code,defs,method)
 		print()
 	end
 	--]]
-	--if methodnotconst and defs[1].nonUDT then print("zzzzz",defs[1].cimguiname) end
+	--if methodnotconst and defs[1].nonUDTno then print("zzzzz",defs[1].cimguiname) end
 	--find first different arg
 	local keys = {}
 	local done = {}
 	local check = {}
 	local maxnargs2 = is_vararg and minvararg-1 or maxnargs
 	local ini_i= methodnotconst and 2 or 1
-	ini_i= defs[1].nonUDT and ini_i + 1 or ini_i
+	ini_i= defs[1].nonUDTno and ini_i + 1 or ini_i
 	for i=ini_i,maxnargs2 do
 		keys[i] = {}
 		for j=1,#defs do
@@ -429,7 +429,7 @@ local function create_generic(code,defs,method)
 	if is_vararg then maxnargs = minvararg-1 end
 	local args = "" --method and "self," or ""
 	if methodnotconst then
-		if defs[1].nonUDT then
+		if defs[1].nonUDTno then
 			for i=3,maxnargs do
 				args = args.."a"..i..","
 			end
@@ -442,7 +442,7 @@ local function create_generic(code,defs,method)
 		args = maxnargs==0 and "ctype" or "ctype,"
 		for i=1,maxnargs do args = args.."a"..i.."," end
 	else
-		if defs[1].nonUDT then
+		if defs[1].nonUDTno then
 			--print("mmmm",defs[1].cimguiname)
 			for i=2,maxnargs do
 				args = args.."a"..i..","
