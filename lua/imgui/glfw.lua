@@ -960,6 +960,14 @@ function ImGuiDebugAllocInfo.__new(ctype)
     return ffi.gc(ptr,lib.ImGuiDebugAllocInfo_destroy)
 end
 M.ImGuiDebugAllocInfo = ffi.metatype("ImGuiDebugAllocInfo",ImGuiDebugAllocInfo)
+--------------------------ImGuiDebugItemPathQuery----------------------------
+local ImGuiDebugItemPathQuery= {}
+ImGuiDebugItemPathQuery.__index = ImGuiDebugItemPathQuery
+function ImGuiDebugItemPathQuery.__new(ctype)
+    local ptr = lib.ImGuiDebugItemPathQuery_ImGuiDebugItemPathQuery()
+    return ffi.gc(ptr,lib.ImGuiDebugItemPathQuery_destroy)
+end
+M.ImGuiDebugItemPathQuery = ffi.metatype("ImGuiDebugItemPathQuery",ImGuiDebugItemPathQuery)
 --------------------------ImGuiDockContext----------------------------
 local ImGuiDockContext= {}
 ImGuiDockContext.__index = ImGuiDockContext
@@ -6991,6 +6999,7 @@ M.ImFontAtlasBuildGetOversampleFactors = lib.igImFontAtlasBuildGetOversampleFact
 M.ImFontAtlasBuildInit = lib.igImFontAtlasBuildInit
 M.ImFontAtlasBuildLegacyPreloadAllGlyphRanges = lib.igImFontAtlasBuildLegacyPreloadAllGlyphRanges
 M.ImFontAtlasBuildMain = lib.igImFontAtlasBuildMain
+M.ImFontAtlasBuildNotifySetFont = lib.igImFontAtlasBuildNotifySetFont
 M.ImFontAtlasBuildRenderBitmapFromString = lib.igImFontAtlasBuildRenderBitmapFromString
 M.ImFontAtlasBuildSetupFontLoader = lib.igImFontAtlasBuildSetupFontLoader
 M.ImFontAtlasBuildSetupFontSpecialGlyphs = lib.igImFontAtlasBuildSetupFontSpecialGlyphs
@@ -7156,6 +7165,7 @@ M.ImTextCountLines = lib.igImTextCountLines
 M.ImTextCountUtf8BytesFromChar = lib.igImTextCountUtf8BytesFromChar
 M.ImTextCountUtf8BytesFromStr = lib.igImTextCountUtf8BytesFromStr
 M.ImTextFindPreviousUtf8Codepoint = lib.igImTextFindPreviousUtf8Codepoint
+M.ImTextFindValidUtf8CodepointEnd = lib.igImTextFindValidUtf8CodepointEnd
 function M.ImTextStrFromUtf8(out_buf,out_buf_size,in_text,in_text_end,in_remaining)
     in_remaining = in_remaining or nil
     return lib.igImTextStrFromUtf8(out_buf,out_buf_size,in_text,in_text_end,in_remaining)
@@ -7464,6 +7474,7 @@ function M.IsWindowHovered(flags)
     flags = flags or 0
     return lib.igIsWindowHovered(flags)
 end
+M.IsWindowInBeginStack = lib.igIsWindowInBeginStack
 M.IsWindowNavFocusable = lib.igIsWindowNavFocusable
 M.IsWindowWithinBeginStackOf = lib.igIsWindowWithinBeginStackOf
 function M.ItemAdd(bb,id,nav_bb,extra_flags)

@@ -10,7 +10,7 @@ Uses cimgui to be the most "up to date" as possible.
 There are backends for glfw, SDL2 and SDL3.
 
 Notes:
-* currently this wrapper is based on version [1.92.4 docking of imgui]
+* currently this wrapper is based on version [1.92.5WIP docking of imgui]
 
 # cloning
 
