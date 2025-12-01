@@ -1721,13 +1721,13 @@ function ImPlot3DPoint.ImPlot3DPoint_Nil()
     local ptr = lib.ImPlot3DPoint_ImPlot3DPoint_Nil()
     return ffi.gc(ptr,lib.ImPlot3DPoint_destroy)
 end
-function ImPlot3DPoint.ImPlot3DPoint_Float(_x,_y,_z)
-    local ptr = lib.ImPlot3DPoint_ImPlot3DPoint_Float(_x,_y,_z)
+function ImPlot3DPoint.ImPlot3DPoint_double(_x,_y,_z)
+    local ptr = lib.ImPlot3DPoint_ImPlot3DPoint_double(_x,_y,_z)
     return ffi.gc(ptr,lib.ImPlot3DPoint_destroy)
 end
 function ImPlot3DPoint.__new(ctype,a1,a2,a3) -- generic version
     if a1==nil then return ImPlot3DPoint.ImPlot3DPoint_Nil() end
-    if (ffi.istype('float',a1) or type(a1)=='number') then return ImPlot3DPoint.ImPlot3DPoint_Float(a1,a2,a3) end
+    if (ffi.istype('double',a1) or type(a1)=='number') then return ImPlot3DPoint.ImPlot3DPoint_double(a1,a2,a3) end
     print(ctype,a1,a2,a3)
     error'ImPlot3DPoint.__new could not find overloaded'
 end
@@ -1748,18 +1748,18 @@ function ImPlot3DQuat.ImPlot3DQuat_Nil()
     local ptr = lib.ImPlot3DQuat_ImPlot3DQuat_Nil()
     return ffi.gc(ptr,lib.ImPlot3DQuat_destroy)
 end
-function ImPlot3DQuat.ImPlot3DQuat_FloatFloat(_x,_y,_z,_w)
-    local ptr = lib.ImPlot3DQuat_ImPlot3DQuat_FloatFloat(_x,_y,_z,_w)
+function ImPlot3DQuat.ImPlot3DQuat_doubledouble(_x,_y,_z,_w)
+    local ptr = lib.ImPlot3DQuat_ImPlot3DQuat_doubledouble(_x,_y,_z,_w)
     return ffi.gc(ptr,lib.ImPlot3DQuat_destroy)
 end
-function ImPlot3DQuat.ImPlot3DQuat_FloatPlot3DPoInt(_angle,_axis)
-    local ptr = lib.ImPlot3DQuat_ImPlot3DQuat_FloatPlot3DPoInt(_angle,_axis)
+function ImPlot3DQuat.ImPlot3DQuat_doublePlot3DPoInt(_angle,_axis)
+    local ptr = lib.ImPlot3DQuat_ImPlot3DQuat_doublePlot3DPoInt(_angle,_axis)
     return ffi.gc(ptr,lib.ImPlot3DQuat_destroy)
 end
 function ImPlot3DQuat.__new(ctype,a1,a2,a3,a4) -- generic version
     if a1==nil then return ImPlot3DQuat.ImPlot3DQuat_Nil() end
-    if (ffi.istype('float',a1) or type(a1)=='number') and (ffi.istype('float',a2) or type(a2)=='number') then return ImPlot3DQuat.ImPlot3DQuat_FloatFloat(a1,a2,a3,a4) end
-    if (ffi.istype('float',a1) or type(a1)=='number') and ffi.istype('const ImPlot3DPoint',a2) then return ImPlot3DQuat.ImPlot3DQuat_FloatPlot3DPoInt(a1,a2) end
+    if (ffi.istype('double',a1) or type(a1)=='number') and (ffi.istype('double',a2) or type(a2)=='number') then return ImPlot3DQuat.ImPlot3DQuat_doubledouble(a1,a2,a3,a4) end
+    if (ffi.istype('double',a1) or type(a1)=='number') and ffi.istype('const ImPlot3DPoint',a2) then return ImPlot3DQuat.ImPlot3DQuat_doublePlot3DPoInt(a1,a2) end
     print(ctype,a1,a2,a3,a4)
     error'ImPlot3DQuat.__new could not find overloaded'
 end
@@ -1778,13 +1778,13 @@ function ImPlot3DRange.ImPlot3DRange_Nil()
     local ptr = lib.ImPlot3DRange_ImPlot3DRange_Nil()
     return ffi.gc(ptr,lib.ImPlot3DRange_destroy)
 end
-function ImPlot3DRange.ImPlot3DRange_Float(min,max)
-    local ptr = lib.ImPlot3DRange_ImPlot3DRange_Float(min,max)
+function ImPlot3DRange.ImPlot3DRange_double(min,max)
+    local ptr = lib.ImPlot3DRange_ImPlot3DRange_double(min,max)
     return ffi.gc(ptr,lib.ImPlot3DRange_destroy)
 end
 function ImPlot3DRange.__new(ctype,a1,a2) -- generic version
     if a1==nil then return ImPlot3DRange.ImPlot3DRange_Nil() end
-    if (ffi.istype('float',a1) or type(a1)=='number') then return ImPlot3DRange.ImPlot3DRange_Float(a1,a2) end
+    if (ffi.istype('double',a1) or type(a1)=='number') then return ImPlot3DRange.ImPlot3DRange_double(a1,a2) end
     print(ctype,a1,a2)
     error'ImPlot3DRange.__new could not find overloaded'
 end
@@ -2786,8 +2786,8 @@ function M.ImPlot3D_GetColormapSize(cmap)
 end
 M.ImPlot3D_GetCurrentContext = lib.ImPlot3D_GetCurrentContext
 M.ImPlot3D_GetPlotDrawList = lib.ImPlot3D_GetPlotDrawList
-M.ImPlot3D_GetPlotPos = lib.ImPlot3D_GetPlotPos
-M.ImPlot3D_GetPlotSize = lib.ImPlot3D_GetPlotSize
+M.ImPlot3D_GetPlotRectPos = lib.ImPlot3D_GetPlotRectPos
+M.ImPlot3D_GetPlotRectSize = lib.ImPlot3D_GetPlotRectSize
 M.ImPlot3D_GetStyle = lib.ImPlot3D_GetStyle
 M.ImPlot3D_GetStyleColorU32 = lib.ImPlot3D_GetStyleColorU32
 M.ImPlot3D_GetStyleColorVec4 = lib.ImPlot3D_GetStyleColorVec4
@@ -2813,6 +2813,10 @@ function M.ImPlot3D_PixelsToPlotRay(a1,a2) -- generic version
     if (ffi.istype('double',a1) or type(a1)=='number') then return M.ImPlot3D_PixelsToPlotRay_double(a1,a2) end
     print(a1,a2)
     error'M.ImPlot3D_PixelsToPlotRay could not find overloaded'
+end
+function M.ImPlot3D_PlotDummy(label_id,flags)
+    flags = flags or 0
+    return lib.ImPlot3D_PlotDummy(label_id,flags)
 end
 function M.ImPlot3D_PlotImage_Vec2(label_id,tex_ref,center,axis_u,axis_v,uv0,uv1,tint_col,flags)
     flags = flags or 0
@@ -3157,7 +3161,7 @@ function M.ImPlot3D_PlotSurface(a1,a2,a3,a4,a5,a6,a7,a8,a9,a10,a11) -- generic v
     error'M.ImPlot3D_PlotSurface could not find overloaded'
 end
 function M.ImPlot3D_PlotText(text,x,y,z,angle,pix_offset)
-    angle = angle or 0.0
+    angle = angle or 0
     pix_offset = pix_offset or ImVec2(0,0)
     return lib.ImPlot3D_PlotText(text,x,y,z,angle,pix_offset)
 end
@@ -3329,6 +3333,17 @@ function M.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
     return lib.ImPlot3D_SetupAxisLimits(axis,v_min,v_max,cond)
 end
 M.ImPlot3D_SetupAxisLimitsConstraints = lib.ImPlot3D_SetupAxisLimitsConstraints
+M.ImPlot3D_SetupAxisScale_Plot3DScale = lib.ImPlot3D_SetupAxisScale_Plot3DScale
+function M.ImPlot3D_SetupAxisScale_Plot3DTransform(axis,forward,inverse,data)
+    data = data or nil
+    return lib.ImPlot3D_SetupAxisScale_Plot3DTransform(axis,forward,inverse,data)
+end
+function M.ImPlot3D_SetupAxisScale(a1,a2,a3,a4) -- generic version
+    if (ffi.istype('int32_t',a2) or type(a2)=='number') then return M.ImPlot3D_SetupAxisScale_Plot3DScale(a1,a2) end
+    if ffi.istype('ImPlot3DTransform',a2) then return M.ImPlot3D_SetupAxisScale_Plot3DTransform(a1,a2,a3,a4) end
+    print(a1,a2,a3,a4)
+    error'M.ImPlot3D_SetupAxisScale could not find overloaded'
+end
 function M.ImPlot3D_SetupAxisTicks_doublePtr(axis,values,n_ticks,labels,keep_default)
     keep_default = keep_default or false
     labels = labels or nil
@@ -3346,18 +3361,18 @@ function M.ImPlot3D_SetupAxisTicks(a1,a2,a3,a4,a5,a6) -- generic version
     error'M.ImPlot3D_SetupAxisTicks could not find overloaded'
 end
 M.ImPlot3D_SetupAxisZoomConstraints = lib.ImPlot3D_SetupAxisZoomConstraints
-M.ImPlot3D_SetupBoxInitialRotation_Float = lib.ImPlot3D_SetupBoxInitialRotation_Float
+M.ImPlot3D_SetupBoxInitialRotation_double = lib.ImPlot3D_SetupBoxInitialRotation_double
 M.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat = lib.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat
 function M.ImPlot3D_SetupBoxInitialRotation(a1,a2) -- generic version
-    if (ffi.istype('float',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxInitialRotation_Float(a1,a2) end
+    if (ffi.istype('double',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxInitialRotation_double(a1,a2) end
     if ffi.istype('ImPlot3DQuat',a1) then return M.ImPlot3D_SetupBoxInitialRotation_Plot3DQuat(a1) end
     print(a1,a2)
     error'M.ImPlot3D_SetupBoxInitialRotation could not find overloaded'
 end
-function M.ImPlot3D_SetupBoxRotation_Float(elevation,azimuth,animate,cond)
+function M.ImPlot3D_SetupBoxRotation_double(elevation,azimuth,animate,cond)
     animate = animate or false
     cond = cond or 2
-    return lib.ImPlot3D_SetupBoxRotation_Float(elevation,azimuth,animate,cond)
+    return lib.ImPlot3D_SetupBoxRotation_double(elevation,azimuth,animate,cond)
 end
 function M.ImPlot3D_SetupBoxRotation_Plot3DQuat(rotation,animate,cond)
     animate = animate or false
@@ -3365,7 +3380,7 @@ function M.ImPlot3D_SetupBoxRotation_Plot3DQuat(rotation,animate,cond)
     return lib.ImPlot3D_SetupBoxRotation_Plot3DQuat(rotation,animate,cond)
 end
 function M.ImPlot3D_SetupBoxRotation(a1,a2,a3,a4) -- generic version
-    if (ffi.istype('float',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxRotation_Float(a1,a2,a3,a4) end
+    if (ffi.istype('double',a1) or type(a1)=='number') then return M.ImPlot3D_SetupBoxRotation_double(a1,a2,a3,a4) end
     if ffi.istype('ImPlot3DQuat',a1) then return M.ImPlot3D_SetupBoxRotation_Plot3DQuat(a1,a2,a3) end
     print(a1,a2,a3,a4)
     error'M.ImPlot3D_SetupBoxRotation could not find overloaded'
@@ -3375,7 +3390,12 @@ function M.ImPlot3D_SetupLegend(location,flags)
     flags = flags or 0
     return lib.ImPlot3D_SetupLegend(location,flags)
 end
+function M.ImPlot3D_ShowAboutWindow(p_open)
+    p_open = p_open or nil
+    return lib.ImPlot3D_ShowAboutWindow(p_open)
+end
 M.ImPlot3D_ShowAllDemos = lib.ImPlot3D_ShowAllDemos
+M.ImPlot3D_ShowColormapSelector = lib.ImPlot3D_ShowColormapSelector
 function M.ImPlot3D_ShowDemoWindow(p_open)
     p_open = p_open or nil
     return lib.ImPlot3D_ShowDemoWindow(p_open)
@@ -3388,6 +3408,7 @@ function M.ImPlot3D_ShowStyleEditor(ref)
     ref = ref or nil
     return lib.ImPlot3D_ShowStyleEditor(ref)
 end
+M.ImPlot3D_ShowStyleSelector = lib.ImPlot3D_ShowStyleSelector
 function M.ImPlot3D_StyleColorsAuto(dst)
     dst = dst or nil
     return lib.ImPlot3D_StyleColorsAuto(dst)

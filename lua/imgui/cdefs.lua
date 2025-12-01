@@ -7439,6 +7439,7 @@ typedef int ImPlot3DMarker;
 typedef int ImPlot3DLocation;
 typedef int ImAxis3D;
 typedef int ImPlane3D;
+typedef int ImPlot3DScale;
 typedef int ImPlot3DColormap;
 typedef int ImPlot3DFlags;
 typedef int ImPlot3DItemFlags;
@@ -7449,6 +7450,7 @@ typedef int ImPlot3DQuadFlags;
 typedef int ImPlot3DSurfaceFlags;
 typedef int ImPlot3DMeshFlags;
 typedef int ImPlot3DImageFlags;
+typedef int ImPlot3DDummyFlags;
 typedef int ImPlot3DLegendFlags;
 typedef int ImPlot3DAxisFlags;
 typedef enum {
@@ -7458,6 +7460,11 @@ typedef enum {
     ImPlot3DFlags_NoMouseText = 1 << 2,
     ImPlot3DFlags_NoClip = 1 << 3,
     ImPlot3DFlags_NoMenus = 1 << 4,
+    ImPlot3DFlags_Equal = 1 << 5,
+    ImPlot3DFlags_NoRotate = 1 << 6,
+    ImPlot3DFlags_NoPan = 1 << 7,
+    ImPlot3DFlags_NoZoom = 1 << 8,
+    ImPlot3DFlags_NoInputs = 1 << 9,
     ImPlot3DFlags_CanvasOnly = ImPlot3DFlags_NoTitle | ImPlot3DFlags_NoLegend | ImPlot3DFlags_NoMouseText,
 }ImPlot3DFlags_;
 typedef enum {
@@ -7493,6 +7500,7 @@ typedef enum {
     ImPlot3DStyleVar_PlotMinSize,
     ImPlot3DStyleVar_PlotPadding,
     ImPlot3DStyleVar_LabelPadding,
+    ImPlot3DStyleVar_ViewScaleFactor,
     ImPlot3DStyleVar_LegendPadding,
     ImPlot3DStyleVar_LegendInnerPadding,
     ImPlot3DStyleVar_LegendSpacing,
@@ -7568,6 +7576,9 @@ typedef enum {
     ImPlot3DImageFlags_NoFit = ImPlot3DItemFlags_NoFit,
 }ImPlot3DImageFlags_;
 typedef enum {
+    ImPlot3DDummyFlags_None = 0
+}ImPlot3DDummyFlags_;
+typedef enum {
     ImPlot3DLegendFlags_None = 0,
     ImPlot3DLegendFlags_NoButtons = 1 << 0,
     ImPlot3DLegendFlags_NoHighlightItem = 1 << 1,
@@ -7611,6 +7622,11 @@ typedef enum {
     ImPlane3D_COUNT,
 }ImPlane3D_;
 typedef enum {
+    ImPlot3DScale_Linear = 0,
+    ImPlot3DScale_Log10,
+    ImPlot3DScale_SymLog,
+}ImPlot3DScale_;
+typedef enum {
     ImPlot3DColormap_Deep = 0,
     ImPlot3DColormap_Dark = 1,
     ImPlot3DColormap_Pastel = 2,
@@ -7628,10 +7644,11 @@ typedef enum {
     ImPlot3DColormap_Spectral = 14,
     ImPlot3DColormap_Greys = 15,
 }ImPlot3DColormap_;
-typedef int (*ImPlot3DFormatter)(float value, char* buff, int size, void* user_data);
+typedef int (*ImPlot3DFormatter)(double value, char* buff, int size, void* user_data);
+typedef double (*ImPlot3DTransform)(double value, void* user_data);
 struct ImPlot3DPoint_c
 {
-    float x, y, z;
+    double x, y, z;
 };
 struct ImPlot3DRay
 {
@@ -7650,12 +7667,12 @@ struct ImPlot3DBox
 };
 struct ImPlot3DRange
 {
-    float Min;
-    float Max;
+    double Min;
+    double Max;
 };
 struct ImPlot3DQuat_c
 {
-    float x, y, z, w;
+    double x, y, z, w;
 };
 struct ImPlot3DStyle_c
 {
@@ -7668,6 +7685,7 @@ struct ImPlot3DStyle_c
     ImVec2_c PlotMinSize;
     ImVec2_c PlotPadding;
     ImVec2_c LabelPadding;
+    float ViewScaleFactor;
     ImVec2_c LegendPadding;
     ImVec2_c LegendInnerPadding;
     ImVec2_c LegendSpacing;
@@ -7700,15 +7718,17 @@ void ImPlot3D_SetupAxisLimits(ImAxis3D axis,double v_min,double v_max,ImPlot3DCo
 void ImPlot3D_SetupAxisFormat(ImAxis3D axis,ImPlot3DFormatter formatter,void* data);
 void ImPlot3D_SetupAxisTicks_doublePtr(ImAxis3D axis,const double* values,int n_ticks,const char* const labels[],                                                                                                                           _Bool                                                                                                                                 keep_default);
 void ImPlot3D_SetupAxisTicks_double(ImAxis3D axis,double v_min,double v_max,int n_ticks,const char* const labels[],                                                                                                                             _Bool                                                                                                                                   keep_default);
+void ImPlot3D_SetupAxisScale_Plot3DScale(ImAxis3D axis,ImPlot3DScale scale);
+void ImPlot3D_SetupAxisScale_Plot3DTransform(ImAxis3D axis,ImPlot3DTransform forward,ImPlot3DTransform inverse,void* data);
 void ImPlot3D_SetupAxisLimitsConstraints(ImAxis3D axis,double v_min,double v_max);
-void ImPlot3D_SetupAxisZoomConstraints(ImAxis3D axis,double z_min,double z_max);
+void ImPlot3D_SetupAxisZoomConstraints(ImAxis3D axis,double zoom_min,double zoom_max);
 void ImPlot3D_SetupAxes(const char* x_label,const char* y_label,const char* z_label,ImPlot3DAxisFlags x_flags,ImPlot3DAxisFlags y_flags,ImPlot3DAxisFlags z_flags);
 void ImPlot3D_SetupAxesLimits(double x_min,double x_max,double y_min,double y_max,double z_min,double z_max,ImPlot3DCond cond);
-void ImPlot3D_SetupBoxRotation_Float(float elevation,float azimuth,                                                                             _Bool                                                                                   animate,ImPlot3DCond cond);
+void ImPlot3D_SetupBoxRotation_double(double elevation,double azimuth,                                                                                _Bool                                                                                      animate,ImPlot3DCond cond);
 void ImPlot3D_SetupBoxRotation_Plot3DQuat(ImPlot3DQuat_c rotation,                                                                            _Bool                                                                                  animate,ImPlot3DCond cond);
-void ImPlot3D_SetupBoxInitialRotation_Float(float elevation,float azimuth);
+void ImPlot3D_SetupBoxInitialRotation_double(double elevation,double azimuth);
 void ImPlot3D_SetupBoxInitialRotation_Plot3DQuat(ImPlot3DQuat_c rotation);
-void ImPlot3D_SetupBoxScale(float x,float y,float z);
+void ImPlot3D_SetupBoxScale(double x,double y,double z);
 void ImPlot3D_SetupLegend(ImPlot3DLocation location,ImPlot3DLegendFlags flags);
 void ImPlot3D_PlotScatter_FloatPtr(const char* label_id,const float* xs,const float* ys,const float* zs,int count,ImPlot3DScatterFlags flags,int offset,int stride);
 void ImPlot3D_PlotScatter_doublePtr(const char* label_id,const double* xs,const double* ys,const double* zs,int count,ImPlot3DScatterFlags flags,int offset,int stride);
@@ -7763,15 +7783,16 @@ void ImPlot3D_PlotSurface_U64Ptr(const char* label_id,const ImU64* xs,const ImU6
 void ImPlot3D_PlotMesh(const char* label_id,const ImPlot3DPoint* vtx,const unsigned int* idx,int vtx_count,int idx_count,ImPlot3DMeshFlags flags);
 void ImPlot3D_PlotImage_Vec2(const char* label_id,ImTextureRef_c tex_ref,const ImPlot3DPoint_c center,const ImPlot3DPoint_c axis_u,const ImPlot3DPoint_c axis_v,const ImVec2_c uv0,const ImVec2_c uv1,const ImVec4_c tint_col,ImPlot3DImageFlags flags);
 void ImPlot3D_PlotImage_Plot3DPoInt(const char* label_id,ImTextureRef_c tex_ref,const ImPlot3DPoint_c p0,const ImPlot3DPoint_c p1,const ImPlot3DPoint_c p2,const ImPlot3DPoint_c p3,const ImVec2_c uv0,const ImVec2_c uv1,const ImVec2_c uv2,const ImVec2_c uv3,const ImVec4_c tint_col,ImPlot3DImageFlags flags);
-void ImPlot3D_PlotText(const char* text,float x,float y,float z,float angle,const ImVec2_c pix_offset);
+void ImPlot3D_PlotText(const char* text,double x,double y,double z,double angle,const ImVec2_c pix_offset);
+void ImPlot3D_PlotDummy(const char* label_id,ImPlot3DDummyFlags flags);
 ImVec2_c ImPlot3D_PlotToPixels_Plot3DPoInt(const ImPlot3DPoint_c point);
 ImVec2_c ImPlot3D_PlotToPixels_double(double x,double y,double z);
 ImPlot3DRay ImPlot3D_PixelsToPlotRay_Vec2(const ImVec2_c pix);
 ImPlot3DRay ImPlot3D_PixelsToPlotRay_double(double x,double y);
 ImPlot3DPoint_c ImPlot3D_PixelsToPlotPlane_Vec2(const ImVec2_c pix,ImPlane3D plane,                                                                                             _Bool                                                                                                   mask);
 ImPlot3DPoint_c ImPlot3D_PixelsToPlotPlane_double(double x,double y,ImPlane3D plane,                                                                                              _Bool                                                                                                    mask);
-ImVec2_c ImPlot3D_GetPlotPos(void);
-ImVec2_c ImPlot3D_GetPlotSize(void);
+ImVec2_c ImPlot3D_GetPlotRectPos(void);
+ImVec2_c ImPlot3D_GetPlotRectSize(void);
 ImDrawList* ImPlot3D_GetPlotDrawList(void);
 ImPlot3DStyle* ImPlot3D_GetStyle(void);
 void ImPlot3D_SetStyle(const ImPlot3DStyle_c style);
@@ -7806,14 +7827,17 @@ ImVec4_c ImPlot3D_SampleColormap(float t,ImPlot3DColormap cmap);
 void ImPlot3D_ShowDemoWindow(                                       _Bool                                           * p_open);
 void ImPlot3D_ShowAllDemos(void);
 void ImPlot3D_ShowStyleEditor(ImPlot3DStyle* ref);
+_Bool                ImPlot3D_ShowStyleSelector(const char* label);
+_Bool                ImPlot3D_ShowColormapSelector(const char* label);
 void ImPlot3D_ShowMetricsWindow(                                          _Bool                                              * p_popen);
+void ImPlot3D_ShowAboutWindow(                                        _Bool                                            * p_open);
 ImPlot3DPoint* ImPlot3DPoint_ImPlot3DPoint_Nil(void);
 void ImPlot3DPoint_destroy(ImPlot3DPoint* self);
-ImPlot3DPoint* ImPlot3DPoint_ImPlot3DPoint_Float(float _x,float _y,float _z);
-float ImPlot3DPoint_Dot(ImPlot3DPoint* self,const ImPlot3DPoint_c rhs);
+ImPlot3DPoint* ImPlot3DPoint_ImPlot3DPoint_double(double _x,double _y,double _z);
+double ImPlot3DPoint_Dot(ImPlot3DPoint* self,const ImPlot3DPoint_c rhs);
 ImPlot3DPoint_c ImPlot3DPoint_Cross(ImPlot3DPoint* self,const ImPlot3DPoint_c rhs);
-float ImPlot3DPoint_Length(ImPlot3DPoint* self);
-float ImPlot3DPoint_LengthSquared(ImPlot3DPoint* self);
+double ImPlot3DPoint_Length(ImPlot3DPoint* self);
+double ImPlot3DPoint_LengthSquared(ImPlot3DPoint* self);
 void ImPlot3DPoint_Normalize(ImPlot3DPoint* self);
 ImPlot3DPoint_c ImPlot3DPoint_Normalized(ImPlot3DPoint* self);
 _Bool                ImPlot3DPoint_IsNaN(ImPlot3DPoint* self);
@@ -7825,23 +7849,23 @@ _Bool                ImPlot3DBox_Contains(ImPlot3DBox* self,const ImPlot3DPoint_
 _Bool                ImPlot3DBox_ClipLineSegment(ImPlot3DBox* self,const ImPlot3DPoint_c p0,const ImPlot3DPoint_c p1,ImPlot3DPoint* p0_clipped,ImPlot3DPoint* p1_clipped);
 ImPlot3DRange* ImPlot3DRange_ImPlot3DRange_Nil(void);
 void ImPlot3DRange_destroy(ImPlot3DRange* self);
-ImPlot3DRange* ImPlot3DRange_ImPlot3DRange_Float(float min,float max);
-void ImPlot3DRange_Expand(ImPlot3DRange* self,float value);
-_Bool                ImPlot3DRange_Contains(ImPlot3DRange* self,float value);
-float ImPlot3DRange_Size(ImPlot3DRange* self);
+ImPlot3DRange* ImPlot3DRange_ImPlot3DRange_double(double min,double max);
+void ImPlot3DRange_Expand(ImPlot3DRange* self,double value);
+_Bool                ImPlot3DRange_Contains(ImPlot3DRange* self,double value);
+double ImPlot3DRange_Size(ImPlot3DRange* self);
 ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_Nil(void);
 void ImPlot3DQuat_destroy(ImPlot3DQuat* self);
-ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_FloatFloat(float _x,float _y,float _z,float _w);
-ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_FloatPlot3DPoInt(float _angle,const ImPlot3DPoint_c _axis);
+ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_doubledouble(double _x,double _y,double _z,double _w);
+ImPlot3DQuat* ImPlot3DQuat_ImPlot3DQuat_doublePlot3DPoInt(double _angle,const ImPlot3DPoint_c _axis);
 ImPlot3DQuat_c ImPlot3DQuat_FromTwoVectors(const ImPlot3DPoint_c v0,const ImPlot3DPoint_c v1);
-ImPlot3DQuat_c ImPlot3DQuat_FromElAz(float elevation,float azimuth);
-float ImPlot3DQuat_Length(ImPlot3DQuat* self);
+ImPlot3DQuat_c ImPlot3DQuat_FromElAz(double elevation,double azimuth);
+double ImPlot3DQuat_Length(ImPlot3DQuat* self);
 ImPlot3DQuat_c ImPlot3DQuat_Normalized(ImPlot3DQuat* self);
 ImPlot3DQuat_c ImPlot3DQuat_Conjugate(ImPlot3DQuat* self);
 ImPlot3DQuat_c ImPlot3DQuat_Inverse(ImPlot3DQuat* self);
 ImPlot3DQuat_c* ImPlot3DQuat_Normalize(ImPlot3DQuat* self);
-ImPlot3DQuat_c ImPlot3DQuat_Slerp(const ImPlot3DQuat_c q1,const ImPlot3DQuat_c q2,float t);
-float ImPlot3DQuat_Dot(ImPlot3DQuat* self,const ImPlot3DQuat_c rhs);
+ImPlot3DQuat_c ImPlot3DQuat_Slerp(const ImPlot3DQuat_c q1,const ImPlot3DQuat_c q2,double t);
+double ImPlot3DQuat_Dot(ImPlot3DQuat* self,const ImPlot3DQuat_c rhs);
 ImVec4_c ImPlot3DStyle_GetColor(ImPlot3DStyle* self,ImPlot3DCol idx);
 void ImPlot3DStyle_SetColor(ImPlot3DStyle* self,ImPlot3DCol idx,const ImVec4_c col);
 ImPlot3DStyle* ImPlot3DStyle_ImPlot3DStyle_Nil(void);
