@@ -14,11 +14,17 @@ local function get_cdefs(gccline,locat,cdef)
 	cdef = cdef or {}
 	local pipe,err = io.popen(gccline,"r")
 	if not pipe then error("could not execute gcc "..err) end
-
+	local skip
 	for line in location(pipe,{locat}) do
 		line = line:gsub("extern __attribute__%(%(dllexport%)%)%s*","")
 		line = line:gsub("extern __declspec%(dllexport%)%s*","")
-		if line~="" then table.insert(cdef,line) end
+		skip = false
+		if line~="" then 
+			if line:match("^%s*static const") and not line:match("static const int") then skip=true end
+			if not skip then
+				table.insert(cdef,line) 
+			end
+		end
 	end
 	pipe:close()
 	return cdef

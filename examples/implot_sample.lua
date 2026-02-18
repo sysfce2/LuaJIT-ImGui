@@ -27,15 +27,19 @@ local gettercb2 = ffi.cast("ImPlotPoint_getter", function(data,idx,ipp)
     ipp[0].y = sin(theta)*rho
 end)
 
+
 function win:draw(ig)
+	local spec_circle = ig.ImPlotSpec()
+	spec_circle.Marker = ig.lib.ImPlotMarker_Circle
     ig.ImPlot_ShowDemoWindow()
     ig.Begin("Ploters")
     if (ig.ImPlot_BeginPlot("Line Plot", ig.ImVec2(0,0))) then
+       -- ig.ImPlot_PlotLineG("Line Plot",ig.lib.W1(gettercb),nil,1000)
+        -- ig.ImPlot_PlotLineG("Polar Plot",ig.lib.W1(gettercb2),dataplot,1000)
         ig.ImPlot_PlotLineG("Line Plot",gettercb,nil,1000)
         ig.ImPlot_PlotLineG("Polar Plot",gettercb2,dataplot,1000)
         ig.ImPlot_Annotation(0.25,1.1,ig.ImPlot_GetLastItemColor(),ig.ImVec2(15,15),true,"function %f %s",1,"hello")
-        ig.ImPlot_SetNextMarkerStyle(ig.lib.ImPlotMarker_Circle);
-        ig.ImPlot_PlotLine("x^2", xs2, ys2, 11);
+        ig.ImPlot_PlotLine("x^2", xs2, ys2, 11,spec_circle[0]);
         ig.ImPlot_EndPlot();
     end
     ig.End()
