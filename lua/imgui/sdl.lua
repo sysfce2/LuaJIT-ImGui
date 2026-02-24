@@ -3411,7 +3411,7 @@ M.ImPlot_BeginDragDropTargetAxis = lib.ImPlot_BeginDragDropTargetAxis
 M.ImPlot_BeginDragDropTargetLegend = lib.ImPlot_BeginDragDropTargetLegend
 M.ImPlot_BeginDragDropTargetPlot = lib.ImPlot_BeginDragDropTargetPlot
 function M.ImPlot_BeginItem(label_id,spec,item_col,item_mkr)
-    item_col = item_col or IMPLOT_AUTO_COL
+    item_col = item_col or M.ImVec4(0,0,0,-1)
     item_mkr = item_mkr or -3
     spec = spec or M.ImPlotSpec()[0]
     return lib.ImPlot_BeginItem(label_id,spec,item_col,item_mkr)
@@ -3453,20 +3453,20 @@ M.ImPlot_CeilTime = lib.ImPlot_CeilTime
 M.ImPlot_ClampLabelPos = lib.ImPlot_ClampLabelPos
 M.ImPlot_ClampLegendRect = lib.ImPlot_ClampLegendRect
 function M.ImPlot_ColormapButton(label,size,cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     size = size or ImVec2(0,0)
     return lib.ImPlot_ColormapButton(label,size,cmap)
 end
 M.ImPlot_ColormapIcon = lib.ImPlot_ColormapIcon
 function M.ImPlot_ColormapScale(label,scale_min,scale_max,size,format,flags,cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     flags = flags or 0
     format = format or "%g"
     size = size or ImVec2(0,0)
     return lib.ImPlot_ColormapScale(label,scale_min,scale_max,size,format,flags,cmap)
 end
 function M.ImPlot_ColormapSlider(label,t,out,format,cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     format = format or ""
     out = out or nil
     return lib.ImPlot_ColormapSlider(label,t,out,format,cmap)
@@ -3552,7 +3552,7 @@ M.ImPlot_Formatter_Logit = lib.ImPlot_Formatter_Logit
 M.ImPlot_Formatter_Time = lib.ImPlot_Formatter_Time
 M.ImPlot_GetAutoColor = lib.ImPlot_GetAutoColor
 function M.ImPlot_GetColormapColor(idx,cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     return lib.ImPlot_GetColormapColor(idx,cmap)
 end
 M.ImPlot_GetColormapColorU32 = lib.ImPlot_GetColormapColorU32
@@ -3560,7 +3560,7 @@ M.ImPlot_GetColormapCount = lib.ImPlot_GetColormapCount
 M.ImPlot_GetColormapIndex = lib.ImPlot_GetColormapIndex
 M.ImPlot_GetColormapName = lib.ImPlot_GetColormapName
 function M.ImPlot_GetColormapSize(cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     return lib.ImPlot_GetColormapSize(cmap)
 end
 M.ImPlot_GetCurrentContext = lib.ImPlot_GetCurrentContext
@@ -3582,19 +3582,19 @@ M.ImPlot_GetMonth = lib.ImPlot_GetMonth
 M.ImPlot_GetPlot = lib.ImPlot_GetPlot
 M.ImPlot_GetPlotDrawList = lib.ImPlot_GetPlotDrawList
 function M.ImPlot_GetPlotLimits(x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_GetPlotLimits(x_axis,y_axis)
 end
 function M.ImPlot_GetPlotMousePos(x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_GetPlotMousePos(x_axis,y_axis)
 end
 M.ImPlot_GetPlotPos = lib.ImPlot_GetPlotPos
 function M.ImPlot_GetPlotSelection(x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_GetPlotSelection(x_axis,y_axis)
 end
 M.ImPlot_GetPlotSize = lib.ImPlot_GetPlotSize
@@ -3923,13 +3923,13 @@ M.ImPlot_Now = lib.ImPlot_Now
 M.ImPlot_OrderOfMagnitude = lib.ImPlot_OrderOfMagnitude
 M.ImPlot_OrderToPrecision = lib.ImPlot_OrderToPrecision
 function M.ImPlot_PixelsToPlot_Vec2(pix,x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_PixelsToPlot_Vec2(pix,x_axis,y_axis)
 end
 function M.ImPlot_PixelsToPlot_Float(x,y,x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_PixelsToPlot_Float(x,y,x_axis,y_axis)
 end
 function M.ImPlot_PixelsToPlot(a1,a2,a3,a4) -- generic version
@@ -5663,13 +5663,13 @@ function M.ImPlot_PlotText(text,x,y,pix_offset,spec)
     return lib.ImPlot_PlotText(text,x,y,pix_offset,spec)
 end
 function M.ImPlot_PlotToPixels_PlotPoint(plt,x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_PlotToPixels_PlotPoint(plt,x_axis,y_axis)
 end
 function M.ImPlot_PlotToPixels_double(x,y,x_axis,y_axis)
-    x_axis = x_axis or IMPLOT_AUTO
-    y_axis = y_axis or IMPLOT_AUTO
+    x_axis = x_axis or -1
+    y_axis = y_axis or -1
     return lib.ImPlot_PlotToPixels_double(x,y,x_axis,y_axis)
 end
 function M.ImPlot_PlotToPixels(a1,a2,a3,a4) -- generic version
@@ -5734,7 +5734,7 @@ M.ImPlot_ResetCtxForNextSubplot = lib.ImPlot_ResetCtxForNextSubplot
 M.ImPlot_RoundTime = lib.ImPlot_RoundTime
 M.ImPlot_RoundTo = lib.ImPlot_RoundTo
 function M.ImPlot_SampleColormap(t,cmap)
-    cmap = cmap or IMPLOT_AUTO
+    cmap = cmap or -1
     return lib.ImPlot_SampleColormap(t,cmap)
 end
 M.ImPlot_SampleColormapU32 = lib.ImPlot_SampleColormapU32
@@ -8426,11 +8426,11 @@ function M.imnodes_StyleColorsLight(dest)
     return lib.imnodes_StyleColorsLight(dest)
 end
 -- _LJ versions
-M.ImPlot_PlotShadedG = M.ImPlot_PlotShadedG_LJ
 M.ImPlot_PlotLineG = M.ImPlot_PlotLineG_LJ
 M.ImPlot_PlotScatterG = M.ImPlot_PlotScatterG_LJ
 M.ImPlot_PlotStairsG = M.ImPlot_PlotStairsG_LJ
-M.ImPlot_PlotDigitalG = M.ImPlot_PlotDigitalG_LJ
+M.ImPlot_PlotShadedG = M.ImPlot_PlotShadedG_LJ
 M.ImPlot_PlotBarsG = M.ImPlot_PlotBarsG_LJ
+M.ImPlot_PlotDigitalG = M.ImPlot_PlotDigitalG_LJ
 return M
 ----------END_AUTOGENERATED_LUA-----------------------------

@@ -1799,7 +1799,6 @@ typedef int ImGuiWindowBgClickFlags;
 typedef int ImGuiWindowRefreshFlags;
 typedef ImS16 ImGuiTableColumnIdx;
 typedef ImU16 ImGuiTableDrawChannelIdx;
-extern ImGuiContext* GImGui;
 typedef enum {
     ImDrawTextFlags_None = 0,
     ImDrawTextFlags_CpuFineClip = 1 << 0,

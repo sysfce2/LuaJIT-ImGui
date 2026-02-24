@@ -25,7 +25,7 @@ local strsplit = cpp2ffi.strsplit
 -------------------------------------------------
 -------------------------------------------------
 local enumsvalues = {}
-
+local constants = {}
 
 
 --[[ tests
@@ -96,10 +96,14 @@ local function sanitize_reserved(def)
 				end
 			elseif enumsvalues[v] then
 				def.defaults[k] = enumsvalues[v]
+			elseif constants[v] then
+				def.defaults[k] = constants[v]
 			else
 				local ok,val = pcall(cpp2ffi.parse_enum_value,v,enumsvalues,true)
+				
 				if ok then
-				def.defaults[k] = val
+					--if v~=val then print("sanitize",k,v,ok,val) end
+					def.defaults[k] = val
 				elseif def.defaults[k]:match"FLT_MAX" then
 					def.defaults[k] = def.defaults[k]:gsub("FLT_MAX","M.FLT_MAX")
 				elseif def.defaults[k]:match"FLT_MIN" then
@@ -580,6 +584,14 @@ local function make_enums(sources)
 			for i,v in ipairs(enu) do
 				assert(v.calc_value)
 				enumsvalues[v.name] = v.calc_value
+			end
+		end
+		local ok,const = pcall(dofile,[[../]]..v..[[/generator/output/constants.lua]])
+		--print("const",v,ok,const)
+		if ok then
+			for key,val in pairs(const) do
+				if val:match"%b()" then val = "M."..val end
+				constants[key] = val
 			end
 		end
 	end
