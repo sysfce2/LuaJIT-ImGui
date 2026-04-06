@@ -805,6 +805,7 @@ typedef enum {
     ImGuiStyleVar_TreeLinesRounding,
     ImGuiStyleVar_ButtonTextAlign,
     ImGuiStyleVar_SelectableTextAlign,
+    ImGuiStyleVar_SeparatorSize,
     ImGuiStyleVar_SeparatorTextBorderSize,
     ImGuiStyleVar_SeparatorTextAlign,
     ImGuiStyleVar_SeparatorTextPadding,
@@ -818,6 +819,7 @@ typedef enum {
     ImGuiButtonFlags_MouseButtonMiddle = 1 << 2,
     ImGuiButtonFlags_MouseButtonMask_ = ImGuiButtonFlags_MouseButtonLeft | ImGuiButtonFlags_MouseButtonRight | ImGuiButtonFlags_MouseButtonMiddle,
     ImGuiButtonFlags_EnableNav = 1 << 3,
+    ImGuiButtonFlags_AllowOverlap = 1 << 12,
 }ImGuiButtonFlags_;
 typedef enum {
     ImGuiColorEditFlags_None = 0,
@@ -1047,6 +1049,7 @@ struct ImGuiStyle
     ImGuiDir ColorButtonPosition;
     ImVec2_c ButtonTextAlign;
     ImVec2_c SelectableTextAlign;
+    float SeparatorSize;
     float SeparatorTextBorderSize;
     ImVec2_c SeparatorTextAlign;
     ImVec2_c SeparatorTextPadding;
@@ -1279,15 +1282,16 @@ typedef enum {
 }ImGuiListClipperFlags_;
 struct ImGuiListClipper
 {
-    ImGuiContext* Ctx;
     int DisplayStart;
     int DisplayEnd;
+    int UserIndex;
     int ItemsCount;
     float ItemsHeight;
+    ImGuiListClipperFlags Flags;
     double StartPosY;
     double StartSeekOffsetY;
+    ImGuiContext* Ctx;
     void* TempData;
-    ImGuiListClipperFlags Flags;
 };
 struct ImColor_c
 {
@@ -1308,10 +1312,12 @@ typedef enum {
     ImGuiMultiSelectFlags_ClearOnClickVoid = 1 << 10,
     ImGuiMultiSelectFlags_ScopeWindow = 1 << 11,
     ImGuiMultiSelectFlags_ScopeRect = 1 << 12,
-    ImGuiMultiSelectFlags_SelectOnClick = 1 << 13,
-    ImGuiMultiSelectFlags_SelectOnClickRelease = 1 << 14,
+    ImGuiMultiSelectFlags_SelectOnAuto = 1 << 13,
+    ImGuiMultiSelectFlags_SelectOnClickAlways = 1 << 14,
+    ImGuiMultiSelectFlags_SelectOnClickRelease = 1 << 15,
     ImGuiMultiSelectFlags_NavWrapX = 1 << 16,
     ImGuiMultiSelectFlags_NoSelectOnRightClick = 1 << 17,
+    ImGuiMultiSelectFlags_SelectOnMask_ = ImGuiMultiSelectFlags_SelectOnAuto | ImGuiMultiSelectFlags_SelectOnClickAlways | ImGuiMultiSelectFlags_SelectOnClickRelease,
 }ImGuiMultiSelectFlags_;
 typedef struct ImVector_ImGuiSelectionRequest {int Size;int Capacity;ImGuiSelectionRequest* Data;} ImVector_ImGuiSelectionRequest;
 struct ImGuiMultiSelectIO
@@ -1939,7 +1945,7 @@ typedef enum {
 }ImGuiHoveredFlagsPrivate_;
 typedef enum {
     ImGuiInputTextFlags_Multiline = 1 << 26,
-    ImGuiInputTextFlags_MergedItem = 1 << 27,
+    ImGuiInputTextFlags_TempInput = 1 << 27,
     ImGuiInputTextFlags_LocalizeDecimalPoint= 1 << 28,
 }ImGuiInputTextFlagsPrivate_;
 typedef enum {
@@ -1950,7 +1956,6 @@ typedef enum {
     ImGuiButtonFlags_PressedOnDoubleClick = 1 << 8,
     ImGuiButtonFlags_PressedOnDragDropHold = 1 << 9,
     ImGuiButtonFlags_FlattenChildren = 1 << 11,
-    ImGuiButtonFlags_AllowOverlap = 1 << 12,
     ImGuiButtonFlags_AlignTextBaseLine = 1 << 15,
     ImGuiButtonFlags_NoKeyModsAllowed = 1 << 16,
     ImGuiButtonFlags_NoHoldingActiveId = 1 << 17,
@@ -2089,7 +2094,8 @@ struct ImGuiInputTextState
    _Bool         CursorFollow;
    _Bool         CursorCenterY;
    _Bool         SelectedAllMouseLock;
-   _Bool         Edited;
+   _Bool         EditedBefore;
+   _Bool         EditedThisFrame;
    _Bool         WantReloadUserBuf;
     ImS8 LastMoveDirectionLR;
     int ReloadSelectionStart;
@@ -2682,7 +2688,7 @@ struct ImGuiViewportP
     float LastAlpha;
    _Bool         LastFocusedHadNavWindow;
     short PlatformMonitor;
-    int BgFgDrawListsLastFrame[2];
+    float BgFgDrawListsLastTimeActive[2];
     ImDrawList* BgFgDrawLists[2];
     ImDrawData DrawDataP;
     ImDrawDataBuilder DrawDataBuilder;
@@ -2834,6 +2840,7 @@ struct ImGuiContextHook
     ImGuiContextHookCallback Callback;
     void* UserData;
 };
+typedef void (*ImGuiDemoMarkerCallback)(const char* file, int line, const char* section);
 typedef struct ImVector_ImFontAtlasPtr {int Size;int Capacity;ImFontAtlas** Data;} ImVector_ImFontAtlasPtr;
 typedef struct ImVector_ImGuiInputEvent {int Size;int Capacity;ImGuiInputEvent* Data;} ImVector_ImGuiInputEvent;
 typedef struct ImVector_ImGuiWindowStackData {int Size;int Capacity;ImGuiWindowStackData* Data;} ImVector_ImGuiWindowStackData;
@@ -2990,6 +2997,7 @@ struct ImGuiContext
     ImGuiWindow* NavWindow;
     ImGuiID NavFocusScopeId;
     ImGuiNavLayer NavLayer;
+    ImGuiItemFlags NavIdItemFlags;
     ImGuiID NavActivateId;
     ImGuiID NavActivateDownId;
     ImGuiID NavActivatePressedId;
@@ -2997,6 +3005,8 @@ struct ImGuiContext
     ImVector_ImGuiFocusScopeData NavFocusRoute;
     ImGuiID NavHighlightActivatedId;
     float NavHighlightActivatedTimer;
+    ImGuiID NavOpenContextMenuItemId;
+    ImGuiID NavOpenContextMenuWindowId;
     ImGuiID NavNextActivateId;
     ImGuiActivateFlags NavNextActivateFlags;
     ImGuiInputSource NavInputSource;
@@ -3097,6 +3107,7 @@ struct ImGuiContext
     ImGuiInputTextDeactivatedState InputTextDeactivatedState;
     ImFontBaked InputTextPasswordFontBackupBaked;
     ImFontFlags InputTextPasswordFontBackupFlags;
+    ImGuiID InputTextReactivateId;
     ImGuiID TempInputId;
     ImGuiDataTypeStorage DataTypeZeroValue;
     int BeginMenuDepth;
@@ -3139,6 +3150,7 @@ struct ImGuiContext
     ImChunkStream_ImGuiTableSettings SettingsTables;
     ImVector_ImGuiContextHook Hooks;
     ImGuiID HookIdNext;
+    ImGuiDemoMarkerCallback DemoMarkerCallback;
     const char* LocalizationTable[ImGuiLocKey_COUNT];
    _Bool         LogEnabled;
    _Bool         LogLineFirstItem;
@@ -3578,8 +3590,9 @@ struct ImGuiTable
     ImGuiTableColumnIdx ResizedColumn;
     ImGuiTableColumnIdx LastResizedColumn;
     ImGuiTableColumnIdx HeldHeaderColumn;
+    ImGuiTableColumnIdx LastHeldHeaderColumn;
     ImGuiTableColumnIdx ReorderColumn;
-    ImGuiTableColumnIdx ReorderColumnDir;
+    ImGuiTableColumnIdx ReorderColumnDstOrder;
     ImGuiTableColumnIdx LeftMostEnabledColumn;
     ImGuiTableColumnIdx RightMostEnabledColumn;
     ImGuiTableColumnIdx LeftMostStretchedColumn;
@@ -3976,6 +3989,7 @@ _Bool                igCollapsingHeader_TreeNodeFlags(const char* label,ImGuiTre
 _Bool                igCollapsingHeader_BoolPtr(const char* label,                                                            _Bool                                                                * p_visible,ImGuiTreeNodeFlags flags);
 void igSetNextItemOpen(                                 _Bool                                       is_open,ImGuiCond cond);
 void igSetNextItemStorageID(ImGuiID storage_id);
+_Bool                igTreeNodeGetOpen(ImGuiID storage_id);
 _Bool                igSelectable_Bool(const char* label,                                                   _Bool                                                         selected,ImGuiSelectableFlags flags,const ImVec2_c size);
 _Bool                igSelectable_BoolPtr(const char* label,                                                      _Bool                                                          * p_selected,ImGuiSelectableFlags flags,const ImVec2_c size);
 ImGuiMultiSelectIO* igBeginMultiSelect(ImGuiMultiSelectFlags flags,int selection_size,int items_count);
@@ -4436,6 +4450,7 @@ ImGuiViewport* ImGuiViewport_ImGuiViewport(void);
 void ImGuiViewport_destroy(ImGuiViewport* self);
 ImVec2_c ImGuiViewport_GetCenter(ImGuiViewport* self);
 ImVec2_c ImGuiViewport_GetWorkCenter(ImGuiViewport* self);
+const char* ImGuiViewport_GetDebugName(ImGuiViewport* self);
 ImGuiPlatformIO* ImGuiPlatformIO_ImGuiPlatformIO(void);
 void ImGuiPlatformIO_destroy(ImGuiPlatformIO* self);
 void ImGuiPlatformIO_ClearPlatformHandlers(ImGuiPlatformIO* self);
@@ -4632,6 +4647,7 @@ void ImGuiInputTextState_ClearFreeMemory(ImGuiInputTextState* self);
 void ImGuiInputTextState_OnKeyPressed(ImGuiInputTextState* self,int key);
 void ImGuiInputTextState_OnCharPressed(ImGuiInputTextState* self,unsigned int c);
 float ImGuiInputTextState_GetPreferredOffsetX(ImGuiInputTextState* self);
+const char* ImGuiInputTextState_GetText(ImGuiInputTextState* self);
 void ImGuiInputTextState_CursorAnimReset(ImGuiInputTextState* self);
 void ImGuiInputTextState_CursorClamp(ImGuiInputTextState* self);
 _Bool                ImGuiInputTextState_HasSelection(ImGuiInputTextState* self);
@@ -4896,6 +4912,8 @@ ImGuiWindow* igFindBlockingModal(ImGuiWindow* window);
 ImVec2_c igFindBestWindowPosForPopup(ImGuiWindow* window);
 ImVec2_c igFindBestWindowPosForPopupEx(const ImVec2_c ref_pos,const ImVec2_c size,ImGuiDir* last_dir,const ImRect_c r_outer,const ImRect_c r_avoid,ImGuiPopupPositionPolicy policy);
 ImGuiMouseButton igGetMouseButtonFromPopupFlags(ImGuiPopupFlags flags);
+_Bool                igIsPopupOpenRequestForItem(ImGuiPopupFlags flags,ImGuiID id);
+_Bool                igIsPopupOpenRequestForWindow(ImGuiPopupFlags flags);
 _Bool                igBeginTooltipEx(ImGuiTooltipFlags tooltip_flags,ImGuiWindowFlags extra_window_flags);
 _Bool                igBeginTooltipHidden(void);
 _Bool                igBeginViewportSideBar(const char* name,ImGuiViewport* viewport,ImGuiDir dir,float size,ImGuiWindowFlags window_flags);
@@ -5080,6 +5098,7 @@ float igTableCalcMaxColumnWidth(const ImGuiTable* table,int column_n);
 void igTableSetColumnWidthAutoSingle(ImGuiTable* table,int column_n);
 void igTableSetColumnWidthAutoAll(ImGuiTable* table);
 void igTableSetColumnDisplayOrder(ImGuiTable* table,int column_n,int dst_order);
+void igTableQueueSetColumnDisplayOrder(ImGuiTable* table,int column_n,int dst_order);
 void igTableRemove(ImGuiTable* table);
 void igTableGcCompactTransientBuffers_TablePtr(ImGuiTable* table);
 void igTableGcCompactTransientBuffers_TableTempDataPtr(ImGuiTableTempData* table);
@@ -5153,6 +5172,7 @@ ImRect_c igGetWindowScrollbarRect(ImGuiWindow* window,ImGuiAxis axis);
 ImGuiID igGetWindowScrollbarID(ImGuiWindow* window,ImGuiAxis axis);
 ImGuiID igGetWindowResizeCornerID(ImGuiWindow* window,int n);
 ImGuiID igGetWindowResizeBorderID(ImGuiWindow* window,ImGuiDir dir);
+void igExtendHitBoxWhenNearViewportEdge(ImGuiWindow* window,ImRect* bb,float threshold,ImGuiAxis axis);
 _Bool                igButtonBehavior(const ImRect_c bb,ImGuiID id,                                                             _Bool                                                                 * out_hovered,                                                                               _Bool                                                                                   * out_held,ImGuiButtonFlags flags);
 _Bool                igDragBehavior(ImGuiID id,ImGuiDataType data_type,void* p_v,float v_speed,const void* p_min,const void* p_max,const char* format,ImGuiSliderFlags flags);
 _Bool                igSliderBehavior(const ImRect_c bb,ImGuiID id,ImGuiDataType data_type,void* p_v,const void* p_min,const void* p_max,const char* format,ImGuiSliderFlags flags,ImRect* out_grab_bb);
@@ -5161,7 +5181,6 @@ _Bool                igTreeNodeBehavior(ImGuiID id,ImGuiTreeNodeFlags flags,cons
 void igTreeNodeDrawLineToChildNode(const ImVec2_c target_pos);
 void igTreeNodeDrawLineToTreePop(const ImGuiTreeNodeStackData* data);
 void igTreePushOverrideID(ImGuiID id);
-_Bool                igTreeNodeGetOpen(ImGuiID storage_id);
 void igTreeNodeSetOpen(ImGuiID storage_id,                                                    _Bool                                                          open);
 _Bool                igTreeNodeUpdateNextOpen(ImGuiID storage_id,ImGuiTreeNodeFlags flags);
 const ImGuiDataTypeInfo* igDataTypeGetInfo(ImGuiDataType data_type);
@@ -5173,7 +5192,7 @@ _Bool                igDataTypeClamp(ImGuiDataType data_type,void* p_data,const 
 _Bool                igDataTypeIsZero(ImGuiDataType data_type,const void* p_data);
 _Bool                igInputTextEx(const char* label,const char* hint,char* buf,int buf_size,const ImVec2_c size_arg,ImGuiInputTextFlags flags,ImGuiInputTextCallback callback,void* user_data);
 void igInputTextDeactivateHook(ImGuiID id);
-_Bool                igTempInputText(const ImRect_c bb,ImGuiID id,const char* label,char* buf,int buf_size,ImGuiInputTextFlags flags);
+_Bool                igTempInputText(const ImRect_c bb,ImGuiID id,const char* label,char* buf,size_t buf_size,ImGuiInputTextFlags flags,ImGuiInputTextCallback callback,void* user_data);
 _Bool                igTempInputScalar(const ImRect_c bb,ImGuiID id,const char* label,ImGuiDataType data_type,void* p_data,const char* format,const void* p_clamp_min,const void* p_clamp_max);
 _Bool                igTempInputIsActive(ImGuiID id);
 ImGuiInputTextState* igGetInputTextState(ImGuiID id);
@@ -5198,6 +5217,7 @@ void igErrorCheckUsingSetCursorPosToExtendParentBoundaries(void);
 void igErrorCheckEndFrameFinalizeErrorTooltip(void);
 _Bool                igBeginErrorTooltip(void);
 void igEndErrorTooltip(void);
+void igDemoMarker(const char* file,int line,const char* section);
 void igDebugAllocHook(ImGuiDebugAllocInfo* info,int frame_count,void* ptr,size_t size);
 void igDebugDrawCursorPos(ImU32 col);
 void igDebugDrawLineExtents(ImU32 col);
@@ -5217,7 +5237,7 @@ void igDebugNodeDockNode(ImGuiDockNode* node,const char* label);
 void igDebugNodeDrawList(ImGuiWindow* window,ImGuiViewportP* viewport,const ImDrawList* draw_list,const char* label);
 void igDebugNodeDrawCmdShowMeshAndBoundingBox(ImDrawList* out_draw_list,const ImDrawList* draw_list,const ImDrawCmd* draw_cmd,                                                                                                                                        _Bool                                                                                                                                              show_mesh,                                                                                                                                                       _Bool                                                                                                                                                             show_aabb);
 void igDebugNodeFont(ImFont* font);
-void igDebugNodeFontGlyphesForSrcMask(ImFont* font,ImFontBaked* baked,int src_mask);
+void igDebugNodeFontGlyphsForSrcMask(ImFont* font,ImFontBaked* baked,int src_mask);
 void igDebugNodeFontGlyph(ImFont* font,const ImFontGlyph* glyph);
 void igDebugNodeTexture(ImTextureData* tex,int int_id,const ImFontAtlasRect* highlight_rect);
 void igDebugNodeStorage(ImGuiStorage* storage,const char* label);
@@ -5340,6 +5360,7 @@ typedef int ImPlotItemFlags;
 typedef int ImPlotLineFlags;
 typedef int ImPlotScatterFlags;
 typedef int ImPlotBubblesFlags;
+typedef int ImPlotPolygonFlags;
 typedef int ImPlotStairsFlags;
 typedef int ImPlotShadedFlags;
 typedef int ImPlotBarsFlags;
@@ -5373,13 +5394,18 @@ typedef enum {
 }ImAxis_;
 typedef enum {
     ImPlotProp_LineColor,
+    ImPlotProp_LineColors,
     ImPlotProp_LineWeight,
     ImPlotProp_FillColor,
+    ImPlotProp_FillColors,
     ImPlotProp_FillAlpha,
     ImPlotProp_Marker,
     ImPlotProp_MarkerSize,
+    ImPlotProp_MarkerSizes,
     ImPlotProp_MarkerLineColor,
+    ImPlotProp_MarkerLineColors,
     ImPlotProp_MarkerFillColor,
+    ImPlotProp_MarkerFillColors,
     ImPlotProp_Size,
     ImPlotProp_Offset,
     ImPlotProp_Stride,
@@ -5485,6 +5511,10 @@ typedef enum {
   ImPlotBubblesFlags_None = 0,
 }ImPlotBubblesFlags_;
 typedef enum {
+  ImPlotPolygonFlags_None = 0,
+  ImPlotPolygonFlags_Concave = 1 << 10,
+}ImPlotPolygonFlags_;
+typedef enum {
     ImPlotStairsFlags_None = 0,
     ImPlotStairsFlags_PreStep = 1 << 10,
     ImPlotStairsFlags_Shaded = 1 << 11
@@ -5517,7 +5547,8 @@ typedef enum {
     ImPlotPieChartFlags_None = 0,
     ImPlotPieChartFlags_Normalize = 1 << 10,
     ImPlotPieChartFlags_IgnoreHidden = 1 << 11,
-    ImPlotPieChartFlags_Exploding = 1 << 12
+    ImPlotPieChartFlags_Exploding = 1 << 12,
+    ImPlotPieChartFlags_NoSliceBorder = 1 << 13
 }ImPlotPieChartFlags_;
 typedef enum {
     ImPlotHeatmapFlags_None = 0,
@@ -5651,13 +5682,18 @@ typedef struct ImPlotSpec_c ImPlotSpec_c;
 struct ImPlotSpec_c
 {
     ImVec4_c LineColor;
+    ImU32* LineColors;
     float LineWeight;
     ImVec4_c FillColor;
+    ImU32* FillColors;
     float FillAlpha;
     ImPlotMarker Marker;
     float MarkerSize;
+    float* MarkerSizes;
     ImVec4_c MarkerLineColor;
+    ImU32* MarkerLineColors;
     ImVec4_c MarkerFillColor;
+    ImU32* MarkerFillColors;
     float Size;
     int Offset;
     int Stride;
@@ -6094,6 +6130,8 @@ void ImPlotSpec_SetProp_S32(ImPlotSpec* self,ImPlotProp prop,ImS32 v);
 void ImPlotSpec_SetProp_U32(ImPlotSpec* self,ImPlotProp prop,ImU32 v);
 void ImPlotSpec_SetProp_S64(ImPlotSpec* self,ImPlotProp prop,ImS64 v);
 void ImPlotSpec_SetProp_U64(ImPlotSpec* self,ImPlotProp prop,ImU64 v);
+void ImPlotSpec_SetProp_U32Ptr(ImPlotSpec* self,ImPlotProp prop,ImU32* v);
+void ImPlotSpec_SetProp_FloatPtr(ImPlotSpec* self,ImPlotProp prop,float* v);
 void ImPlotSpec_SetProp_Vec4(ImPlotSpec* self,ImPlotProp prop,const ImVec4_c v);
 ImPlotPoint* ImPlotPoint_ImPlotPoint_Nil(void);
 void ImPlotPoint_destroy(ImPlotPoint* self);
@@ -6213,6 +6251,16 @@ void ImPlot_PlotBubbles_S32PtrS32PtrS32Ptr(const char* label_id,const ImS32* xs,
 void ImPlot_PlotBubbles_U32PtrU32PtrU32Ptr(const char* label_id,const ImU32* xs,const ImU32* ys,const ImU32* szs,int count,const ImPlotSpec_c spec);
 void ImPlot_PlotBubbles_S64PtrS64PtrS64Ptr(const char* label_id,const ImS64* xs,const ImS64* ys,const ImS64* szs,int count,const ImPlotSpec_c spec);
 void ImPlot_PlotBubbles_U64PtrU64PtrU64Ptr(const char* label_id,const ImU64* xs,const ImU64* ys,const ImU64* szs,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_FloatPtr(const char* label_id,const float* xs,const float* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_doublePtr(const char* label_id,const double* xs,const double* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_S8Ptr(const char* label_id,const ImS8* xs,const ImS8* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_U8Ptr(const char* label_id,const ImU8* xs,const ImU8* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_S16Ptr(const char* label_id,const ImS16* xs,const ImS16* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_U16Ptr(const char* label_id,const ImU16* xs,const ImU16* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_S32Ptr(const char* label_id,const ImS32* xs,const ImS32* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_U32Ptr(const char* label_id,const ImU32* xs,const ImU32* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_S64Ptr(const char* label_id,const ImS64* xs,const ImS64* ys,int count,const ImPlotSpec_c spec);
+void ImPlot_PlotPolygon_U64Ptr(const char* label_id,const ImU64* xs,const ImU64* ys,int count,const ImPlotSpec_c spec);
 void ImPlot_PlotStairs_FloatPtrInt(const char* label_id,const float* values,int count,double xscale,double xstart,const ImPlotSpec_c spec);
 void ImPlot_PlotStairs_doublePtrInt(const char* label_id,const double* values,int count,double xscale,double xstart,const ImPlotSpec_c spec);
 void ImPlot_PlotStairs_S8PtrInt(const char* label_id,const ImS8* values,int count,double xscale,double xstart,const ImPlotSpec_c spec);
@@ -7530,13 +7578,18 @@ typedef int ImPlot3DLegendFlags;
 typedef int ImPlot3DAxisFlags;
 typedef enum {
     ImPlot3DProp_LineColor,
+    ImPlot3DProp_LineColors,
     ImPlot3DProp_LineWeight,
     ImPlot3DProp_FillColor,
+    ImPlot3DProp_FillColors,
     ImPlot3DProp_FillAlpha,
     ImPlot3DProp_Marker,
     ImPlot3DProp_MarkerSize,
+    ImPlot3DProp_MarkerSizes,
     ImPlot3DProp_MarkerLineColor,
+    ImPlot3DProp_MarkerLineColors,
     ImPlot3DProp_MarkerFillColor,
+    ImPlot3DProp_MarkerFillColors,
     ImPlot3DProp_Offset,
     ImPlot3DProp_Stride,
     ImPlot3DProp_Flags
@@ -7572,6 +7625,9 @@ typedef enum {
     ImPlot3DCol_AxisText,
     ImPlot3DCol_AxisGrid,
     ImPlot3DCol_AxisTick,
+    ImPlot3DCol_AxisBg,
+    ImPlot3DCol_AxisBgHovered,
+    ImPlot3DCol_AxisBgActive,
     ImPlot3DCol_COUNT,
 }ImPlot3DCol_;
 typedef enum {
@@ -7732,13 +7788,18 @@ typedef struct ImPlot3DSpec_c ImPlot3DSpec_c;
 struct ImPlot3DSpec_c
 {
     ImVec4_c LineColor;
+    ImU32* LineColors;
     float LineWeight;
     ImVec4_c FillColor;
+    ImU32* FillColors;
     float FillAlpha;
     ImPlot3DMarker Marker;
     float MarkerSize;
+    float* MarkerSizes;
     ImVec4_c MarkerLineColor;
+    ImU32* MarkerLineColors;
     ImVec4_c MarkerFillColor;
+    ImU32* MarkerFillColors;
     int Offset;
     int Stride;
     ImPlot3DItemFlags Flags;
@@ -7812,6 +7873,8 @@ void ImPlot3DSpec_SetProp_S32(ImPlot3DSpec* self,ImPlot3DProp prop,ImS32 v);
 void ImPlot3DSpec_SetProp_U32(ImPlot3DSpec* self,ImPlot3DProp prop,ImU32 v);
 void ImPlot3DSpec_SetProp_S64(ImPlot3DSpec* self,ImPlot3DProp prop,ImS64 v);
 void ImPlot3DSpec_SetProp_U64(ImPlot3DSpec* self,ImPlot3DProp prop,ImU64 v);
+void ImPlot3DSpec_SetProp_U32Ptr(ImPlot3DSpec* self,ImPlot3DProp prop,ImU32* v);
+void ImPlot3DSpec_SetProp_FloatPtr(ImPlot3DSpec* self,ImPlot3DProp prop,float* v);
 void ImPlot3DSpec_SetProp_Vec4(ImPlot3DSpec* self,ImPlot3DProp prop,const ImVec4_c v);
 ImPlot3DContext* ImPlot3D_CreateContext(void);
 void ImPlot3D_DestroyContext(ImPlot3DContext* ctx);
@@ -7886,7 +7949,16 @@ void ImPlot3D_PlotSurface_S32Ptr(const char* label_id,const ImS32* xs,const ImS3
 void ImPlot3D_PlotSurface_U32Ptr(const char* label_id,const ImU32* xs,const ImU32* ys,const ImU32* zs,int x_count,int y_count,double scale_min,double scale_max,const ImPlot3DSpec_c spec);
 void ImPlot3D_PlotSurface_S64Ptr(const char* label_id,const ImS64* xs,const ImS64* ys,const ImS64* zs,int x_count,int y_count,double scale_min,double scale_max,const ImPlot3DSpec_c spec);
 void ImPlot3D_PlotSurface_U64Ptr(const char* label_id,const ImU64* xs,const ImU64* ys,const ImU64* zs,int x_count,int y_count,double scale_min,double scale_max,const ImPlot3DSpec_c spec);
-void ImPlot3D_PlotMesh(const char* label_id,const ImPlot3DPoint* vtx,const unsigned int* idx,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_FloatPtr(const char* label_id,const float* vtx_xs,const float* vtx_ys,const float* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_doublePtr(const char* label_id,const double* vtx_xs,const double* vtx_ys,const double* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_S8Ptr(const char* label_id,const ImS8* vtx_xs,const ImS8* vtx_ys,const ImS8* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_U8Ptr(const char* label_id,const ImU8* vtx_xs,const ImU8* vtx_ys,const ImU8* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_S16Ptr(const char* label_id,const ImS16* vtx_xs,const ImS16* vtx_ys,const ImS16* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_U16Ptr(const char* label_id,const ImU16* vtx_xs,const ImU16* vtx_ys,const ImU16* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_S32Ptr(const char* label_id,const ImS32* vtx_xs,const ImS32* vtx_ys,const ImS32* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_U32Ptr(const char* label_id,const ImU32* vtx_xs,const ImU32* vtx_ys,const ImU32* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_S64Ptr(const char* label_id,const ImS64* vtx_xs,const ImS64* vtx_ys,const ImS64* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
+void ImPlot3D_PlotMesh_U64Ptr(const char* label_id,const ImU64* vtx_xs,const ImU64* vtx_ys,const ImU64* vtx_zs,const unsigned int* idxs,int vtx_count,int idx_count,const ImPlot3DSpec_c spec);
 void ImPlot3D_PlotImage_Vec2(const char* label_id,ImTextureRef_c tex_ref,const ImPlot3DPoint_c center,const ImPlot3DPoint_c axis_u,const ImPlot3DPoint_c axis_v,const ImVec2_c uv0,const ImVec2_c uv1,const ImVec4_c tint_col,const ImPlot3DSpec_c spec);
 void ImPlot3D_PlotImage_Plot3DPoint(const char* label_id,ImTextureRef_c tex_ref,const ImPlot3DPoint_c p0,const ImPlot3DPoint_c p1,const ImPlot3DPoint_c p2,const ImPlot3DPoint_c p3,const ImVec2_c uv0,const ImVec2_c uv1,const ImVec2_c uv2,const ImVec2_c uv3,const ImVec4_c tint_col,const ImPlot3DSpec_c spec);
 void ImPlot3D_PlotText(const char* text,double x,double y,double z,double angle,const ImVec2_c pix_offset);
