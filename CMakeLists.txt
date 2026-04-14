@@ -1,6 +1,7 @@
 cmake_minimum_required(VERSION 3.20)
 Project(cimgui)
-set (CMAKE_CXX_STANDARD 14) #needed by santaclose/ImGuiColorTextEdit
+#set (CMAKE_CXX_STANDARD 14) #needed by santaclose/ImGuiColorTextEdit
+set (CMAKE_CXX_STANDARD 17) #needed by goossens/ImGuiColorTextEdit
 
 if(WIN32) #to mingw work as all the others
 set(CMAKE_SHARED_LIBRARY_PREFIX "")
