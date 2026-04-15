@@ -479,6 +479,31 @@ function CanvasState.__new(ctype)
     return ffi.gc(ptr,lib.CanvasState_destroy)
 end
 M.CanvasState = ffi.metatype("CanvasState",CanvasState)
+--------------------------CodePoint----------------------------
+local CodePoint= {}
+CodePoint.__index = CodePoint
+M.CodePoint_isBracketCloser = lib.CodePoint_isBracketCloser
+M.CodePoint_isBracketOpener = lib.CodePoint_isBracketOpener
+M.CodePoint_isLetter = lib.CodePoint_isLetter
+M.CodePoint_isLower = lib.CodePoint_isLower
+M.CodePoint_isMatchingBrackets = lib.CodePoint_isMatchingBrackets
+M.CodePoint_isMatchingPair = lib.CodePoint_isMatchingPair
+M.CodePoint_isNumber = lib.CodePoint_isNumber
+M.CodePoint_isPairCloser = lib.CodePoint_isPairCloser
+M.CodePoint_isPairOpener = lib.CodePoint_isPairOpener
+M.CodePoint_isUpper = lib.CodePoint_isUpper
+M.CodePoint_isWhiteSpace = lib.CodePoint_isWhiteSpace
+M.CodePoint_isWord = lib.CodePoint_isWord
+M.CodePoint_isXidContinue = lib.CodePoint_isXidContinue
+M.CodePoint_isXidStart = lib.CodePoint_isXidStart
+
+
+M.CodePoint_toLower = lib.CodePoint_toLower
+M.CodePoint_toPairCloser = lib.CodePoint_toPairCloser
+M.CodePoint_toPairOpener = lib.CodePoint_toPairOpener
+M.CodePoint_toUpper = lib.CodePoint_toUpper
+M.CodePoint_write = lib.CodePoint_write
+M.CodePoint = ffi.metatype("CodePoint",CodePoint)
 --------------------------EmulateThreeButtonMouse----------------------------
 local EmulateThreeButtonMouse= {}
 EmulateThreeButtonMouse.__index = EmulateThreeButtonMouse
@@ -487,6 +512,29 @@ function EmulateThreeButtonMouse.__new(ctype)
     return ffi.gc(ptr,lib.EmulateThreeButtonMouse_destroy)
 end
 M.EmulateThreeButtonMouse = ffi.metatype("EmulateThreeButtonMouse",EmulateThreeButtonMouse)
+--------------------------Glyph----------------------------
+local Glyph= {}
+Glyph.__index = Glyph
+function Glyph.Glyph_Nil()
+    local ptr = lib.Glyph_Glyph_Nil()
+    return ffi.gc(ptr,lib.Glyph_destroy)
+end
+function Glyph.Glyph_Wchar(cp)
+    local ptr = lib.Glyph_Glyph_Wchar(cp)
+    return ffi.gc(ptr,lib.Glyph_destroy)
+end
+function Glyph.Glyph_WcharColor(cp,col)
+    local ptr = lib.Glyph_Glyph_WcharColor(cp,col)
+    return ffi.gc(ptr,lib.Glyph_destroy)
+end
+function Glyph.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return Glyph.Glyph_Nil() end
+    if (ffi.istype('uint32_t',a1) or type(a1)=='number') and a2==nil then return Glyph.Glyph_Wchar(a1) end
+    if (ffi.istype('uint32_t',a1) or type(a1)=='number') and ffi.istype('Color',a2) then return Glyph.Glyph_WcharColor(a1,a2) end
+    print(ctype,a1,a2)
+    error'Glyph.__new could not find overloaded'
+end
+M.Glyph = ffi.metatype("Glyph",Glyph)
 --------------------------ImBitVector----------------------------
 local ImBitVector= {}
 ImBitVector.__index = ImBitVector
@@ -2496,6 +2544,25 @@ function ImVec2ih.__new(ctype,a1,a2) -- generic version
     error'ImVec2ih.__new could not find overloaded'
 end
 M.ImVec2ih = ffi.metatype("ImVec2ih",ImVec2ih)
+--------------------------Iterator----------------------------
+function M.Iterator_Iterator(a1) -- generic version
+    if a1==nil then return M.Iterator_Iterator_Nil() end
+    if (ffi.istype('Glyph*',a1) or ffi.istype('Glyph',a1) or ffi.istype('Glyph[]',a1)) then return M.Iterator_Iterator_GlyphPtr(a1) end
+    print(a1)
+    error'M.Iterator_Iterator could not find overloaded'
+end
+--------------------------Language----------------------------
+M.Language_AngelScript = lib.Language_AngelScript
+M.Language_C = lib.Language_C
+M.Language_Cpp = lib.Language_Cpp
+M.Language_Cs = lib.Language_Cs
+M.Language_Glsl = lib.Language_Glsl
+M.Language_Hlsl = lib.Language_Hlsl
+M.Language_Json = lib.Language_Json
+M.Language_Lua = lib.Language_Lua
+M.Language_Markdown = lib.Language_Markdown
+M.Language_Python = lib.Language_Python
+M.Language_Sql = lib.Language_Sql
 --------------------------LinkDetachWithModifierClick----------------------------
 local LinkDetachWithModifierClick= {}
 LinkDetachWithModifierClick.__index = LinkDetachWithModifierClick
@@ -2512,6 +2579,7 @@ function MultipleSelectModifier.__new(ctype)
     return ffi.gc(ptr,lib.MultipleSelectModifier_destroy)
 end
 M.MultipleSelectModifier = ffi.metatype("MultipleSelectModifier",MultipleSelectModifier)
+--------------------------Palette----------------------------
 --------------------------Style----------------------------
 local Style= {}
 Style.__index = Style
@@ -2523,83 +2591,187 @@ M.Style = ffi.metatype("Style",Style)
 --------------------------TextEditor----------------------------
 local TextEditor= {}
 TextEditor.__index = TextEditor
+TextEditor.AddMarker = lib.TextEditor_AddMarker
+TextEditor.AddNextOccurrence = lib.TextEditor_AddNextOccurrence
 TextEditor.AllCursorsHaveSelection = lib.TextEditor_AllCursorsHaveSelection
 TextEditor.AnyCursorHasSelection = lib.TextEditor_AnyCursorHasSelection
 TextEditor.CanRedo = lib.TextEditor_CanRedo
 TextEditor.CanUndo = lib.TextEditor_CanUndo
-TextEditor.ClearExtraCursors = lib.TextEditor_ClearExtraCursors
-TextEditor.ClearSelections = lib.TextEditor_ClearSelections
+TextEditor.ClearCursors = lib.TextEditor_ClearCursors
+TextEditor.ClearLineDecorator = lib.TextEditor_ClearLineDecorator
+TextEditor.ClearLineNumberContextMenuCallback = lib.TextEditor_ClearLineNumberContextMenuCallback
+TextEditor.ClearMarkers = lib.TextEditor_ClearMarkers
+TextEditor.ClearText = lib.TextEditor_ClearText
+TextEditor.ClearTextContextMenuCallback = lib.TextEditor_ClearTextContextMenuCallback
+TextEditor.CloseFindReplaceWindow = lib.TextEditor_CloseFindReplaceWindow
 TextEditor.Copy = lib.TextEditor_Copy
+TextEditor.CurrentCursorHasSelection = lib.TextEditor_CurrentCursorHasSelection
 TextEditor.Cut = lib.TextEditor_Cut
+TextEditor.DeindentLines = lib.TextEditor_DeindentLines
+
+
+TextEditor.FindAll = lib.TextEditor_FindAll
+TextEditor.FindNext = lib.TextEditor_FindNext
+TextEditor.GetCurrentCursor = lib.TextEditor_GetCurrentCursor
+TextEditor.GetCurrentCursorPosition = lib.TextEditor_GetCurrentCursorPosition
+TextEditor.GetCursor_size_t = lib.TextEditor_GetCursor_size_t
+TextEditor.GetCursor_IntPtr = lib.TextEditor_GetCursor_IntPtr
+function TextEditor:GetCursor(a2,a3,a4,a5,a6) -- generic version
+    if (ffi.istype('uint32_t',a4) or type(a4)=='number') then return self:GetCursor_size_t(a2,a3,a4) end
+    if ffi.typeof('int32_t*') == ffi.typeof(a4) or ffi.typeof('const int32_t*') == ffi.typeof(a4) or ffi.typeof('int32_t[?]') == ffi.typeof(a4) or ffi.typeof('const int32_t[?]') == ffi.typeof(a4) then return self:GetCursor_IntPtr(a2,a3,a4,a5,a6) end
+    print(a2,a3,a4,a5,a6)
+    error'TextEditor:GetCursor could not find overloaded'
+end
 TextEditor.GetCursorPosition = lib.TextEditor_GetCursorPosition
+TextEditor.GetCursorSelection = lib.TextEditor_GetCursorSelection
+TextEditor.GetCursorText = lib.TextEditor_GetCursorText
+M.TextEditor_GetDarkPalette = lib.TextEditor_GetDarkPalette
 M.TextEditor_GetDefaultPalette = lib.TextEditor_GetDefaultPalette
+TextEditor.GetFirstVisibleColumn = lib.TextEditor_GetFirstVisibleColumn
 TextEditor.GetFirstVisibleLine = lib.TextEditor_GetFirstVisibleLine
-TextEditor.GetLanguageDefinition = lib.TextEditor_GetLanguageDefinition
-TextEditor.GetLanguageDefinitionName = lib.TextEditor_GetLanguageDefinitionName
+TextEditor.GetGlyphWidth = lib.TextEditor_GetGlyphWidth
+TextEditor.GetLanguage = lib.TextEditor_GetLanguage
+TextEditor.GetLanguageName = lib.TextEditor_GetLanguageName
+TextEditor.GetLastVisibleColumn = lib.TextEditor_GetLastVisibleColumn
 TextEditor.GetLastVisibleLine = lib.TextEditor_GetLastVisibleLine
+M.TextEditor_GetLightPalette = lib.TextEditor_GetLightPalette
 TextEditor.GetLineCount = lib.TextEditor_GetLineCount
+TextEditor.GetLineHeight = lib.TextEditor_GetLineHeight
 TextEditor.GetLineSpacing = lib.TextEditor_GetLineSpacing
+TextEditor.GetLineText = lib.TextEditor_GetLineText
+TextEditor.GetMainCursor = lib.TextEditor_GetMainCursor
+TextEditor.GetMainCursorPosition = lib.TextEditor_GetMainCursorPosition
+TextEditor.GetMainCursorSelection = lib.TextEditor_GetMainCursorSelection
+TextEditor.GetNumberOfCursors = lib.TextEditor_GetNumberOfCursors
 TextEditor.GetPalette = lib.TextEditor_GetPalette
+TextEditor.GetSectionText = lib.TextEditor_GetSectionText
 TextEditor.GetTabSize = lib.TextEditor_GetTabSize
 TextEditor.GetText = lib.TextEditor_GetText
-
 TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
-function TextEditor:ImGuiDebugPanel(panelName)
-    panelName = panelName or "Debug"
-    return lib.TextEditor_ImGuiDebugPanel(self,panelName)
-end
+TextEditor.GetUserData = lib.TextEditor_GetUserData
+TextEditor.GetWordAtScreenPos = lib.TextEditor_GetWordAtScreenPos
+TextEditor.GrowSelectionsToCurlyBrackets = lib.TextEditor_GrowSelectionsToCurlyBrackets
+TextEditor.HasFindString = lib.TextEditor_HasFindString
+TextEditor.HasLanguage = lib.TextEditor_HasLanguage
+TextEditor.HasLineDecorator = lib.TextEditor_HasLineDecorator
+TextEditor.HasLineNumberContextMenuCallback = lib.TextEditor_HasLineNumberContextMenuCallback
+TextEditor.HasMarkers = lib.TextEditor_HasMarkers
+TextEditor.HasTextContextMenuCallback = lib.TextEditor_HasTextContextMenuCallback
+TextEditor.IndentLines = lib.TextEditor_IndentLines
 TextEditor.IsAutoIndentEnabled = lib.TextEditor_IsAutoIndentEnabled
+TextEditor.IsCompletingPairedGlyphs = lib.TextEditor_IsCompletingPairedGlyphs
+TextEditor.IsEmpty = lib.TextEditor_IsEmpty
+TextEditor.IsInsertSpacesOnTabs = lib.TextEditor_IsInsertSpacesOnTabs
+TextEditor.IsMiddleMousePanMode = lib.TextEditor_IsMiddleMousePanMode
 TextEditor.IsOverwriteEnabled = lib.TextEditor_IsOverwriteEnabled
 TextEditor.IsReadOnlyEnabled = lib.TextEditor_IsReadOnlyEnabled
-TextEditor.IsShortTabsEnabled = lib.TextEditor_IsShortTabsEnabled
 TextEditor.IsShowLineNumbersEnabled = lib.TextEditor_IsShowLineNumbersEnabled
+TextEditor.IsShowPanScrollIndicatorEnabled = lib.TextEditor_IsShowPanScrollIndicatorEnabled
+TextEditor.IsShowScrollbarMiniMapEnabled = lib.TextEditor_IsShowScrollbarMiniMapEnabled
+TextEditor.IsShowSpacesEnabled = lib.TextEditor_IsShowSpacesEnabled
+TextEditor.IsShowTabsEnabled = lib.TextEditor_IsShowTabsEnabled
 TextEditor.IsShowWhitespacesEnabled = lib.TextEditor_IsShowWhitespacesEnabled
+TextEditor.IsShowingMatchingBrackets = lib.TextEditor_IsShowingMatchingBrackets
+
+
+TextEditor.MoveDownLines = lib.TextEditor_MoveDownLines
+TextEditor.MoveUpLines = lib.TextEditor_MoveUpLines
+TextEditor.OpenFindReplaceWindow = lib.TextEditor_OpenFindReplaceWindow
 TextEditor.Paste = lib.TextEditor_Paste
-function TextEditor:Redo(aSteps)
-    aSteps = aSteps or 1
-    return lib.TextEditor_Redo(self,aSteps)
+TextEditor.Redo = lib.TextEditor_Redo
+function TextEditor:Render(title,size,border)
+    border = border or false
+    size = size or ImVec2()
+    return lib.TextEditor_Render(self,title,size,border)
 end
-function TextEditor:Render(aTitle,aParentIsFocused,aSize,aBorder)
-    aBorder = aBorder or false
-    aParentIsFocused = aParentIsFocused or false
-    aSize = aSize or ImVec2()
-    return lib.TextEditor_Render(self,aTitle,aParentIsFocused,aSize,aBorder)
-end
+TextEditor.ReplaceSectionText = lib.TextEditor_ReplaceSectionText
+TextEditor.ReplaceTextInAllCursors = lib.TextEditor_ReplaceTextInAllCursors
+TextEditor.ReplaceTextInCurrentCursor = lib.TextEditor_ReplaceTextInCurrentCursor
+TextEditor.ScrollToLine = lib.TextEditor_ScrollToLine
 TextEditor.SelectAll = lib.TextEditor_SelectAll
-function TextEditor:SelectAllOccurrencesOf(aText,aTextSize,aCaseSensitive)
-    if aCaseSensitive == nil then aCaseSensitive = true end
-    return lib.TextEditor_SelectAllOccurrencesOf(self,aText,aTextSize,aCaseSensitive)
+TextEditor.SelectAllOccurrences = lib.TextEditor_SelectAllOccurrences
+function TextEditor:SelectAllOccurrencesOf(text,caseSensitive,wholeWord)
+    if caseSensitive == nil then caseSensitive = true end
+    wholeWord = wholeWord or false
+    return lib.TextEditor_SelectAllOccurrencesOf(self,text,caseSensitive,wholeWord)
+end
+function TextEditor:SelectFirstOccurrenceOf(text,caseSensitive,wholeWord)
+    if caseSensitive == nil then caseSensitive = true end
+    wholeWord = wholeWord or false
+    return lib.TextEditor_SelectFirstOccurrenceOf(self,text,caseSensitive,wholeWord)
 end
 TextEditor.SelectLine = lib.TextEditor_SelectLine
-function TextEditor:SelectNextOccurrenceOf(aText,aTextSize,aCaseSensitive)
-    if aCaseSensitive == nil then aCaseSensitive = true end
-    return lib.TextEditor_SelectNextOccurrenceOf(self,aText,aTextSize,aCaseSensitive)
+TextEditor.SelectLines = lib.TextEditor_SelectLines
+function TextEditor:SelectNextOccurrenceOf(text,caseSensitive,wholeWord)
+    if caseSensitive == nil then caseSensitive = true end
+    wholeWord = wholeWord or false
+    return lib.TextEditor_SelectNextOccurrenceOf(self,text,caseSensitive,wholeWord)
 end
 TextEditor.SelectRegion = lib.TextEditor_SelectRegion
+function TextEditor:SelectToBrackets(includeBrackets)
+    if includeBrackets == nil then includeBrackets = true end
+    return lib.TextEditor_SelectToBrackets(self,includeBrackets)
+end
+TextEditor.SelectionToLowerCase = lib.TextEditor_SelectionToLowerCase
+TextEditor.SelectionToUpperCase = lib.TextEditor_SelectionToUpperCase
+TextEditor.SetAutoCompleteConfig = lib.TextEditor_SetAutoCompleteConfig
+
 TextEditor.SetAutoIndentEnabled = lib.TextEditor_SetAutoIndentEnabled
-TextEditor.SetCursorPosition = lib.TextEditor_SetCursorPosition
+
+TextEditor.SetCompletePairedGlyphs = lib.TextEditor_SetCompletePairedGlyphs
+TextEditor.SetCursor = lib.TextEditor_SetCursor
 M.TextEditor_SetDefaultPalette = lib.TextEditor_SetDefaultPalette
-TextEditor.SetLanguageDefinition = lib.TextEditor_SetLanguageDefinition
+
+TextEditor.SetFindAllButtonLabel = lib.TextEditor_SetFindAllButtonLabel
+TextEditor.SetFindButtonLabel = lib.TextEditor_SetFindButtonLabel
+TextEditor.SetFocus = lib.TextEditor_SetFocus
+TextEditor.SetInsertSpacesOnTabs = lib.TextEditor_SetInsertSpacesOnTabs
+
+TextEditor.SetLanguage = lib.TextEditor_SetLanguage
+
+
 TextEditor.SetLineSpacing = lib.TextEditor_SetLineSpacing
+TextEditor.SetMiddleMousePanMode = lib.TextEditor_SetMiddleMousePanMode
+TextEditor.SetMiddleMouseScrollMode = lib.TextEditor_SetMiddleMouseScrollMode
+TextEditor.SetOverwriteEnabled = lib.TextEditor_SetOverwriteEnabled
 TextEditor.SetPalette = lib.TextEditor_SetPalette
 TextEditor.SetReadOnlyEnabled = lib.TextEditor_SetReadOnlyEnabled
-TextEditor.SetShortTabsEnabled = lib.TextEditor_SetShortTabsEnabled
+TextEditor.SetReplaceAllButtonLabel = lib.TextEditor_SetReplaceAllButtonLabel
+TextEditor.SetReplaceButtonLabel = lib.TextEditor_SetReplaceButtonLabel
 TextEditor.SetShowLineNumbersEnabled = lib.TextEditor_SetShowLineNumbersEnabled
+TextEditor.SetShowMatchingBrackets = lib.TextEditor_SetShowMatchingBrackets
+TextEditor.SetShowPanScrollIndicatorEnabled = lib.TextEditor_SetShowPanScrollIndicatorEnabled
+TextEditor.SetShowScrollbarMiniMapEnabled = lib.TextEditor_SetShowScrollbarMiniMapEnabled
+TextEditor.SetShowSpacesEnabled = lib.TextEditor_SetShowSpacesEnabled
+TextEditor.SetShowTabsEnabled = lib.TextEditor_SetShowTabsEnabled
 TextEditor.SetShowWhitespacesEnabled = lib.TextEditor_SetShowWhitespacesEnabled
 TextEditor.SetTabSize = lib.TextEditor_SetTabSize
 TextEditor.SetText = lib.TextEditor_SetText
 
-TextEditor.SetViewAtLine = lib.TextEditor_SetViewAtLine
+
+TextEditor.SetUserData = lib.TextEditor_SetUserData
+TextEditor.ShrinkSelectionsToCurlyBrackets = lib.TextEditor_ShrinkSelectionsToCurlyBrackets
+TextEditor.SpacesToTabs = lib.TextEditor_SpacesToTabs
+TextEditor.StripTrailingWhitespaces = lib.TextEditor_StripTrailingWhitespaces
+TextEditor.TabsToSpaces = lib.TextEditor_TabsToSpaces
 function TextEditor.__new(ctype)
     local ptr = lib.TextEditor_TextEditor()
     return ffi.gc(ptr,lib.TextEditor_destroy)
 end
-function TextEditor:Undo(aSteps)
-    aSteps = aSteps or 1
-    return lib.TextEditor_Undo(self,aSteps)
-end
-TextEditor.UnitTests = lib.TextEditor_UnitTests
+TextEditor.ToggleComments = lib.TextEditor_ToggleComments
+TextEditor.Undo = lib.TextEditor_Undo
 M.TextEditor = ffi.metatype("TextEditor",TextEditor)
+--------------------------Trie----------------------------
+local Trie= {}
+Trie.__index = Trie
+function Trie.__new(ctype)
+    local ptr = lib.Trie_Trie()
+    return ffi.gc(ptr,lib.Trie_destroy)
+end
+Trie.clear = lib.Trie_clear
+
+Trie.insert = lib.Trie_insert
+M.Trie = ffi.metatype("Trie",Trie)
 --------------------------imguiGizmo----------------------------
 local imguiGizmo= {}
 imguiGizmo.__index = imguiGizmo
@@ -8586,11 +8758,11 @@ function M.imnodes_StyleColorsLight(dest)
     return lib.imnodes_StyleColorsLight(dest)
 end
 -- _LJ versions
+M.ImPlot_PlotLineG = M.ImPlot_PlotLineG_LJ
+M.ImPlot_PlotScatterG = M.ImPlot_PlotScatterG_LJ
+M.ImPlot_PlotDigitalG = M.ImPlot_PlotDigitalG_LJ
 M.ImPlot_PlotStairsG = M.ImPlot_PlotStairsG_LJ
 M.ImPlot_PlotShadedG = M.ImPlot_PlotShadedG_LJ
-M.ImPlot_PlotScatterG = M.ImPlot_PlotScatterG_LJ
-M.ImPlot_PlotLineG = M.ImPlot_PlotLineG_LJ
-M.ImPlot_PlotDigitalG = M.ImPlot_PlotDigitalG_LJ
 M.ImPlot_PlotBarsG = M.ImPlot_PlotBarsG_LJ
 return M
 ----------END_AUTOGENERATED_LUA-----------------------------

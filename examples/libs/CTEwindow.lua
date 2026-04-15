@@ -1,10 +1,10 @@
 local ig
 local ffi = require"ffi"
 
-local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl"}
+local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl","Markdown"}
 local function toint(x) return ffi.new("int",x) end
-local mLine = ffi.new("int[?]",1)
-local mColumn = ffi.new("int[?]",1)
+--local mLine = ffi.new("int[?]",1)
+--local mColumn = ffi.new("int[?]",1)
 local openfind = false
 local findbuf = ffi.new("char[?]",256)
 local showhelp = false
@@ -17,8 +17,8 @@ ctrl + / for comment toggling]]
 
 local function Render(self)
 	local editor = self.editor
-	editor:GetCursorPosition(mLine, mColumn)
-	
+	local cupos = editor:GetMainCursorPosition()
+	local mLine, mColumn = cupos.line, cupos.column
 	if (ig.BeginMenuBar()) then
 	
 			if (ig.BeginMenu("Edit")) then
@@ -60,17 +60,17 @@ local function Render(self)
 			if (ig.BeginMenu("View")) then
 			
 				if (ig.MenuItem("Dark palette")) then
-					editor:SetPalette(ig.lib.Dark);
+					editor:SetPalette(ig.TextEditor_GetDarkPalette());
 				end
 				if (ig.MenuItem("Light palette")) then
-					editor:SetPalette(ig.lib.Light);
+					editor:SetPalette(ig.TextEditor_GetLightPalette());
 				end
-				if (ig.MenuItem("Mariana palette")) then
-					editor:SetPalette(ig.lib.Mariana);
-				end
-				if (ig.MenuItem("Retro blue palette")) then
-					editor:SetPalette(ig.lib.RetroBlue);
-				end
+				-- if (ig.MenuItem("Mariana palette")) then
+					-- editor:SetPalette(ig.lib.Mariana);
+				-- end
+				-- if (ig.MenuItem("Retro blue palette")) then
+					-- editor:SetPalette(ig.lib.RetroBlue);
+				-- end
 				ig.EndMenu()
 			end
 			
@@ -86,7 +86,7 @@ local function Render(self)
 	--ig.BeginChild(self.ID)--, nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
 		--ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
 	
-		ig.Text("%6d/%-6d %6d lines  | %s |", toint(mLine[0] + 1), toint(mColumn[0] + 1), toint(editor:GetLineCount()),
+		ig.Text("%6d/%-6d %6d lines  | %s |", toint(mLine + 1), toint(mColumn + 1), toint(editor:GetLineCount()),
 		editor:IsOverwriteEnabled() and "Ovr" or "Ins")
 		ig.SameLine()
 		local dirty = editor:CanUndo()
@@ -171,8 +171,12 @@ local function CTEwindow(file_name)
 	editor:SetText( strtext)
 
 	W.lang_combo = ig.LuaCombo("Lang",langNames,
-				function(name,ind) 
-					editor:SetLanguageDefinition(ind-1)
+				function(name,ind)
+					if name=="None" then
+						editor:SetLanguage(nil)
+					else
+						editor:SetLanguage(ig["Language_"..name]())
+					end
 				end,{calcwidth=true})
 	if ext == "cpp" or ext == "hpp" then
 		W.lang_combo:set_index(2)

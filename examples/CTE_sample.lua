@@ -9,7 +9,7 @@ local lib = win.ig.lib
 local langNames = {[0]="None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl"}
 local editor = lib.TextEditor_TextEditor()
 
-lib.TextEditor_SetLanguageDefinition(editor,lib.Cpp);
+lib.TextEditor_SetLanguage(editor,lib.Language_Cpp());
 
 
 local fileN = [[../cimCTE/cimCTE.cpp]]
@@ -22,10 +22,11 @@ file:close()
 lib.TextEditor_SetText(editor, strtext)
 
 local function toint(x) return ffi.new("int",x) end
-local mLine = ffi.new("int[?]",1)
-local mColumn = ffi.new("int[?]",1)
+-- local mLine = ffi.new("int[?]",1)
+-- local mColumn = ffi.new("int[?]",1)
 function win:draw(ig)
-	local cpos = ig.lib.TextEditor_GetCursorPosition(editor,mLine,mColumn)
+	local cpos = ig.lib.TextEditor_GetMainCursorPosition(editor)
+	local mLine, mColumn = cpos.line, cpos.column
 	ig.Begin("Text Editor Demo", nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
 		ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
 		if (ig.BeginMenuBar())
@@ -81,28 +82,22 @@ function win:draw(ig)
 			if (ig.BeginMenu("View")) then
 			
 				if (ig.MenuItem("Dark palette")) then
-					ig.lib.TextEditor_SetPalette(editor,ig.lib.Dark);
+					editor:SetPalette(ig.TextEditor_GetDarkPalette());
 				end
 				if (ig.MenuItem("Light palette")) then
-					ig.lib.TextEditor_SetPalette(editor,ig.lib.Light);
-				end
-				if (ig.MenuItem("Mariana palette")) then
-					ig.lib.TextEditor_SetPalette(editor,ig.lib.Mariana);
-				end
-				if (ig.MenuItem("Retro blue palette")) then
-					ig.lib.TextEditor_SetPalette(editor,ig.lib.RetroBlue);
+					editor:SetPalette(ig.TextEditor_GetLightPalette());
 				end
 				ig.EndMenu()
 			end
 			ig.EndMenuBar();
 		end
 		
-		ig.Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", toint(mLine[0] + 1), toint(mColumn[0] + 1), toint(ig.lib.TextEditor_GetLineCount(editor)),
+		ig.Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", toint(mLine + 1), toint(mColumn + 1), toint(ig.lib.TextEditor_GetLineCount(editor)),
 		ig.lib.TextEditor_IsOverwriteEnabled(editor) and "Ovr" or "Ins",
 		ig.lib.TextEditor_CanUndo(editor) and "*" or " ",
-		langNames[ig.lib.TextEditor_GetLanguageDefinition(editor)],fileN)
+		ig.lib.TextEditor_GetLanguageName(editor),fileN)
 		
-		ig.lib.TextEditor_Render(editor, "texteditor",false,ig.ImVec2(),false)
+		ig.lib.TextEditor_Render(editor, "texteditor",ig.ImVec2(),false)
 	ig.End()
 
 end

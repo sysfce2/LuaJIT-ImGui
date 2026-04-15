@@ -5,10 +5,10 @@ local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true})
 local ffi = require"ffi"
 
 local ig = win.ig
-local langNames = {[0]="None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl"}
+--local langNames = {[0]="None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl"}
 local editor = ig.TextEditor()
 
-editor:SetLanguageDefinition(ig.lib.Cpp)
+editor:SetLanguage(ig.Language_Cpp())
 
 
 local fileN = [[../cimCTE/cimCTE.cpp]]
@@ -21,10 +21,10 @@ file:close()
 editor:SetText( strtext)
 
 local function toint(x) return ffi.new("int",x) end
-local mLine = ffi.new("int[?]",1)
-local mColumn = ffi.new("int[?]",1)
+
 function win:draw(ig)
-	editor:GetCursorPosition(mLine, mColumn)
+	local cupos = editor:GetMainCursorPosition()
+	local mLine, mColumn = cupos.line, cupos.column
 	ig.Begin("Text Editor Demo", nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
 		ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
 		if (ig.BeginMenuBar())
@@ -80,26 +80,21 @@ function win:draw(ig)
 			if (ig.BeginMenu("View")) then
 			
 				if (ig.MenuItem("Dark palette")) then
-					editor:SetPalette(ig.lib.Dark);
+					editor:SetPalette(ig.TextEditor_GetDarkPalette());
 				end
 				if (ig.MenuItem("Light palette")) then
-					editor:SetPalette(ig.lib.Light);
+					editor:SetPalette(ig.TextEditor_GetLightPalette());
 				end
-				if (ig.MenuItem("Mariana palette")) then
-					editor:SetPalette(ig.lib.Mariana);
-				end
-				if (ig.MenuItem("Retro blue palette")) then
-					editor:SetPalette(ig.lib.RetroBlue);
-				end
+				
 				ig.EndMenu()
 			end
 			ig.EndMenuBar();
 		end
 		
-		ig.Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", toint(mLine[0] + 1), toint(mColumn[0] + 1), toint(editor:GetLineCount()),
+		ig.Text("%6d/%-6d %6d lines  | %s | %s | %s | %s", toint(mLine + 1), toint(mColumn + 1), toint(editor:GetLineCount()),
 		editor:IsOverwriteEnabled() and "Ovr" or "Ins",
 		editor:CanUndo() and "*" or " ",
-		langNames[tonumber(editor:GetLanguageDefinition())],
+		editor:GetLanguageName(),
 		fileN)
 		
 		editor:Render("texteditor")
