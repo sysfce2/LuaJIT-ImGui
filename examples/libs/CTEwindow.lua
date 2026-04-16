@@ -3,10 +3,6 @@ local ffi = require"ffi"
 
 local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl","Markdown"}
 local function toint(x) return ffi.new("int",x) end
---local mLine = ffi.new("int[?]",1)
---local mColumn = ffi.new("int[?]",1)
-local openfind = false
-local findbuf = ffi.new("char[?]",256)
 local showhelp = false
 local help_txt = 
 [[multicursor (ctrl + click to add a new one)
@@ -14,7 +10,11 @@ ctrl + d for selecting next match
 ctrl + [ and ctrl + ] for indentation
 ctrl + backspace and ctrl + delete for word mode delete
 ctrl + / for comment toggling]]
-
+local it_cb = ffi.cast("void(*)(const char *)", function(ident)
+	if ident ~= nil then
+		print(ffi.string(ident))
+	end
+end)
 local function Render(self)
 	local editor = self.editor
 	local cupos = editor:GetMainCursorPosition()
@@ -28,7 +28,7 @@ local function Render(self)
 				end
 				ig.Separator();
 
-				if (ig.MenuItem("Undo", "ALT-Backspace", nil, not ro[0] and editor:CanUndo())) then
+				if (ig.MenuItem("Undo", "Ctrl-Z", nil, not ro[0] and editor:CanUndo())) then
 					editor:Undo()
 				end
 				if (ig.MenuItem("Redo", "Ctrl-Y", nil,not ro[0] and editor:CanRedo())) then
@@ -46,14 +46,26 @@ local function Render(self)
 					editor:Paste();
 				end
 				ig.Separator();
-
+				local flag = ffi.new("bool[?]",1,editor:IsInsertSpacesOnTabs())
+				if (ig.MenuItem("Insert Spaces on Tabs", nil, flag)) then editor:SetInsertSpacesOnTabs(flag[0]); end
+				if (ig.MenuItem("Tabs To Spaces")) then editor:TabsToSpaces(); end
+				if (ig.MenuItem("Spaces To Tabs", nil, nil, not editor:IsInsertSpacesOnTabs())) then editor:SpacesToTabs(); end
+				if (ig.MenuItem("Strip Trailing Whitespaces")) then editor:StripTrailingWhitespaces(); end
+				ig.Separator();
 				if (ig.MenuItem("Select all", nil, nil)) then
 					editor:SelectAll();
 				end
 				
-				if (ig.MenuItem("Find")) then
-					openfind = true
-				end
+				-- if (ig.MenuItem("Find")) then
+					-- editor:OpenFindReplaceWindow()
+				-- end
+				ig.EndMenu();
+			end
+			if (ig.BeginMenu("Find")) then
+				if (ig.MenuItem("Find", "Ctrl-F")) then editor:OpenFindReplaceWindow(); end
+				if (ig.MenuItem("Find Next","Ctrl-G", nil, editor:HasFindString())) then editor:FindNext(); end
+				if (ig.MenuItem("Find All", "^Ctrl-G", nil, editor:HasFindString())) then editor:FindAll(); end
+				ig.Separator();
 				ig.EndMenu();
 			end
 
@@ -65,18 +77,41 @@ local function Render(self)
 				if (ig.MenuItem("Light palette")) then
 					editor:SetPalette(ig.TextEditor_GetLightPalette());
 				end
-				-- if (ig.MenuItem("Mariana palette")) then
-					-- editor:SetPalette(ig.lib.Mariana);
-				-- end
-				-- if (ig.MenuItem("Retro blue palette")) then
-					-- editor:SetPalette(ig.lib.RetroBlue);
-				-- end
+				ig.Separator()
+				-- if (ig.MenuItem("Zoom In", "Ctrl-+")) then increaseFontSIze(); end
+				-- if (ig.MenuItem("Zoom Out", "Ctrl--")) then decreaseFontSIze(); end
+				-- ig.Separator();
+				local flag = ffi.new("bool[?]",1)
+				--if (ig.MenuItem("Autocomplete", nil, &autocomplete)) { setAutocompleteMode(autocomplete); }
+				flag[0] = editor:IsShowWhitespacesEnabled(); 
+				if (ig.MenuItem("Show Whitespaces", nil, flag)) then editor:SetShowWhitespacesEnabled(flag[0]); end
+				flag[0] = editor:IsShowSpacesEnabled();
+				if (ig.MenuItem("Show Spaces", nil, flag)) then editor:SetShowSpacesEnabled(flag[0]) end
+				flag[0] = editor:IsShowTabsEnabled();
+				if (ig.MenuItem("Show Tabs", nil, flag)) then editor:SetShowTabsEnabled(flag[0]) end
+				flag[0] = editor:IsShowLineNumbersEnabled();
+				if (ig.MenuItem("Show Line Numbers", nil, flag)) then editor:SetShowLineNumbersEnabled(flag[0]) end
+				flag[0] = editor:IsShowingMatchingBrackets();
+				if (ig.MenuItem("Show Matching Brackets", nil, flag)) then editor:SetShowMatchingBrackets(flag[0]); end
+				flag[0] = editor:IsCompletingPairedGlyphs(); 
+				if (ig.MenuItem("Complete Matching Glyphs", nil, flag)) then editor:SetCompletePairedGlyphs(flag[0]); end
+				flag[0] = editor:IsShowPanScrollIndicatorEnabled();
+				if (ig.MenuItem("Show Pan/Scroll Indicator", nil, flag)) then editor:SetShowPanScrollIndicatorEnabled(flag[0]); end
+				flag[0] = editor:IsMiddleMousePanMode(); 
+				if (ig.MenuItem("Middle Mouse Pan Mode", nil, flag)) then
+					if (flag[0]) then editor:SetMiddleMousePanMode();
+					else editor:SetMiddleMouseScrollMode(); end
+				end
 				ig.EndMenu()
 			end
 			
 			if ig.BeginMenu("Help") then
 				if (ig.MenuItem("Show")) then
 					showhelp = true
+				end
+				if (ig.MenuItem("iterate")) then
+					--ig.lib.IterateIdentifiers(editor,it_cb)
+					editor:IterateIdentifiers(it_cb)
 				end
 				ig.EndMenu()
 			end
@@ -105,23 +140,6 @@ local function Render(self)
 		--ig.lib.TextEditor_ImGuiDebugPanel(editor,"deb##"..self.ID)
 	--ig.EndChild()
 		
-		if openfind then
-			ig.SetNextWindowSize(ig.ImVec2(300,200));
-			ig.Begin("Find dialog")
-				ig.InputText("search",findbuf,256)
-				if ig.Button("Find") then
-					findstr = ffi.string(findbuf)
-					if #findstr > 0 then
-						editor:SelectAllOccurrencesOf(findstr,#findstr)
-					end
-					openfind = false
-				end
-				ig.SameLine()
-				if ig.Button("Cancel") then
-					openfind = false
-				end
-			ig.End()
-		end
 		if showhelp then
 			ig.SetNextWindowSize(ig.ImVec2(500,200));
 			ig.OpenPopup("Help##p")
@@ -184,6 +202,8 @@ local function CTEwindow(file_name)
 		W.lang_combo:set_index(3)
 	elseif ext == "lua" then
 		W.lang_combo:set_index(6)
+	elseif ext == "json" then
+		W.lang_combo:set_index(7)
 	else
 		W.lang_combo:set_index(1)
 		print"unknown language"
