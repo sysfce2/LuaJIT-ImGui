@@ -7471,14 +7471,18 @@ void ImNodes_Ez_PushStyleColor_U32(ImNodesStyleCol idx,ImU32 col);
 void ImNodes_Ez_PushStyleColor_Vec4(ImNodesStyleCol idx,const ImVec4_c col);
 void ImNodes_Ez_PopStyleColor(int count);
 typedef struct TextEditor TextEditor;
-struct CursorPosition
-{ int line; int column;
+struct CursorPosition_c
+{
+  int line;
+  int column;
 };
-typedef struct CursorPosition CursorPosition;
-struct CursorSelection
-{ CursorPosition start; CursorPosition end;
+typedef struct CursorPosition_c CursorPosition_c;
+struct CursorSelection_c
+{
+  CursorPosition_c start;
+  CursorPosition_c end;
 };
-typedef struct CursorSelection CursorSelection;
+typedef struct CursorSelection_c CursorSelection_c;
 typedef enum {
   alignTop,
   alignMiddle,
@@ -7535,8 +7539,8 @@ typedef struct CodePoint CodePoint;
 struct TextEditor
 {
 };
-typedef struct CursorPosition CursorPosition;
-typedef struct CursorSelection CursorSelection;
+typedef struct CursorPosition_c CursorPosition_c;
+typedef struct CursorSelection_c CursorSelection_c;
 typedef struct Change* Change_opq;
 typedef struct Decorator Decorator;
 typedef struct Palette* Palette_opq;
@@ -7547,6 +7551,13 @@ typedef struct AutoCompleteState* AutoCompleteState_opq;
 typedef struct AutoCompleteConfig* AutoCompleteConfig_opq;
 typedef struct Trie Trie;
 typedef struct CodePoint CodePoint;
+typedef struct TextDiff TextDiff;
+struct TextDiff
+{
+    TextEditor _TextEditor;
+};
+typedef struct CursorPosition_c CursorPosition;
+typedef struct CursorSelection_c CursorSelection;
 TextEditor* TextEditor_TextEditor(void);
 void TextEditor_destroy(TextEditor* self);
 void TextEditor_SetTabSize(TextEditor* self,int value);
@@ -7618,11 +7629,17 @@ void TextEditor_GetCursor_size_t(TextEditor* self,int* line,int* column,size_t c
 void TextEditor_GetCursor_IntPtr(TextEditor* self,int* startLine,int* startColumn,int* endLine,int* endColumn,size_t cursor);
 void TextEditor_GetMainCursor(TextEditor* self,int* line,int* column);
 void TextEditor_GetCurrentCursor(TextEditor* self,int* line,int* column);
-CursorPosition TextEditor_GetMainCursorPosition(TextEditor* self);
-CursorPosition TextEditor_GetCurrentCursorPosition(TextEditor* self);
-CursorPosition TextEditor_GetCursorPosition(TextEditor* self,size_t cursor);
-CursorSelection TextEditor_GetCursorSelection(TextEditor* self,size_t cursor);
-CursorSelection TextEditor_GetMainCursorSelection(TextEditor* self);
+CursorPosition* CursorPosition_CursorPosition_Nil(void);
+void CursorPosition_destroy(CursorPosition* self);
+CursorPosition* CursorPosition_CursorPosition_Int(int l,int c);
+CursorSelection* CursorSelection_CursorSelection_Nil(void);
+void CursorSelection_destroy(CursorSelection* self);
+CursorSelection* CursorSelection_CursorSelection_CursorPosition(CursorPosition_c s,CursorPosition_c e);
+CursorPosition_c TextEditor_GetMainCursorPosition(TextEditor* self);
+CursorPosition_c TextEditor_GetCurrentCursorPosition(TextEditor* self);
+CursorPosition_c TextEditor_GetCursorPosition(TextEditor* self,size_t cursor);
+CursorSelection_c TextEditor_GetCursorSelection(TextEditor* self,size_t cursor);
+CursorSelection_c TextEditor_GetMainCursorSelection(TextEditor* self);
 const char* TextEditor_GetWordAtScreenPos(TextEditor* self,const ImVec2_c screenPos);
 void TextEditor_ScrollToLine(TextEditor* self,int line,Scroll alignment);
 int TextEditor_GetFirstVisibleLine(TextEditor* self);
@@ -7715,6 +7732,22 @@ _Bool                CodePoint_isMatchingPair(ImWchar open,ImWchar close);
 _Bool                CodePoint_isBracketOpener(ImWchar ch);
 _Bool                CodePoint_isBracketCloser(ImWchar ch);
 _Bool                CodePoint_isMatchingBrackets(ImWchar open,ImWchar close);
+TextDiff* TextDiff_TextDiff(void);
+void TextDiff_destroy(TextDiff* self);
+void TextDiff_SetSideBySideMode(TextDiff* self,                                                         _Bool                                                               flag);
+_Bool                TextDiff_GetSideBySideMode(TextDiff* self);
+void TextDiff_SetText(TextDiff* self,const char* left,const char* right);
+void TextDiff_SetLanguage(TextDiff* self,const Language_opq l);
+void TextDiff_SetColors(TextDiff* self,ImU32 ac,ImU32 dc);
+void TextDiff_Render(TextDiff* self,const char* title,const ImVec2_c size,                                                                                    _Bool                                                                                          border);
+void TextDiff_SetReadOnlyEnabled(TextDiff* self,                                                          _Bool                                                                value);
+void TextDiff_SetShowLineNumbersEnabled(TextDiff* self,                                                                 _Bool                                                                       value);
+void TextDiff_SetShowMatchingBrackets(TextDiff* self,                                                               _Bool                                                                     value);
+void TextDiff_AddMarker(TextDiff* self,int line,ImU32 lineNumberColor,ImU32 textColor,const char* lineNumberTooltip,const char* textTooltip);
+void TextDiff_ClearMarkers(TextDiff* self);
+void TextDiff_ClearLineDecorator(TextDiff* self);
+void TextDiff_ClearLineNumberContextMenuCallback(TextDiff* self);
+void TextDiff_ClearTextContextMenuCallback(TextDiff* self);
 char* TextEditor_GetText_alloc(TextEditor* self);
 void TextEditor_GetText_free(char* ptr);
 const char* TextEditor_GetText_static(TextEditor* self);

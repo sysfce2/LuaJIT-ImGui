@@ -15,6 +15,43 @@ local it_cb = ffi.cast("void(*)(const char *)", function(ident)
 		print(ffi.string(ident))
 	end
 end)
+
+local function RenderDiff(self)
+	ig.OpenPopup("Changes since Opening File##diff");
+	local viewport = ig.GetMainViewport();
+	local center = viewport:GetCenter();
+	ig.SetNextWindowPos(center, ig.lib.ImGuiCond_Appearing, ig.ImVec2(0.5, 0.5));
+
+	if (ig.BeginPopupModal("Changes since Opening File##diff", nil, ig.lib.ImGuiWindowFlags_AlwaysAutoResize)) then
+		local diff = self.diff
+		diff:Render("diff", viewport.Size * 0.8, true);
+
+		ig.Separator();
+		local buttonWidth = 80.0;
+		local buttonOffset = ig.GetContentRegionAvail().x - buttonWidth;
+		local sideBySide = ffi.new("bool[?]",1)
+		sideBySide[0] = diff:GetSideBySideMode();
+
+		if (ig.Checkbox("Show side-by-side", sideBySide)) then
+			diff:SetSideBySideMode(sideBySide[0]);
+		end
+
+		ig.SameLine();
+		ig.Indent(buttonOffset);
+
+		if (ig.Button("OK", ig.ImVec2(buttonWidth, 0.0)) or ig.IsKeyPressed(ig.lib.ImGuiKey_Escape, false)) then
+			self.render_diff = false
+			ig.CloseCurrentPopup();
+		end
+
+		ig.EndPopup();
+	end
+end
+local function showDiff(self)
+	self.diff:SetLanguage(self.editor:GetLanguage());
+	self.diff:SetText(self.originalText, self.editor:GetText());
+	self.render_diff = true
+end
 local function Render(self)
 	local editor = self.editor
 	local cupos = editor:GetMainCursorPosition()
@@ -102,6 +139,8 @@ local function Render(self)
 					if (flag[0]) then editor:SetMiddleMousePanMode();
 					else editor:SetMiddleMouseScrollMode(); end
 				end
+				ig.Separator();
+				if (ig.MenuItem("Show Diff", "Ctrl-I")) then showDiff(self); end
 				ig.EndMenu()
 			end
 			
@@ -135,10 +174,13 @@ local function Render(self)
             --ig.SetWindowFontScale(self.window_scale[0]);
              ig.GetStyle().FontScaleMain = self.window_scale[0]
 		end	
+		
 		--ig.PushFont(nil, self.window_scale[0] * ig.GetStyle().FontSizeBase)
 		editor:Render("texteditor"..self.ID)
 		--ig.lib.TextEditor_ImGuiDebugPanel(editor,"deb##"..self.ID)
-	--ig.EndChild()
+		if self.render_diff then
+			RenderDiff(self)
+		end
 		
 		if showhelp then
 			ig.SetNextWindowSize(ig.ImVec2(500,200));
@@ -186,6 +228,9 @@ local function CTEwindow(file_name)
 	local W = {file_name = file_name or ""}
 	local editor = ig.TextEditor()
 	W.editor = editor
+	W.diff = ig.TextDiff()
+	W.render_diff = false
+	W.originalText = strtext
 	editor:SetText( strtext)
 
 	W.lang_combo = ig.LuaCombo("Lang",langNames,

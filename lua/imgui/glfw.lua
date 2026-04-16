@@ -504,6 +504,42 @@ M.CodePoint_toPairOpener = lib.CodePoint_toPairOpener
 M.CodePoint_toUpper = lib.CodePoint_toUpper
 M.CodePoint_write = lib.CodePoint_write
 M.CodePoint = ffi.metatype("CodePoint",CodePoint)
+--------------------------CursorPosition----------------------------
+local CursorPosition= {}
+CursorPosition.__index = CursorPosition
+function CursorPosition.CursorPosition_Nil()
+    local ptr = lib.CursorPosition_CursorPosition_Nil()
+    return ffi.gc(ptr,lib.CursorPosition_destroy)
+end
+function CursorPosition.CursorPosition_Int(l,c)
+    local ptr = lib.CursorPosition_CursorPosition_Int(l,c)
+    return ffi.gc(ptr,lib.CursorPosition_destroy)
+end
+function CursorPosition.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return CursorPosition.CursorPosition_Nil() end
+    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return CursorPosition.CursorPosition_Int(a1,a2) end
+    print(ctype,a1,a2)
+    error'CursorPosition.__new could not find overloaded'
+end
+M.CursorPosition = ffi.metatype("CursorPosition",CursorPosition)
+--------------------------CursorSelection----------------------------
+local CursorSelection= {}
+CursorSelection.__index = CursorSelection
+function CursorSelection.CursorSelection_Nil()
+    local ptr = lib.CursorSelection_CursorSelection_Nil()
+    return ffi.gc(ptr,lib.CursorSelection_destroy)
+end
+function CursorSelection.CursorSelection_CursorPosition(s,e)
+    local ptr = lib.CursorSelection_CursorSelection_CursorPosition(s,e)
+    return ffi.gc(ptr,lib.CursorSelection_destroy)
+end
+function CursorSelection.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return CursorSelection.CursorSelection_Nil() end
+    if ffi.istype('CursorPosition',a1) then return CursorSelection.CursorSelection_CursorPosition(a1,a2) end
+    print(ctype,a1,a2)
+    error'CursorSelection.__new could not find overloaded'
+end
+M.CursorSelection = ffi.metatype("CursorSelection",CursorSelection)
 --------------------------EmulateThreeButtonMouse----------------------------
 local EmulateThreeButtonMouse= {}
 EmulateThreeButtonMouse.__index = EmulateThreeButtonMouse
@@ -2588,6 +2624,35 @@ function Style.__new(ctype)
     return ffi.gc(ptr,lib.Style_destroy)
 end
 M.Style = ffi.metatype("Style",Style)
+--------------------------TextDiff----------------------------
+local TextDiff= {}
+TextDiff.__index = TextDiff
+TextDiff.AddMarker = lib.TextDiff_AddMarker
+TextDiff.ClearLineDecorator = lib.TextDiff_ClearLineDecorator
+TextDiff.ClearLineNumberContextMenuCallback = lib.TextDiff_ClearLineNumberContextMenuCallback
+TextDiff.ClearMarkers = lib.TextDiff_ClearMarkers
+TextDiff.ClearTextContextMenuCallback = lib.TextDiff_ClearTextContextMenuCallback
+TextDiff.GetSideBySideMode = lib.TextDiff_GetSideBySideMode
+function TextDiff:Render(title,size,border)
+    border = border or false
+    size = size or ImVec2()
+    return lib.TextDiff_Render(self,title,size,border)
+end
+TextDiff.SetColors = lib.TextDiff_SetColors
+TextDiff.SetLanguage = lib.TextDiff_SetLanguage
+
+
+TextDiff.SetReadOnlyEnabled = lib.TextDiff_SetReadOnlyEnabled
+TextDiff.SetShowLineNumbersEnabled = lib.TextDiff_SetShowLineNumbersEnabled
+TextDiff.SetShowMatchingBrackets = lib.TextDiff_SetShowMatchingBrackets
+TextDiff.SetSideBySideMode = lib.TextDiff_SetSideBySideMode
+TextDiff.SetText = lib.TextDiff_SetText
+
+function TextDiff.__new(ctype)
+    local ptr = lib.TextDiff_TextDiff()
+    return ffi.gc(ptr,lib.TextDiff_destroy)
+end
+M.TextDiff = ffi.metatype("TextDiff",TextDiff)
 --------------------------TextEditor----------------------------
 local TextEditor= {}
 TextEditor.__index = TextEditor
