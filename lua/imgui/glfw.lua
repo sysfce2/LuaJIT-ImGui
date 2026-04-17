@@ -2627,11 +2627,6 @@ M.Style = ffi.metatype("Style",Style)
 --------------------------TextDiff----------------------------
 local TextDiff= {}
 TextDiff.__index = TextDiff
-TextDiff.AddMarker = lib.TextDiff_AddMarker
-TextDiff.ClearLineDecorator = lib.TextDiff_ClearLineDecorator
-TextDiff.ClearLineNumberContextMenuCallback = lib.TextDiff_ClearLineNumberContextMenuCallback
-TextDiff.ClearMarkers = lib.TextDiff_ClearMarkers
-TextDiff.ClearTextContextMenuCallback = lib.TextDiff_ClearTextContextMenuCallback
 TextDiff.GetSideBySideMode = lib.TextDiff_GetSideBySideMode
 function TextDiff:Render(title,size,border)
     border = border or false
@@ -2640,14 +2635,8 @@ function TextDiff:Render(title,size,border)
 end
 TextDiff.SetColors = lib.TextDiff_SetColors
 TextDiff.SetLanguage = lib.TextDiff_SetLanguage
-
-
-TextDiff.SetReadOnlyEnabled = lib.TextDiff_SetReadOnlyEnabled
-TextDiff.SetShowLineNumbersEnabled = lib.TextDiff_SetShowLineNumbersEnabled
-TextDiff.SetShowMatchingBrackets = lib.TextDiff_SetShowMatchingBrackets
 TextDiff.SetSideBySideMode = lib.TextDiff_SetSideBySideMode
 TextDiff.SetText = lib.TextDiff_SetText
-
 function TextDiff.__new(ctype)
     local ptr = lib.TextDiff_TextDiff()
     return ffi.gc(ptr,lib.TextDiff_destroy)
