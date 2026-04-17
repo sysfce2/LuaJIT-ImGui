@@ -2662,8 +2662,8 @@ TextEditor.Copy = lib.TextEditor_Copy
 TextEditor.CurrentCursorHasSelection = lib.TextEditor_CurrentCursorHasSelection
 TextEditor.Cut = lib.TextEditor_Cut
 TextEditor.DeindentLines = lib.TextEditor_DeindentLines
-
-
+TextEditor.FilterLines = lib.TextEditor_FilterLines
+TextEditor.FilterSelections = lib.TextEditor_FilterSelections
 TextEditor.FindAll = lib.TextEditor_FindAll
 TextEditor.FindNext = lib.TextEditor_FindNext
 TextEditor.GetCurrentCursor = lib.TextEditor_GetCurrentCursor
@@ -2727,7 +2727,7 @@ TextEditor.IsShowTabsEnabled = lib.TextEditor_IsShowTabsEnabled
 TextEditor.IsShowWhitespacesEnabled = lib.TextEditor_IsShowWhitespacesEnabled
 TextEditor.IsShowingMatchingBrackets = lib.TextEditor_IsShowingMatchingBrackets
 TextEditor.IterateIdentifiers = lib.TextEditor_IterateIdentifiers
-
+TextEditor.IterateUserData = lib.TextEditor_IterateUserData
 TextEditor.MoveDownLines = lib.TextEditor_MoveDownLines
 TextEditor.MoveUpLines = lib.TextEditor_MoveUpLines
 TextEditor.OpenFindReplaceWindow = lib.TextEditor_OpenFindReplaceWindow
@@ -2771,19 +2771,22 @@ TextEditor.SelectionToUpperCase = lib.TextEditor_SelectionToUpperCase
 TextEditor.SetAutoCompleteConfig = lib.TextEditor_SetAutoCompleteConfig
 
 TextEditor.SetAutoIndentEnabled = lib.TextEditor_SetAutoIndentEnabled
-
+function TextEditor:SetChangeCallback(callback,delay)
+    delay = delay or 0
+    return lib.TextEditor_SetChangeCallback(self,callback,delay)
+end
 TextEditor.SetCompletePairedGlyphs = lib.TextEditor_SetCompletePairedGlyphs
 TextEditor.SetCursor = lib.TextEditor_SetCursor
 M.TextEditor_SetDefaultPalette = lib.TextEditor_SetDefaultPalette
-
+TextEditor.SetDeletor = lib.TextEditor_SetDeletor
 TextEditor.SetFindAllButtonLabel = lib.TextEditor_SetFindAllButtonLabel
 TextEditor.SetFindButtonLabel = lib.TextEditor_SetFindButtonLabel
 TextEditor.SetFocus = lib.TextEditor_SetFocus
 TextEditor.SetInsertSpacesOnTabs = lib.TextEditor_SetInsertSpacesOnTabs
-
+TextEditor.SetInsertor = lib.TextEditor_SetInsertor
 TextEditor.SetLanguage = lib.TextEditor_SetLanguage
-
-
+TextEditor.SetLineDecorator = lib.TextEditor_SetLineDecorator
+TextEditor.SetLineNumberContextMenuCallback = lib.TextEditor_SetLineNumberContextMenuCallback
 TextEditor.SetLineSpacing = lib.TextEditor_SetLineSpacing
 TextEditor.SetMiddleMousePanMode = lib.TextEditor_SetMiddleMousePanMode
 TextEditor.SetMiddleMouseScrollMode = lib.TextEditor_SetMiddleMouseScrollMode
@@ -2801,7 +2804,7 @@ TextEditor.SetShowTabsEnabled = lib.TextEditor_SetShowTabsEnabled
 TextEditor.SetShowWhitespacesEnabled = lib.TextEditor_SetShowWhitespacesEnabled
 TextEditor.SetTabSize = lib.TextEditor_SetTabSize
 TextEditor.SetText = lib.TextEditor_SetText
-
+TextEditor.SetTextContextMenuCallback = lib.TextEditor_SetTextContextMenuCallback
 
 TextEditor.SetUserData = lib.TextEditor_SetUserData
 TextEditor.ShrinkSelectionsToCurlyBrackets = lib.TextEditor_ShrinkSelectionsToCurlyBrackets

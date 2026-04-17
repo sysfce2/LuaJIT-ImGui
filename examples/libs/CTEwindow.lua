@@ -232,7 +232,7 @@ local function CTEwindow(file_name)
 	W.render_diff = false
 	W.originalText = strtext
 	editor:SetText( strtext)
-
+	--editor:SetChangeCallback(function() print"change" end,0)
 	W.lang_combo = ig.LuaCombo("Lang",langNames,
 				function(name,ind)
 					if name=="None" then
