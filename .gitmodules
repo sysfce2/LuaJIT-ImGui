@@ -24,3 +24,6 @@
 [submodule "cimplot3d"]
 	path = cimplot3d
 	url = https://github.com/cimgui/cimplot3d.git
+[submodule "cimnodes_editor"]
+	path = cimnodes_editor
+	url = https://github.com/cimgui/cimnodes_editor.git
