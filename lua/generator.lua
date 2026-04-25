@@ -44,7 +44,9 @@ end
 --------------------------------------------------------
 --first get cdefs
 print"get cdefs"
-local sources = {"cimgui", "cimplot", "cimguizmo", "cimguizmo_quat", "cimnodes","cimnodes_r","cimCTE","cimplot3d"}
+--local sources = {"cimgui", "cimplot", "cimguizmo", "cimguizmo_quat", "cimnodes","cimnodes_r","cimCTE","cimplot3d"}
+--local sources = {"cimgui","cimnodes_editor"}
+local sources = {"cimgui", "cimplot", "cimguizmo", "cimguizmo_quat", "cimnodes","cimnodes_r","cimCTE","cimplot3d","cimnodes_editor"}
 local cdefs = get_all_cdefs(sources)
 
 print"get cimgui_impl cdefs"

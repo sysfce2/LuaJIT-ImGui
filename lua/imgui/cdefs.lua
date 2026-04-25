@@ -7541,14 +7541,14 @@ struct TextEditor
 };
 typedef struct CursorPosition_c CursorPosition_c;
 typedef struct CursorSelection_c CursorSelection_c;
-typedef struct Change* Change_opq;
+typedef struct Change Change;
 typedef struct Decorator Decorator;
-typedef struct Palette* Palette_opq;
+typedef struct Palette Palette;
 typedef struct Glyph Glyph;
-typedef struct Iterator* Iterator_opq;
-typedef struct Language* Language_opq;
-typedef struct AutoCompleteState* AutoCompleteState_opq;
-typedef struct AutoCompleteConfig* AutoCompleteConfig_opq;
+typedef struct Iterator Iterator;
+typedef struct Language Language;
+typedef struct AutoCompleteState AutoCompleteState;
+typedef struct AutoCompleteConfig AutoCompleteConfig;
 typedef struct Trie Trie;
 typedef struct CodePoint CodePoint;
 typedef struct TextDiff TextDiff;
@@ -7692,33 +7692,33 @@ void TextEditor_StripTrailingWhitespaces(TextEditor* self);
 void TextEditor_FilterLines(TextEditor* self,const char*(*cb)(const char*));
 void TextEditor_TabsToSpaces(TextEditor* self);
 void TextEditor_SpacesToTabs(TextEditor* self);
-void TextEditor_SetPalette(TextEditor* self,const Palette_opq newPalette);
-const Palette_opq TextEditor_GetPalette(TextEditor* self);
-void TextEditor_SetDefaultPalette(const Palette_opq aValue);
-Palette_opq TextEditor_GetDefaultPalette(void);
-const Palette_opq TextEditor_GetDarkPalette(void);
-const Palette_opq TextEditor_GetLightPalette(void);
+void TextEditor_SetPalette(TextEditor* self,const Palette* newPalette);
+const Palette* TextEditor_GetPalette(TextEditor* self);
+void TextEditor_SetDefaultPalette(const Palette* aValue);
+Palette* TextEditor_GetDefaultPalette(void);
+const Palette* TextEditor_GetDarkPalette(void);
+const Palette* TextEditor_GetLightPalette(void);
 Glyph* Glyph_Glyph_Nil(void);
 void Glyph_destroy(Glyph* self);
 Glyph* Glyph_Glyph_Wchar(ImWchar cp);
 Glyph* Glyph_Glyph_WcharColor(ImWchar cp,Color col);
-const Language_opq Language_C(void);
-const Language_opq Language_Cpp(void);
-const Language_opq Language_Cs(void);
-const Language_opq Language_AngelScript(void);
-const Language_opq Language_Lua(void);
-const Language_opq Language_Python(void);
-const Language_opq Language_Glsl(void);
-const Language_opq Language_Hlsl(void);
-const Language_opq Language_Json(void);
-const Language_opq Language_Markdown(void);
-const Language_opq Language_Sql(void);
-void TextEditor_SetLanguage(TextEditor* self,const Language_opq l);
-const Language_opq TextEditor_GetLanguage(TextEditor* self);
+const Language* Language_C(void);
+const Language* Language_Cpp(void);
+const Language* Language_Cs(void);
+const Language* Language_AngelScript(void);
+const Language* Language_Lua(void);
+const Language* Language_Python(void);
+const Language* Language_Glsl(void);
+const Language* Language_Hlsl(void);
+const Language* Language_Json(void);
+const Language* Language_Markdown(void);
+const Language* Language_Sql(void);
+void TextEditor_SetLanguage(TextEditor* self,const Language* l);
+const Language* TextEditor_GetLanguage(TextEditor* self);
 _Bool                TextEditor_HasLanguage(TextEditor* self);
 const char* TextEditor_GetLanguageName(TextEditor* self);
 void TextEditor_IterateIdentifiers(TextEditor* self,void(*cb)(const char*));
-void TextEditor_SetAutoCompleteConfig(TextEditor* self,const AutoCompleteConfig_opq config);
+void TextEditor_SetAutoCompleteConfig(TextEditor* self,const AutoCompleteConfig* config);
 Trie* Trie_Trie(void);
 void Trie_destroy(Trie* self);
 void Trie_clear(Trie* self);
@@ -7742,12 +7742,13 @@ _Bool                CodePoint_isMatchingPair(ImWchar open,ImWchar close);
 _Bool                CodePoint_isBracketOpener(ImWchar ch);
 _Bool                CodePoint_isBracketCloser(ImWchar ch);
 _Bool                CodePoint_isMatchingBrackets(ImWchar open,ImWchar close);
+void TextEditor_SetImGuiContext(ImGuiContext* ctx);
 TextDiff* TextDiff_TextDiff(void);
 void TextDiff_destroy(TextDiff* self);
 void TextDiff_SetSideBySideMode(TextDiff* self,                                                         _Bool                                                               flag);
 _Bool                TextDiff_GetSideBySideMode(TextDiff* self);
 void TextDiff_SetText(TextDiff* self,const char* left,const char* right);
-void TextDiff_SetLanguage(TextDiff* self,const Language_opq l);
+void TextDiff_SetLanguage(TextDiff* self,const Language* l);
 void TextDiff_SetColors(TextDiff* self,ImU32 ac,ImU32 dc);
 void TextDiff_Render(TextDiff* self,const char* title,const ImVec2_c size,                                                                                    _Bool                                                                                          border);
 char* TextEditor_GetText_alloc(TextEditor* self);
@@ -8262,6 +8263,278 @@ void ImPlot3DStyle_SetColor(ImPlot3DStyle* self,ImPlot3DCol idx,const ImVec4_c c
 ImPlot3DStyle* ImPlot3DStyle_ImPlot3DStyle_Nil(void);
 void ImPlot3DStyle_destroy(ImPlot3DStyle* self);
 ImPlot3DStyle* ImPlot3DStyle_ImPlot3DStyle_Plot3DStyle(const ImPlot3DStyle_c other);
+typedef struct NodeId NodeId;
+typedef struct LinkId LinkId;
+typedef struct PinId PinId;
+typedef struct EditorContext EditorContext;
+struct NodeId;
+struct LinkId;
+struct PinId;
+typedef enum {
+    Input,
+    Output
+}PinKind;
+typedef enum {
+    Forward,
+    Backward
+}FlowDirection;
+typedef enum {
+    FitVerticalView,
+    FitHorizontalView,
+    CenterOnly,
+}CanvasSizeMode;
+typedef enum {
+None=0x00000000,
+Navigation=0x00000001,
+Position=0x00000002,
+Size=0x00000004,
+Selection=0x00000008,
+AddNode=0x00000010,
+RemoveNode=0x00000020,
+User=0x00000040,
+}SaveReasonFlags;
+typedef        _Bool             (*ConfigSaveSettings)(const char* data, size_t size, SaveReasonFlags reason, void* userPointer);
+typedef size_t (*ConfigLoadSettings)(char* data, void* userPointer);
+typedef        _Bool             (*ConfigSaveNodeSettings)(NodeId nodeId, const char* data, size_t size, SaveReasonFlags reason, void* userPointer);
+typedef size_t (*ConfigLoadNodeSettings)(NodeId nodeId, char* data, void* userPointer);
+typedef void (*ConfigSession)(void* userPointer);
+typedef struct Config Config;
+typedef CanvasSizeMode CanvasSizeModeAlias;
+struct Config
+{
+    const char* SettingsFile;
+    ConfigSession BeginSaveSession;
+    ConfigSession EndSaveSession;
+    ConfigSaveSettings SaveSettings;
+    ConfigLoadSettings LoadSettings;
+    ConfigSaveNodeSettings SaveNodeSettings;
+    ConfigLoadNodeSettings LoadNodeSettings;
+    void* UserPointer;
+    ImVector_float CustomZoomLevels;
+    CanvasSizeModeAlias CanvasSizeMode;
+    int DragButtonIndex;
+    int SelectButtonIndex;
+    int NavigateButtonIndex;
+    int ContextMenuButtonIndex;
+   _Bool         EnableSmoothZoom;
+    float SmoothZoomPower;
+};
+typedef enum {
+    StyleColor_Bg,
+    StyleColor_Grid,
+    StyleColor_NodeBg,
+    StyleColor_NodeBorder,
+    StyleColor_HovNodeBorder,
+    StyleColor_SelNodeBorder,
+    StyleColor_NodeSelRect,
+    StyleColor_NodeSelRectBorder,
+    StyleColor_HovLinkBorder,
+    StyleColor_SelLinkBorder,
+    StyleColor_HighlightLinkBorder,
+    StyleColor_LinkSelRect,
+    StyleColor_LinkSelRectBorder,
+    StyleColor_PinRect,
+    StyleColor_PinRectBorder,
+    StyleColor_Flow,
+    StyleColor_FlowMarker,
+    StyleColor_GroupBg,
+    StyleColor_GroupBorder,
+    StyleColor_Count
+}StyleColor;
+typedef enum {
+    StyleVar_NodePadding,
+    StyleVar_NodeRounding,
+    StyleVar_NodeBorderWidth,
+    StyleVar_HoveredNodeBorderWidth,
+    StyleVar_SelectedNodeBorderWidth,
+    StyleVar_PinRounding,
+    StyleVar_PinBorderWidth,
+    StyleVar_LinkStrength,
+    StyleVar_SourceDirection,
+    StyleVar_TargetDirection,
+    StyleVar_ScrollDuration,
+    StyleVar_FlowMarkerDistance,
+    StyleVar_FlowSpeed,
+    StyleVar_FlowDuration,
+    StyleVar_PivotAlignment,
+    StyleVar_PivotSize,
+    StyleVar_PivotScale,
+    StyleVar_PinCorners,
+    StyleVar_PinRadius,
+    StyleVar_PinArrowSize,
+    StyleVar_PinArrowWidth,
+    StyleVar_GroupRounding,
+    StyleVar_GroupBorderWidth,
+    StyleVar_HighlightConnectedLinks,
+    StyleVar_SnapLinkToPinDir,
+    StyleVar_HoveredNodeBorderOffset,
+    StyleVar_SelectedNodeBorderOffset,
+    StyleVar_Count
+}StyleVar;
+typedef struct cimnodes_editor_Style cimnodes_editor_Style;
+struct cimnodes_editor_Style
+{
+    ImVec4_c NodePadding;
+    float NodeRounding;
+    float NodeBorderWidth;
+    float HoveredNodeBorderWidth;
+    float HoverNodeBorderOffset;
+    float SelectedNodeBorderWidth;
+    float SelectedNodeBorderOffset;
+    float PinRounding;
+    float PinBorderWidth;
+    float LinkStrength;
+    ImVec2_c SourceDirection;
+    ImVec2_c TargetDirection;
+    float ScrollDuration;
+    float FlowMarkerDistance;
+    float FlowSpeed;
+    float FlowDuration;
+    ImVec2_c PivotAlignment;
+    ImVec2_c PivotSize;
+    ImVec2_c PivotScale;
+    float PinCorners;
+    float PinRadius;
+    float PinArrowSize;
+    float PinArrowWidth;
+    float GroupRounding;
+    float GroupBorderWidth;
+    float HighlightConnectedLinks;
+    float SnapLinkToPinDir;
+    ImVec4_c Colors[StyleColor_Count];
+};
+struct EditorContext;
+typedef struct SafeType SafeType;
+typedef struct SafePointerType SafePointerType;
+typedef struct NodeId NodeId;
+typedef struct LinkId LinkId;
+typedef struct PinId PinId;
+Config* ax_NodeEditor_Config_Config_Config(void);
+void Config_destroy(Config* self);
+void ax_NodeEditor_SetCurrentEditor(EditorContext* ctx);
+EditorContext* ax_NodeEditor_GetCurrentEditor(void);
+EditorContext* ax_NodeEditor_CreateEditor(const Config* config);
+void ax_NodeEditor_DestroyEditor(EditorContext* ctx);
+const Config* ax_NodeEditor_GetConfig(EditorContext* ctx);
+cimnodes_editor_Style* ax_NodeEditor_GetStyle(void);
+const char* ax_NodeEditor_GetStyleColorName(StyleColor colorIndex);
+void ax_NodeEditor_PushStyleColor(StyleColor colorIndex,const ImVec4_c color);
+void ax_NodeEditor_PopStyleColor(int count);
+void ax_NodeEditor_PushStyleVar_Float(StyleVar varIndex,float value);
+void ax_NodeEditor_PushStyleVar_Vec2(StyleVar varIndex,const ImVec2_c value);
+void ax_NodeEditor_PushStyleVar_Vec4(StyleVar varIndex,const ImVec4_c value);
+void ax_NodeEditor_PopStyleVar(int count);
+void ax_NodeEditor_Begin(const char* id,const ImVec2_c size);
+void ax_NodeEditor_End(void);
+void ax_NodeEditor_BeginNode(NodeId* id);
+void ax_NodeEditor_BeginPin(PinId* id,PinKind kind);
+void ax_NodeEditor_PinRect(const ImVec2_c a,const ImVec2_c b);
+void ax_NodeEditor_PinPivotRect(const ImVec2_c a,const ImVec2_c b);
+void ax_NodeEditor_PinPivotSize(const ImVec2_c size);
+void ax_NodeEditor_PinPivotScale(const ImVec2_c scale);
+void ax_NodeEditor_PinPivotAlignment(const ImVec2_c alignment);
+void ax_NodeEditor_EndPin(void);
+void ax_NodeEditor_Group(const ImVec2_c size);
+void ax_NodeEditor_EndNode(void);
+_Bool                ax_NodeEditor_BeginGroupHint(NodeId* nodeId);
+ImVec2_c ax_NodeEditor_GetGroupMin(void);
+ImVec2_c ax_NodeEditor_GetGroupMax(void);
+ImDrawList* ax_NodeEditor_GetHintForegroundDrawList(void);
+ImDrawList* ax_NodeEditor_GetHintBackgroundDrawList(void);
+void ax_NodeEditor_EndGroupHint(void);
+ImDrawList* ax_NodeEditor_GetNodeBackgroundDrawList(NodeId* nodeId);
+_Bool                ax_NodeEditor_Link(LinkId* id,PinId* startPinId,PinId* endPinId,const ImVec4_c color,float thickness);
+void ax_NodeEditor_Flow(LinkId* linkId,FlowDirection direction);
+_Bool                ax_NodeEditor_BeginCreate(const ImVec4_c color,float thickness);
+_Bool                ax_NodeEditor_QueryNewLink_Nil(PinId* startId,PinId* endId);
+_Bool                ax_NodeEditor_QueryNewLink_Vec4(PinId* startId,PinId* endId,const ImVec4_c color,float thickness);
+_Bool                ax_NodeEditor_QueryNewNode_Nil(PinId* pinId);
+_Bool                ax_NodeEditor_QueryNewNode_Vec4(PinId* pinId,const ImVec4_c color,float thickness);
+_Bool                ax_NodeEditor_AcceptNewItem_Nil(void);
+_Bool                ax_NodeEditor_AcceptNewItem_Vec4(const ImVec4_c color,float thickness);
+void ax_NodeEditor_RejectNewItem_Nil(void);
+void ax_NodeEditor_RejectNewItem_Vec4(const ImVec4_c color,float thickness);
+void ax_NodeEditor_EndCreate(void);
+_Bool                ax_NodeEditor_BeginDelete(void);
+_Bool                ax_NodeEditor_QueryDeletedLink(LinkId* linkId,PinId* startId,PinId* endId);
+_Bool                ax_NodeEditor_QueryDeletedNode(NodeId* nodeId);
+_Bool                ax_NodeEditor_AcceptDeletedItem(                                               _Bool                                                     deleteDependencies);
+void ax_NodeEditor_RejectDeletedItem(void);
+void ax_NodeEditor_EndDelete(void);
+void ax_NodeEditor_SetNodePosition(NodeId* nodeId,const ImVec2_c editorPosition);
+void ax_NodeEditor_SetGroupSize(NodeId* nodeId,const ImVec2_c size);
+ImVec2_c ax_NodeEditor_GetNodePosition(NodeId* nodeId);
+ImVec2_c ax_NodeEditor_GetNodeSize(NodeId* nodeId);
+void ax_NodeEditor_CenterNodeOnScreen(NodeId* nodeId);
+void ax_NodeEditor_SetNodeZPosition(NodeId* nodeId,float z);
+float ax_NodeEditor_GetNodeZPosition(NodeId* nodeId);
+void ax_NodeEditor_RestoreNodeState(NodeId* nodeId);
+void ax_NodeEditor_Suspend(void);
+void ax_NodeEditor_Resume(void);
+_Bool                ax_NodeEditor_IsSuspended(void);
+_Bool                ax_NodeEditor_IsActive(void);
+_Bool                ax_NodeEditor_HasSelectionChanged(void);
+int ax_NodeEditor_GetSelectedObjectCount(void);
+int ax_NodeEditor_GetSelectedNodes(NodeId* nodes,int size);
+int ax_NodeEditor_GetSelectedLinks(LinkId* links,int size);
+_Bool                ax_NodeEditor_IsNodeSelected(NodeId* nodeId);
+_Bool                ax_NodeEditor_IsLinkSelected(LinkId* linkId);
+void ax_NodeEditor_ClearSelection(void);
+void ax_NodeEditor_SelectNode(NodeId* nodeId,                                                       _Bool                                                             append);
+void ax_NodeEditor_SelectLink(LinkId* linkId,                                                       _Bool                                                             append);
+void ax_NodeEditor_DeselectNode(NodeId* nodeId);
+void ax_NodeEditor_DeselectLink(LinkId* linkId);
+_Bool                ax_NodeEditor_DeleteNode(NodeId* nodeId);
+_Bool                ax_NodeEditor_DeleteLink(LinkId* linkId);
+_Bool                ax_NodeEditor_HasAnyLinks_NodeId(NodeId* nodeId);
+_Bool                ax_NodeEditor_HasAnyLinks_PinId(PinId* pinId);
+int ax_NodeEditor_BreakLinks_NodeId(NodeId* nodeId);
+int ax_NodeEditor_BreakLinks_PinId(PinId* pinId);
+void ax_NodeEditor_NavigateToContent(float duration);
+void ax_NodeEditor_NavigateToSelection(                                                 _Bool                                                       zoomIn,float duration);
+_Bool                ax_NodeEditor_ShowNodeContextMenu(NodeId* nodeId);
+_Bool                ax_NodeEditor_ShowPinContextMenu(PinId* pinId);
+_Bool                ax_NodeEditor_ShowLinkContextMenu(LinkId* linkId);
+_Bool                ax_NodeEditor_ShowBackgroundContextMenu(void);
+void ax_NodeEditor_EnableShortcuts(                                             _Bool                                                   enable);
+_Bool                ax_NodeEditor_AreShortcutsEnabled(void);
+_Bool                ax_NodeEditor_BeginShortcut(void);
+_Bool                ax_NodeEditor_AcceptCut(void);
+_Bool                ax_NodeEditor_AcceptCopy(void);
+_Bool                ax_NodeEditor_AcceptPaste(void);
+_Bool                ax_NodeEditor_AcceptDuplicate(void);
+_Bool                ax_NodeEditor_AcceptCreateNode(void);
+int ax_NodeEditor_GetActionContextSize(void);
+int ax_NodeEditor_GetActionContextNodes(NodeId* nodes,int size);
+int ax_NodeEditor_GetActionContextLinks(LinkId* links,int size);
+void ax_NodeEditor_EndShortcut(void);
+float ax_NodeEditor_GetCurrentZoom(void);
+NodeId* ax_NodeEditor_GetHoveredNode(void);
+PinId* ax_NodeEditor_GetHoveredPin(void);
+LinkId* ax_NodeEditor_GetHoveredLink(void);
+NodeId* ax_NodeEditor_GetDoubleClickedNode(void);
+PinId* ax_NodeEditor_GetDoubleClickedPin(void);
+LinkId* ax_NodeEditor_GetDoubleClickedLink(void);
+_Bool                ax_NodeEditor_IsBackgroundClicked(void);
+_Bool                ax_NodeEditor_IsBackgroundDoubleClicked(void);
+ImGuiMouseButton ax_NodeEditor_GetBackgroundClickButtonIndex(void);
+ImGuiMouseButton ax_NodeEditor_GetBackgroundDoubleClickButtonIndex(void);
+_Bool                ax_NodeEditor_GetLinkPins(LinkId* linkId,PinId* startPinId,PinId* endPinId);
+_Bool                ax_NodeEditor_PinHadAnyLinks(PinId* pinId);
+ImVec2_c ax_NodeEditor_GetScreenSize(void);
+ImVec2_c ax_NodeEditor_ScreenToCanvas(const ImVec2_c pos);
+ImVec2_c ax_NodeEditor_CanvasToScreen(const ImVec2_c pos);
+int ax_NodeEditor_GetNodeCount(void);
+int ax_NodeEditor_GetOrderedNodeIds(NodeId* nodes,int size);
+NodeId* ax_NodeEditor_NodeId(uintptr_t val);
+void ax_NodeEditor_NodeId_destroy(NodeId* self);
+PinId* ax_NodeEditor_PinId(uintptr_t val);
+void ax_NodeEditor_PinId_destroy(PinId* self);
+LinkId* ax_NodeEditor_LinkId(uintptr_t val);
+void ax_NodeEditor_LinkId_destroy(LinkId* self);
+uintptr_t ax_NodeEditor_NodeId_value(NodeId* self);
+uintptr_t ax_NodeEditor_PinId_value(PinId* self);
+uintptr_t ax_NodeEditor_LinkId_value(LinkId* self);
 typedef struct GLFWwindow GLFWwindow;
 typedef struct GLFWmonitor GLFWmonitor;
 struct GLFWwindow;

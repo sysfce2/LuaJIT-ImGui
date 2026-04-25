@@ -504,6 +504,14 @@ M.CodePoint_toPairOpener = lib.CodePoint_toPairOpener
 M.CodePoint_toUpper = lib.CodePoint_toUpper
 M.CodePoint_write = lib.CodePoint_write
 M.CodePoint = ffi.metatype("CodePoint",CodePoint)
+--------------------------Config----------------------------
+local Config= {}
+Config.__index = Config
+function Config.__new(ctype)
+    local ptr = lib.ax_NodeEditor_Config_Config_Config()
+    return ffi.gc(ptr,lib.Config_destroy)
+end
+M.Config = ffi.metatype("Config",Config)
 --------------------------CursorPosition----------------------------
 local CursorPosition= {}
 CursorPosition.__index = CursorPosition
@@ -2782,6 +2790,7 @@ TextEditor.SetDeletor = lib.TextEditor_SetDeletor
 TextEditor.SetFindAllButtonLabel = lib.TextEditor_SetFindAllButtonLabel
 TextEditor.SetFindButtonLabel = lib.TextEditor_SetFindButtonLabel
 TextEditor.SetFocus = lib.TextEditor_SetFocus
+M.TextEditor_SetImGuiContext = lib.TextEditor_SetImGuiContext
 TextEditor.SetInsertSpacesOnTabs = lib.TextEditor_SetInsertSpacesOnTabs
 TextEditor.SetInsertor = lib.TextEditor_SetInsertor
 TextEditor.SetLanguage = lib.TextEditor_SetLanguage
@@ -6285,6 +6294,222 @@ M.ImPlot_TransformForward_SymLog = lib.ImPlot_TransformForward_SymLog
 M.ImPlot_TransformInverse_Log10 = lib.ImPlot_TransformInverse_Log10
 M.ImPlot_TransformInverse_Logit = lib.ImPlot_TransformInverse_Logit
 M.ImPlot_TransformInverse_SymLog = lib.ImPlot_TransformInverse_SymLog
+M.ax_NodeEditor_AcceptCopy = lib.ax_NodeEditor_AcceptCopy
+M.ax_NodeEditor_AcceptCreateNode = lib.ax_NodeEditor_AcceptCreateNode
+M.ax_NodeEditor_AcceptCut = lib.ax_NodeEditor_AcceptCut
+function M.ax_NodeEditor_AcceptDeletedItem(deleteDependencies)
+    if deleteDependencies == nil then deleteDependencies = true end
+    return lib.ax_NodeEditor_AcceptDeletedItem(deleteDependencies)
+end
+M.ax_NodeEditor_AcceptDuplicate = lib.ax_NodeEditor_AcceptDuplicate
+M.ax_NodeEditor_AcceptNewItem_Nil = lib.ax_NodeEditor_AcceptNewItem_Nil
+function M.ax_NodeEditor_AcceptNewItem_Vec4(color,thickness)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_AcceptNewItem_Vec4(color,thickness)
+end
+function M.ax_NodeEditor_AcceptNewItem(a1,a2) -- generic version
+    if a1==nil then return M.ax_NodeEditor_AcceptNewItem_Nil() end
+    if ffi.istype('const ImVec4',a1) then return M.ax_NodeEditor_AcceptNewItem_Vec4(a1,a2) end
+    print(a1,a2)
+    error'M.ax_NodeEditor_AcceptNewItem could not find overloaded'
+end
+M.ax_NodeEditor_AcceptPaste = lib.ax_NodeEditor_AcceptPaste
+M.ax_NodeEditor_AreShortcutsEnabled = lib.ax_NodeEditor_AreShortcutsEnabled
+function M.ax_NodeEditor_Begin(id,size)
+    size = size or ImVec2(0,0)
+    return lib.ax_NodeEditor_Begin(id,size)
+end
+function M.ax_NodeEditor_BeginCreate(color,thickness)
+    color = color or ImVec4(1,1,1,1)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_BeginCreate(color,thickness)
+end
+M.ax_NodeEditor_BeginDelete = lib.ax_NodeEditor_BeginDelete
+M.ax_NodeEditor_BeginGroupHint = lib.ax_NodeEditor_BeginGroupHint
+M.ax_NodeEditor_BeginNode = lib.ax_NodeEditor_BeginNode
+M.ax_NodeEditor_BeginPin = lib.ax_NodeEditor_BeginPin
+M.ax_NodeEditor_BeginShortcut = lib.ax_NodeEditor_BeginShortcut
+M.ax_NodeEditor_BreakLinks_NodeId = lib.ax_NodeEditor_BreakLinks_NodeId
+M.ax_NodeEditor_BreakLinks_PinId = lib.ax_NodeEditor_BreakLinks_PinId
+function M.ax_NodeEditor_BreakLinks(a1) -- generic version
+    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_BreakLinks_NodeId(a1) end
+    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_BreakLinks_PinId(a1) end
+    print(a1)
+    error'M.ax_NodeEditor_BreakLinks could not find overloaded'
+end
+M.ax_NodeEditor_CanvasToScreen = lib.ax_NodeEditor_CanvasToScreen
+M.ax_NodeEditor_CenterNodeOnScreen = lib.ax_NodeEditor_CenterNodeOnScreen
+M.ax_NodeEditor_ClearSelection = lib.ax_NodeEditor_ClearSelection
+function M.ax_NodeEditor_CreateEditor(config)
+    config = config or nil
+    return lib.ax_NodeEditor_CreateEditor(config)
+end
+M.ax_NodeEditor_DeleteLink = lib.ax_NodeEditor_DeleteLink
+M.ax_NodeEditor_DeleteNode = lib.ax_NodeEditor_DeleteNode
+M.ax_NodeEditor_DeselectLink = lib.ax_NodeEditor_DeselectLink
+M.ax_NodeEditor_DeselectNode = lib.ax_NodeEditor_DeselectNode
+M.ax_NodeEditor_DestroyEditor = lib.ax_NodeEditor_DestroyEditor
+M.ax_NodeEditor_EnableShortcuts = lib.ax_NodeEditor_EnableShortcuts
+M.ax_NodeEditor_End = lib.ax_NodeEditor_End
+M.ax_NodeEditor_EndCreate = lib.ax_NodeEditor_EndCreate
+M.ax_NodeEditor_EndDelete = lib.ax_NodeEditor_EndDelete
+M.ax_NodeEditor_EndGroupHint = lib.ax_NodeEditor_EndGroupHint
+M.ax_NodeEditor_EndNode = lib.ax_NodeEditor_EndNode
+M.ax_NodeEditor_EndPin = lib.ax_NodeEditor_EndPin
+M.ax_NodeEditor_EndShortcut = lib.ax_NodeEditor_EndShortcut
+function M.ax_NodeEditor_Flow(linkId,direction)
+    direction = direction or 0
+    return lib.ax_NodeEditor_Flow(linkId,direction)
+end
+M.ax_NodeEditor_GetActionContextLinks = lib.ax_NodeEditor_GetActionContextLinks
+M.ax_NodeEditor_GetActionContextNodes = lib.ax_NodeEditor_GetActionContextNodes
+M.ax_NodeEditor_GetActionContextSize = lib.ax_NodeEditor_GetActionContextSize
+M.ax_NodeEditor_GetBackgroundClickButtonIndex = lib.ax_NodeEditor_GetBackgroundClickButtonIndex
+M.ax_NodeEditor_GetBackgroundDoubleClickButtonIndex = lib.ax_NodeEditor_GetBackgroundDoubleClickButtonIndex
+function M.ax_NodeEditor_GetConfig(ctx)
+    ctx = ctx or nil
+    return lib.ax_NodeEditor_GetConfig(ctx)
+end
+M.ax_NodeEditor_GetCurrentEditor = lib.ax_NodeEditor_GetCurrentEditor
+M.ax_NodeEditor_GetCurrentZoom = lib.ax_NodeEditor_GetCurrentZoom
+M.ax_NodeEditor_GetDoubleClickedLink = lib.ax_NodeEditor_GetDoubleClickedLink
+M.ax_NodeEditor_GetDoubleClickedNode = lib.ax_NodeEditor_GetDoubleClickedNode
+M.ax_NodeEditor_GetDoubleClickedPin = lib.ax_NodeEditor_GetDoubleClickedPin
+M.ax_NodeEditor_GetGroupMax = lib.ax_NodeEditor_GetGroupMax
+M.ax_NodeEditor_GetGroupMin = lib.ax_NodeEditor_GetGroupMin
+M.ax_NodeEditor_GetHintBackgroundDrawList = lib.ax_NodeEditor_GetHintBackgroundDrawList
+M.ax_NodeEditor_GetHintForegroundDrawList = lib.ax_NodeEditor_GetHintForegroundDrawList
+M.ax_NodeEditor_GetHoveredLink = lib.ax_NodeEditor_GetHoveredLink
+M.ax_NodeEditor_GetHoveredNode = lib.ax_NodeEditor_GetHoveredNode
+M.ax_NodeEditor_GetHoveredPin = lib.ax_NodeEditor_GetHoveredPin
+M.ax_NodeEditor_GetLinkPins = lib.ax_NodeEditor_GetLinkPins
+M.ax_NodeEditor_GetNodeBackgroundDrawList = lib.ax_NodeEditor_GetNodeBackgroundDrawList
+M.ax_NodeEditor_GetNodeCount = lib.ax_NodeEditor_GetNodeCount
+M.ax_NodeEditor_GetNodePosition = lib.ax_NodeEditor_GetNodePosition
+M.ax_NodeEditor_GetNodeSize = lib.ax_NodeEditor_GetNodeSize
+M.ax_NodeEditor_GetNodeZPosition = lib.ax_NodeEditor_GetNodeZPosition
+M.ax_NodeEditor_GetOrderedNodeIds = lib.ax_NodeEditor_GetOrderedNodeIds
+M.ax_NodeEditor_GetScreenSize = lib.ax_NodeEditor_GetScreenSize
+M.ax_NodeEditor_GetSelectedLinks = lib.ax_NodeEditor_GetSelectedLinks
+M.ax_NodeEditor_GetSelectedNodes = lib.ax_NodeEditor_GetSelectedNodes
+M.ax_NodeEditor_GetSelectedObjectCount = lib.ax_NodeEditor_GetSelectedObjectCount
+M.ax_NodeEditor_GetStyle = lib.ax_NodeEditor_GetStyle
+M.ax_NodeEditor_GetStyleColorName = lib.ax_NodeEditor_GetStyleColorName
+M.ax_NodeEditor_Group = lib.ax_NodeEditor_Group
+M.ax_NodeEditor_HasAnyLinks_NodeId = lib.ax_NodeEditor_HasAnyLinks_NodeId
+M.ax_NodeEditor_HasAnyLinks_PinId = lib.ax_NodeEditor_HasAnyLinks_PinId
+function M.ax_NodeEditor_HasAnyLinks(a1) -- generic version
+    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_HasAnyLinks_NodeId(a1) end
+    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_HasAnyLinks_PinId(a1) end
+    print(a1)
+    error'M.ax_NodeEditor_HasAnyLinks could not find overloaded'
+end
+M.ax_NodeEditor_HasSelectionChanged = lib.ax_NodeEditor_HasSelectionChanged
+M.ax_NodeEditor_IsActive = lib.ax_NodeEditor_IsActive
+M.ax_NodeEditor_IsBackgroundClicked = lib.ax_NodeEditor_IsBackgroundClicked
+M.ax_NodeEditor_IsBackgroundDoubleClicked = lib.ax_NodeEditor_IsBackgroundDoubleClicked
+M.ax_NodeEditor_IsLinkSelected = lib.ax_NodeEditor_IsLinkSelected
+M.ax_NodeEditor_IsNodeSelected = lib.ax_NodeEditor_IsNodeSelected
+M.ax_NodeEditor_IsSuspended = lib.ax_NodeEditor_IsSuspended
+function M.ax_NodeEditor_Link(id,startPinId,endPinId,color,thickness)
+    color = color or ImVec4(1,1,1,1)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_Link(id,startPinId,endPinId,color,thickness)
+end
+function M.ax_NodeEditor_NavigateToContent(duration)
+    duration = duration or -1
+    return lib.ax_NodeEditor_NavigateToContent(duration)
+end
+function M.ax_NodeEditor_NavigateToSelection(zoomIn,duration)
+    duration = duration or -1
+    zoomIn = zoomIn or false
+    return lib.ax_NodeEditor_NavigateToSelection(zoomIn,duration)
+end
+M.ax_NodeEditor_PinHadAnyLinks = lib.ax_NodeEditor_PinHadAnyLinks
+M.ax_NodeEditor_PinPivotAlignment = lib.ax_NodeEditor_PinPivotAlignment
+M.ax_NodeEditor_PinPivotRect = lib.ax_NodeEditor_PinPivotRect
+M.ax_NodeEditor_PinPivotScale = lib.ax_NodeEditor_PinPivotScale
+M.ax_NodeEditor_PinPivotSize = lib.ax_NodeEditor_PinPivotSize
+M.ax_NodeEditor_PinRect = lib.ax_NodeEditor_PinRect
+function M.ax_NodeEditor_PopStyleColor(count)
+    count = count or 1
+    return lib.ax_NodeEditor_PopStyleColor(count)
+end
+function M.ax_NodeEditor_PopStyleVar(count)
+    count = count or 1
+    return lib.ax_NodeEditor_PopStyleVar(count)
+end
+M.ax_NodeEditor_PushStyleColor = lib.ax_NodeEditor_PushStyleColor
+M.ax_NodeEditor_PushStyleVar_Float = lib.ax_NodeEditor_PushStyleVar_Float
+M.ax_NodeEditor_PushStyleVar_Vec2 = lib.ax_NodeEditor_PushStyleVar_Vec2
+M.ax_NodeEditor_PushStyleVar_Vec4 = lib.ax_NodeEditor_PushStyleVar_Vec4
+function M.ax_NodeEditor_PushStyleVar(a1,a2) -- generic version
+    if (ffi.istype('float',a2) or type(a2)=='number') then return M.ax_NodeEditor_PushStyleVar_Float(a1,a2) end
+    if ffi.istype('const ImVec2',a2) then return M.ax_NodeEditor_PushStyleVar_Vec2(a1,a2) end
+    if ffi.istype('const ImVec4',a2) then return M.ax_NodeEditor_PushStyleVar_Vec4(a1,a2) end
+    print(a1,a2)
+    error'M.ax_NodeEditor_PushStyleVar could not find overloaded'
+end
+function M.ax_NodeEditor_QueryDeletedLink(linkId,startId,endId)
+    endId = endId or nil
+    startId = startId or nil
+    return lib.ax_NodeEditor_QueryDeletedLink(linkId,startId,endId)
+end
+M.ax_NodeEditor_QueryDeletedNode = lib.ax_NodeEditor_QueryDeletedNode
+M.ax_NodeEditor_QueryNewLink_Nil = lib.ax_NodeEditor_QueryNewLink_Nil
+function M.ax_NodeEditor_QueryNewLink_Vec4(startId,endId,color,thickness)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_QueryNewLink_Vec4(startId,endId,color,thickness)
+end
+function M.ax_NodeEditor_QueryNewLink(a1,a2,a3,a4) -- generic version
+    if a3==nil then return M.ax_NodeEditor_QueryNewLink_Nil(a1,a2) end
+    if ffi.istype('const ImVec4',a3) then return M.ax_NodeEditor_QueryNewLink_Vec4(a1,a2,a3,a4) end
+    print(a1,a2,a3,a4)
+    error'M.ax_NodeEditor_QueryNewLink could not find overloaded'
+end
+M.ax_NodeEditor_QueryNewNode_Nil = lib.ax_NodeEditor_QueryNewNode_Nil
+function M.ax_NodeEditor_QueryNewNode_Vec4(pinId,color,thickness)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_QueryNewNode_Vec4(pinId,color,thickness)
+end
+function M.ax_NodeEditor_QueryNewNode(a1,a2,a3) -- generic version
+    if a2==nil then return M.ax_NodeEditor_QueryNewNode_Nil(a1) end
+    if ffi.istype('const ImVec4',a2) then return M.ax_NodeEditor_QueryNewNode_Vec4(a1,a2,a3) end
+    print(a1,a2,a3)
+    error'M.ax_NodeEditor_QueryNewNode could not find overloaded'
+end
+M.ax_NodeEditor_RejectDeletedItem = lib.ax_NodeEditor_RejectDeletedItem
+M.ax_NodeEditor_RejectNewItem_Nil = lib.ax_NodeEditor_RejectNewItem_Nil
+function M.ax_NodeEditor_RejectNewItem_Vec4(color,thickness)
+    thickness = thickness or 1.0
+    return lib.ax_NodeEditor_RejectNewItem_Vec4(color,thickness)
+end
+function M.ax_NodeEditor_RejectNewItem(a1,a2) -- generic version
+    if a1==nil then return M.ax_NodeEditor_RejectNewItem_Nil() end
+    if ffi.istype('const ImVec4',a1) then return M.ax_NodeEditor_RejectNewItem_Vec4(a1,a2) end
+    print(a1,a2)
+    error'M.ax_NodeEditor_RejectNewItem could not find overloaded'
+end
+M.ax_NodeEditor_RestoreNodeState = lib.ax_NodeEditor_RestoreNodeState
+M.ax_NodeEditor_Resume = lib.ax_NodeEditor_Resume
+M.ax_NodeEditor_ScreenToCanvas = lib.ax_NodeEditor_ScreenToCanvas
+function M.ax_NodeEditor_SelectLink(linkId,append)
+    append = append or false
+    return lib.ax_NodeEditor_SelectLink(linkId,append)
+end
+function M.ax_NodeEditor_SelectNode(nodeId,append)
+    append = append or false
+    return lib.ax_NodeEditor_SelectNode(nodeId,append)
+end
+M.ax_NodeEditor_SetCurrentEditor = lib.ax_NodeEditor_SetCurrentEditor
+M.ax_NodeEditor_SetGroupSize = lib.ax_NodeEditor_SetGroupSize
+M.ax_NodeEditor_SetNodePosition = lib.ax_NodeEditor_SetNodePosition
+M.ax_NodeEditor_SetNodeZPosition = lib.ax_NodeEditor_SetNodeZPosition
+M.ax_NodeEditor_ShowBackgroundContextMenu = lib.ax_NodeEditor_ShowBackgroundContextMenu
+M.ax_NodeEditor_ShowLinkContextMenu = lib.ax_NodeEditor_ShowLinkContextMenu
+M.ax_NodeEditor_ShowNodeContextMenu = lib.ax_NodeEditor_ShowNodeContextMenu
+M.ax_NodeEditor_ShowPinContextMenu = lib.ax_NodeEditor_ShowPinContextMenu
+M.ax_NodeEditor_Suspend = lib.ax_NodeEditor_Suspend
 function M.AcceptDragDropPayload(type,flags)
     flags = flags or 0
     return lib.igAcceptDragDropPayload(type,flags)

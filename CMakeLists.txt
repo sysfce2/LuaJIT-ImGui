@@ -12,12 +12,11 @@ include_directories(cimplot/implot)
 include_directories(cimguizmo/ImGuizmo)
 include_directories(./cimguizmo_quat/imGuIZMO.quat/imguizmo_quat)
 include_directories(cimnodes/imnodes)
+include_directories(cimCTE/ImGuiColorTextEdit)
 add_definitions("-DIMGUI_USER_CONFIG=\"../cimconfig.h\"")
 add_definitions("-DIMGUI_DISABLE_OBSOLETE_FUNCTIONS=1")
 add_definitions(-DIMNODES_NAMESPACE=imnodes)
 include_directories(cimgui)
-add_subdirectory(cimCTE)
-include_directories(${cimCTE_inc})
 set(IMGUI_SOURCES ./cimgui/cimgui.cpp 
 ./cimgui/imgui/imgui.cpp 
 ./cimgui/imgui/imgui_draw.cpp 
@@ -41,7 +40,14 @@ set(IMGUI_SOURCES ./cimgui/cimgui.cpp
 ./cimplot3d/implot3d/implot3d_demo.cpp
 ./cimplot3d/implot3d/implot3d_items.cpp
 ./cimplot3d/implot3d/implot3d_meshes.cpp
-${cimCTE_SRCS}
+./cimCTE/cimCTE.cpp 
+./cimCTE/ImGuiColorTextEdit/TextEditor.cpp
+./cimCTE/ImGuiColorTextEdit/TextDiff.cpp
+./cimnodes_editor/cimnodes_editor.cpp
+./cimnodes_editor/imgui-node-editor/imgui_node_editor.cpp
+./cimnodes_editor/imgui-node-editor/imgui_node_editor_api.cpp
+./cimnodes_editor/imgui-node-editor/imgui_canvas.cpp
+./cimnodes_editor/imgui-node-editor/crude_json.cpp
 )
 
 if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/cimgui/imgui/imgui_tables.cpp)
