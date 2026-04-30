@@ -58,6 +58,7 @@ local m_Context = ig.ax_NodeEditor_CreateEditor(config)
 local m_FirstFrame = true
 local m_Links = {}
 local m_NextLinkId = 100
+--require"anima.utils"
 function win:draw(ig)
 ---[[
 	local io = ig.GetIO();
@@ -141,7 +142,7 @@ function win:draw(ig)
         if (ig.ax_NodeEditor_BeginCreate()) then
             local inputPinId, outputPinId = ig.PinId(0),ig.PinId(0)
             if (ig.ax_NodeEditor_QueryNewLink(inputPinId, outputPinId)) then
-				--print(inputPinId:value() , outputPinId:value())
+				print(inputPinId:value() , outputPinId:value())
                 -- // QueryNewLink returns true if editor want to create new link between pins.
                 -- //
                 -- // Link can be created only for two valid pins, it is up to you to
@@ -162,6 +163,7 @@ function win:draw(ig)
                         --// Since we accepted new link, lets add one to our list of links.
                         --m_Links.push_back({ ed::LinkId(m_NextLinkId++), inputPinId, outputPinId });
 						table.insert(m_Links,{Id=ig.LinkId(m_NextLinkId), InputId=inputPinId, OutputId=outputPinId})
+						--prtable(m_Links)
 						m_NextLinkId = m_NextLinkId + 1
                         --// Draw new link.
 						local ll = m_Links[#m_Links]
@@ -192,7 +194,6 @@ function win:draw(ig)
 						end
 					end
                 end
-
                 --// You may reject link deletion by calling:
                 --// ed::RejectDeletedItem();
             end
@@ -206,7 +207,9 @@ function win:draw(ig)
         if (m_FirstFrame) then
             ig.ax_NodeEditor_NavigateToContent(0.0);
 		end
-
+		local sel_nodes = ig.NodeId(0)
+		--print("selected",ig.ax_NodeEditor_GetSelectedObjectCount())
+		print("selected",ig.ax_NodeEditor_GetSelectedNodes(sel_nodes,1))
         ig.ax_NodeEditor_SetCurrentEditor(nil);
 
         m_FirstFrame = false;

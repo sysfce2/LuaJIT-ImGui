@@ -188,7 +188,13 @@ local function Node(value,editor,typen,loadT)
                 ig.imnodes_EndStaticAttribute();
             end
         end
-
+        
+        for i,root in ipairs(editor.root_nodes) do
+            if root == self.id and editor.outs then
+                self:show(editor.outs[i],i)
+            end
+        end
+        
         if node.output_id then
             ig.imnodes_BeginOutputAttribute(node.output_id)
             local text_width = ig.CalcTextSize("output").x;
@@ -204,14 +210,20 @@ end
 
 local function show_editor(editor)
 
-    ig.imnodes_EditorContextSet(editor.context);
 
-    ig.SetNextWindowSizeConstraints(ig.ImVec2(300, 300), ig.ImVec2(ig.FLT_MAX, ig.FLT_MAX));
-	ig.SetNextWindowPos(ig.ImVec2(0, 150), ig.lib.ImGuiCond_FirstUseEver);
+    --Submit a window filling the entire viewport
+    local viewport = ig.GetMainViewport();
+    ig.SetNextWindowPos(viewport.WorkPos);
+    ig.SetNextWindowSize(viewport.WorkSize);
+    ig.SetNextWindowViewport(viewport.ID);
+
+    
     ig.Begin(editor.name);
 
     ig.TextUnformatted("A -- add node");
     ig.TextUnformatted("X -- delete selected node or link");
+    ig.imnodes_EditorContextSet(editor.context);
+    
     ig.imnodes_BeginNodeEditor();
 
     local user_key = ig.lib.ImGuiKey_A
@@ -304,10 +316,10 @@ local function show_editor(editor)
     ig.End();
     
     -- The outputs
-    local outs =  editor:evaluate()
-    for i,root in ipairs(editor.root_nodes) do
-        editor.nodes[root]:show(outs[i],i)
-    end
+    editor.outs =  editor:evaluate()
+    -- for i,root in ipairs(editor.root_nodes) do
+        -- editor.nodes[root]:show(editor.outs[i],i)
+    -- end
 
 end
 
@@ -315,7 +327,6 @@ local function Editor(name, nodetypes)
     local E = {nodes={},links={},current_id=0,name=name,root_nodes={}, nodetypes= nodetypes}
     E.G = Graph()
     function E:evaluate()
-        --return (self.root_node_id == -1) and ig.U32(1, 20/255, 147/255, 1) or self.G:DFS(self.root_node_id)
         local outs = {}
         self.G:DFS_prepare()
         for i,root in ipairs(self.root_nodes) do
@@ -457,12 +468,12 @@ local nodetypes = {
     input_names = {"r","g","b"},
     is_root = true,
     show = function(self,v,i)
-        ig.PushStyleColor(ig.lib.ImGuiCol_WindowBg, v);
-		ig.SetNextWindowPos(ig.ImVec2(0, 0), ig.lib.ImGuiCond_FirstUseEver);
-		ig.SetNextWindowSizeConstraints(ig.ImVec2(100, 100), ig.ImVec2(ig.FLT_MAX, ig.FLT_MAX));
-        ig.Begin("output color"..i);
-        ig.End();
-        ig.PopStyleColor();
+        local canvas_p0 = ig.GetCursorScreenPos(); 
+        local canvas_sz = ig.ImVec2(150,150)
+        local canvas_p1 = canvas_p0 + canvas_sz
+        local draw_list = ig.GetWindowDrawList();
+        ig.Dummy(canvas_sz)
+        if v then draw_list:AddRectFilled(canvas_p0, canvas_p1, v) end
     end,
     compute = function(t)
         local a,b,c = clamp(t[1]),clamp(t[2]),clamp(t[3])
@@ -476,14 +487,12 @@ local nodetypes = {
         local lisaS = 30
         self.lisamem = self.lisamem or {}
         local lisamem = self.lisamem
-		ig.SetNextWindowSizeConstraints(ig.ImVec2(150, 150), ig.ImVec2(ig.FLT_MAX, ig.FLT_MAX));
-		ig.SetNextWindowPos(ig.ImVec2(100, 0), ig.lib.ImGuiCond_FirstUseEver);
-        ig.Begin("output lisa"..i);
         ig.Text("x: %f, y: %f",v[1],v[2])
         local canvas_p0 = ig.GetCursorScreenPos();      -- ImDrawList API uses screen coordinates!
-        local canvas_sz = ig.GetContentRegionAvail();
+        local canvas_sz = ig.ImVec2(150,150)--ig.GetContentRegionAvail();
         local canvas_p1 = canvas_p0 + canvas_sz
         local draw_list = ig.GetWindowDrawList();
+        ig.Dummy(canvas_sz)
         draw_list:AddRectFilled(canvas_p0, canvas_p1, ig.U32(50/255, 50/255, 50/255, 1));
         draw_list:AddRect(canvas_p0, canvas_p1, ig.U32(1, 1, 1, 1));
         table.insert(lisamem ,1,v)
@@ -492,7 +501,6 @@ local nodetypes = {
             local u = lisamem[i] or v
             draw_list:AddCircleFilled(ig.ImVec2(u[1]*canvas_sz.x,u[2]*canvas_sz.y)+canvas_p0, 3, ig.U32(1,1,1,1));
         end
-        ig.End();
     end,
     compute = function(t)
         local x,y = clamp(t[1]),clamp(t[2])
@@ -525,7 +533,7 @@ iog.EmulateThreeButtonMouse.Modifier = KeyCtrlPtr
 
 function win:draw(ig)
     editor1:draw()
-    ig.ShowDemoWindow()
+    --ig.ShowDemoWindow()
 end
 
 local function clean()

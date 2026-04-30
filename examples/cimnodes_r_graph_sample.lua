@@ -182,18 +182,34 @@ local function Node(value,editor,typen,loadT)
         if ig.ImNodes_Ez_BeginNode(node.id,node.title,node.pos,node.selected) then
 
             ig.ImNodes_Ez_InputSlots(node.input_slots, node.nins);
+			ig.BeginGroup()
             for i, input_id in ipairs(node.inputs) do
                 --if there is no input
                 local orig = editor.G.nodes[input_id].fromedges
-                    ig.PushItemWidth(80.0);
-                    if #orig==0 then
-                        ig.DragFloat("##value"..i, node.values[i], 0.01);
-                    else
-                        ig.Dummy(ig.ImVec2(80,ig.GetTextLineHeightWithSpacing()))
-                    end
-                    ig.PopItemWidth();
-                
+				if #orig==0 then
+                ig.PushItemWidth(80.0);
+                if #orig==0 then
+                    ig.DragFloat("##value"..i, node.values[i], 0.01);
+                else
+                    ig.Dummy(ig.ImVec2(80,ig.GetTextLineHeightWithSpacing()))
+                end
+                ig.PopItemWidth();
+				end
             end
+			------------------------------
+			ig.EndGroup()
+			ig.SameLine()
+			ig.BeginGroup()
+			for i,root in ipairs(editor.root_nodes) do
+				--print("oooout",i,root,self.id,tonumber(ffi.cast("uintptr_t",self.id)))
+				if root == tonumber(ffi.cast("uintptr_t",self.id)) and editor.outs then
+					--print"out----"
+					self:show(editor.outs[i],i)
+				end
+			end
+			--ig.TextUnformatted"jñlkjs"
+			ig.EndGroup()
+			---------------------
             ig.ImNodes_Ez_OutputSlots(node.output_slots, node.nouts);
             
             local conn = Connection()
@@ -258,6 +274,12 @@ local function Node(value,editor,typen,loadT)
 end
 
 local function show_editor(editor)
+        --Submit a window filling the entire viewport
+    local viewport = ig.GetMainViewport();
+    ig.SetNextWindowPos(viewport.WorkPos);
+    ig.SetNextWindowSize(viewport.WorkSize);
+    ig.SetNextWindowViewport(viewport.ID);
+
     ig.Begin(editor.name);
 
     ig.TextUnformatted("A -- add node");
@@ -293,9 +315,10 @@ local function show_editor(editor)
     ig.End();
     
         -- The outputs
-    local outs =  editor:evaluate()
+    editor.outs =  editor:evaluate()
     for i,root in ipairs(editor.root_nodes) do
-        editor.nodes[root]:show(outs[i],i)
+		--print("outs",i,root)
+        --editor.nodes[root]:show(outs[i],i)
     end
 end
 local function Editor(name, nodetypes)
@@ -406,10 +429,12 @@ local nodetypes = {
     is_root = true,
     outs = {},
     show = function(self,v,i)
-        ig.PushStyleColor(ig.lib.ImGuiCol_WindowBg, v);
-        ig.Begin("output color"..i);
-        ig.End();
-        ig.PopStyleColor();
+        local canvas_p0 = ig.GetCursorScreenPos(); 
+        local canvas_sz = ig.ImVec2(150,150)
+        local canvas_p1 = canvas_p0 + canvas_sz
+        local draw_list = ig.GetWindowDrawList();
+        ig.Dummy(canvas_sz)
+        if v then draw_list:AddRectFilled(canvas_p0, canvas_p1, v) end
     end,
     compute = function(t)
         local a,b,c = clamp(t[1]),clamp(t[2]),clamp(t[3])
@@ -424,12 +449,12 @@ local nodetypes = {
         local lisaS = 30
         self.lisamem = self.lisamem or {}
         local lisamem = self.lisamem
-        ig.Begin("output lisa"..i);
         ig.Text("x: %f, y: %f",v[1],v[2])
         local canvas_p0 = ig.GetCursorScreenPos();  
-        local canvas_sz = ig.GetContentRegionAvail();
+        local canvas_sz = ig.ImVec2(150,150)--ig.GetContentRegionAvail();
         local canvas_p1 = canvas_p0 + canvas_sz
         local draw_list = ig.GetWindowDrawList();
+        ig.Dummy(canvas_sz)
         draw_list:AddRectFilled(canvas_p0, canvas_p1, ig.U32(50/255, 50/255, 50/255, 1));
         draw_list:AddRect(canvas_p0, canvas_p1, ig.U32(1, 1, 1, 1));
         table.insert(lisamem ,1,v)
@@ -438,7 +463,6 @@ local nodetypes = {
             local u = lisamem[i] or v
             draw_list:AddCircleFilled(ig.ImVec2(u[1]*canvas_sz.x,u[2]*canvas_sz.y)+canvas_p0, 3, ig.U32(1,1,1,1));
         end
-        ig.End();
     end,
     compute = function(t)
         local x,y = clamp(t[1]),clamp(t[2])
@@ -466,7 +490,7 @@ editor1:load()
 
 function win:draw(ig)
     editor1:draw()
-    ig.ShowDemoWindow()
+    --ig.ShowDemoWindow()
 end
 
 local function clean()
