@@ -6976,8 +6976,11 @@ void ImGuizmo_DecomposeMatrixToComponents(const float* matrix,float* translation
 void ImGuizmo_RecomposeMatrixFromComponents(const float* translation,const float* rotation,const float* scale,float* matrix);
 void ImGuizmo_SetRect(float x,float y,float width,float height);
 void ImGuizmo_SetOrthographic(                                        _Bool                                              isOrthographic);
+void ImGuizmo_DrawAxes(const float* view,const float* projection,const float* matrices,int matrixCount);
 void ImGuizmo_DrawCubes(const float* view,const float* projection,const float* matrices,int matrixCount);
 void ImGuizmo_DrawGrid(const float* view,const float* projection,const float* matrix,const float gridSize);
+void ImGuizmo_DrawGridCustom(const float* view,const float* projection,const float* matrix,const float gridSize,const float majorStep,const unsigned int subdivision);
+void ImGuizmo_DrawGridCustomColor(const float* view,const float* projection,const float* matrix,const float gridSize,const float majorStep,const unsigned int subdivision,const ImU32 majorCol,const ImU32 minorCol,const ImU32 centerCol);
 _Bool                ImGuizmo_Manipulate(const float* view,const float* projection,OPERATION operation,MODE mode,float* matrix,float* deltaMatrix,const float* snap,const float* localBounds,const float* boundsSnap);
 void ImGuizmo_ViewManipulate_Float(float* view,float length,ImVec2_c position,ImVec2_c size,ImU32 backgroundColor);
 void ImGuizmo_ViewManipulate_FloatPtr(float* view,const float* projection,OPERATION operation,MODE mode,float* matrix,float length,ImVec2_c position,ImVec2_c size,ImU32 backgroundColor);

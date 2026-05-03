@@ -27,7 +27,7 @@ set(IMGUI_SOURCES ./cimgui/cimgui.cpp
 ./cimplot/implot/implot_items.cpp  
 ./cimplot/implot/implot_demo.cpp
 ./cimguizmo/cimguizmo.cpp
-./cimguizmo/ImGuizmo/ImGuizmo.cpp
+./cimguizmo/ImGuizmo/src/ImGuizmo.cpp
 ./cimguizmo_quat/cimguizmo_quat.cpp
 ./cimguizmo_quat/imGuIZMO.quat/imguizmo_quat/imGuIZMOquat.cpp  
 ./cimnodes/cimnodes.cpp

@@ -2954,8 +2954,11 @@ end
 M.ImGuizmo_AllowAxisFlip = lib.ImGuizmo_AllowAxisFlip
 M.ImGuizmo_BeginFrame = lib.ImGuizmo_BeginFrame
 M.ImGuizmo_DecomposeMatrixToComponents = lib.ImGuizmo_DecomposeMatrixToComponents
+M.ImGuizmo_DrawAxes = lib.ImGuizmo_DrawAxes
 M.ImGuizmo_DrawCubes = lib.ImGuizmo_DrawCubes
 M.ImGuizmo_DrawGrid = lib.ImGuizmo_DrawGrid
+M.ImGuizmo_DrawGridCustom = lib.ImGuizmo_DrawGridCustom
+M.ImGuizmo_DrawGridCustomColor = lib.ImGuizmo_DrawGridCustomColor
 M.ImGuizmo_Enable = lib.ImGuizmo_Enable
 M.ImGuizmo_GetID_Str = lib.ImGuizmo_GetID_Str
 M.ImGuizmo_GetID_StrStr = lib.ImGuizmo_GetID_StrStr
