@@ -1,7 +1,7 @@
 local igwin = require"imgui.window"
 
 --local win = igwin:SDL(800,400, "compute graph",{vsync=true})
-local win = igwin:GLFW(800,400, "compute graph",{vsync=false})
+local win = igwin:GLFW(800,600, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
 local serializer = require"libs.serializer"
@@ -39,19 +39,28 @@ function LinkId:value()
 end
 ig.LinkId = ffi.metatype("LinkId",LinkId)
 
-local function DFS(G,v)
+local function DFS(G,v, editor)
+    local is_root =  editor.nodes[v] and editor.nodes[v].is_root
     G.nodes_explored[v] = true
     local values = {}
     for i,id in ipairs(G.nodes[v].fromedges) do
+        if is_root then G.nodes_explored = {v=true} end
         local value
         if not G.nodes_explored[id] then
-            value = DFS(G,id)
-            G.nodes_values[id] = value
+            value = G.nodes_values[id]
+            if not value then
+                value = DFS(G,id, editor)
+                G.nodes_values[id] = value
+            --else
+                --print"already calc from other root"
+            end
         else
             value = G.nodes_values[id]
+            print("cicle found--",value,v,id,G.nodes[v].linkids[i])
+            editor:deleteLink(G.nodes[v].linkids[i])
             if not value then 
-                value = G.old_nodes_values[id]
-                --print("cicle found",value)
+                value = 0 --G.old_nodes_values[id]
+                print("cicle found",value)
             end
         end
         table.insert(values,value)
@@ -62,7 +71,7 @@ end
 local function Graph()
     local G = {nodes={},edges={}}
     function G:insert_node(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="?"}
+        self.nodes[id] = {fromedges={},linkids = {},compute=compute,kind="?"}
     end
     function G:delete_node(id)
         local fromedges = self.nodes[id].fromedges
@@ -71,14 +80,20 @@ local function Graph()
         end
         self.nodes[id] = nil
     end
-    function G:insert_edge(id1,id2)
+    function G:insert_edge(id1,id2, linkid)
         local fromedgs = self.nodes[id2].fromedges
+        local linkids = self.nodes[id2].linkids
         table.insert(fromedgs,id1)
+        table.insert(linkids,linkid or 0)
     end
     function G:delete_edge(id1,id2)
         local fromedgs = self.nodes[id2].fromedges
+        local linkids = self.nodes[id2].linkids
         for i,id in ipairs(fromedgs) do
-            if id == id1 then table.remove(fromedgs,i) end
+            if id == id1 then 
+                table.remove(fromedgs,i) 
+                table.remove(linkids,i)
+            end
         end
     end
     function G:DFS_prepare()
@@ -86,13 +101,11 @@ local function Graph()
         G.old_nodes_values = G.nodes_values or {}
         G.nodes_values = {}
     end
-    function G:DFS(root)
-        return DFS(self,root)
+    function G:DFS(root, editor)
+        return DFS(self,root, editor)
     end
     return G
 end
-
-
 
 local function Link()
     local link = {id=0,start_attr=ig.PinId(0),end_attr=ig.PinId(0)}
@@ -105,6 +118,7 @@ local function Link()
         self.id = t.id
         self.start_attr = t.start_attr
         self.end_attr = t.end_attr
+        assert(type(self.start_attr)=="number")
     end
     return link
 end
@@ -124,7 +138,7 @@ local function Node(value,editor,typen,loadT)
             node.input_names[i] = iname
         end
         if not typen.is_root then
-            node.output_id = editor:newid() --node.id --editor:newid()
+            node.output_id = editor:newid() --node.id 
         end
         -- create static_id
         node.values = {}
@@ -155,9 +169,11 @@ local function Node(value,editor,typen,loadT)
     
     for i ,input_id in ipairs(node.inputs) do
         editor.G:insert_node(input_id,computeIn(i))
+        editor.pinToNode[input_id] = { node = node.id, kind = "input" }
     end
     if node.output_id then 
         editor.G:insert_node(node.output_id,node.compute)
+        editor.pinToNode[node.output_id] = { node = node.id, kind = "output" }
         for _ ,input_id in ipairs(node.inputs) do
             editor.G:insert_edge(input_id,node.output_id)
         end
@@ -208,7 +224,7 @@ local function Node(value,editor,typen,loadT)
             local orig = editor.G.nodes[input_id].fromedges
             if #orig==0 then
                 ig.SameLine()
-                ig.PushID(ffi.cast("void*",self.id))
+                ig.PushID(self.id)
                 ig.PushItemWidth(80.0);
                 ig.DragFloat("##value"..i, node.values[i], 0.01);
                 ig.PopItemWidth();
@@ -222,23 +238,38 @@ local function Node(value,editor,typen,loadT)
             end
         end
         if node.output_id then
-           -- ig.imnodes_BeginOutputAttribute(node.output_id)
             ig.ax_NodeEditor_BeginPin(ig.PinId(node.output_id), ig.lib.Output);
+
             local text_width = ig.CalcTextSize("output").x;
             ig.Indent(80. + ig.CalcTextSize("value").x - text_width);
             ig.TextUnformatted("output");
-            --ig.imnodes_EndOutputAttribute();
             ig.ax_NodeEditor_EndPin();
+
         end
         
         ig.ax_NodeEditor_EndNode();
     end
     return node
 end
-local m_FirstFrame = true
-local function show_editor(editor)
+local m_FirstFrame = 0
+local function showLabel(label,color)
+    ig.SetCursorPosY(ig.GetCursorPosY() - ig.GetTextLineHeight());
+    local size = ig.CalcTextSize(label);
 
-        --Submit a window filling the entire viewport
+    local padding = ig.GetStyle().FramePadding;
+    local spacing = ig.GetStyle().ItemSpacing;
+
+    ig.SetCursorPos(ig.GetCursorPos() + ig.ImVec2(spacing.x, -spacing.y));
+
+    local rectMin = ig.GetCursorScreenPos() - padding;
+    local rectMax = ig.GetCursorScreenPos() + size + padding;
+
+    local drawList = ig.GetWindowDrawList();
+    drawList:AddRectFilled(rectMin, rectMax, color, size.y * 0.15);
+    ig.TextUnformatted(label);
+end
+local function show_editor(editor)
+    --Submit a window filling the entire viewport
     local viewport = ig.GetMainViewport();
     ig.SetNextWindowPos(viewport.WorkPos);
     ig.SetNextWindowSize(viewport.WorkSize);
@@ -248,8 +279,16 @@ local function show_editor(editor)
 
     ig.TextUnformatted("A -- add node");
     ig.TextUnformatted("del -- delete selected node or link");
-
     ig.ax_NodeEditor_SetCurrentEditor(editor.context)
+    if ig.Button("Zoom to Content") then ig.ax_NodeEditor_NavigateToContent(); end
+    ig.SameLine()
+    if ig.Button("Show Flow") then
+        for i,link in pairs(editor.links) do
+            ig.ax_NodeEditor_Flow(ig.LinkId(link.id))
+        end
+    end
+
+
 
     local user_key = ig.lib.ImGuiKey_A
     local open_popup
@@ -263,7 +302,7 @@ local function show_editor(editor)
     ig.PushStyleVar(ig.lib.ImGuiStyleVar_WindowPadding, ig.ImVec2(8, 8))
     if open_popup then ig.OpenPopup("add node") end
     if ig.BeginPopup"add node" then
-        local click_pos = ig.ax_NodeEditor_ScreenToCanvas(ig.GetMousePos()) --ig.GetMousePosOnOpeningCurrentPopup();
+        local click_pos = ig.ax_NodeEditor_ScreenToCanvas(ig.GetMousePos()) 
         for i,ntype in ipairs(editor.nodetypes) do
             if ig.MenuItem(ntype.name) then
                 local newnode = editor:Node(0,ntype)
@@ -282,6 +321,7 @@ local function show_editor(editor)
     end
     
     for _, link in pairs(editor.links) do
+        --print("showlink",link.id,link.start_attr,link.end_attr)
         ig.ax_NodeEditor_Link(ig.LinkId(link.id), ig.PinId(link.start_attr), ig.PinId(link.end_attr));
     end
 
@@ -289,11 +329,30 @@ local function show_editor(editor)
 
             local link = Link()
             if (ig.ax_NodeEditor_QueryNewLink(link.start_attr, link.end_attr)) then
+                local start = tonumber(link.start_attr:value())
+                local endp = tonumber(link.end_attr:value())
+                --print("ax_NodeEditor_QueryNewLink", start, endp )
                 if link.start_attr:value()~=0 and link.end_attr:value()~=0 then
+                    local pin1 = assert(editor.pinToNode[start])
+                    local pin2 = assert(editor.pinToNode[endp])
                     --// ed::AcceptNewItem() return true when user release mouse button.
-                    if (ig.ax_NodeEditor_AcceptNewItem()) then
-                        link.start_attr = tonumber(link.start_attr:value())
-                        link.end_attr = tonumber(link.end_attr:value())
+                    --print(pin1.node, pin2.node, pin1.kind, pin2.kind)
+                    if pin1.node == pin2.node then
+                        ig.ax_NodeEditor_RejectNewItem(ig.ImVec4(255, 0, 0), 2.0);
+                        showLabel("same node",ig.U32(255,0,0,1))
+                        --print"same node"
+                    elseif pin1.kind == pin2.kind then
+                        ig.ax_NodeEditor_RejectNewItem(ig.ImVec4(255, 0, 0), 2.0);
+                        showLabel("same kind",ig.U32(255,0,0,1))
+                        --print"same kind"
+                    elseif (ig.ax_NodeEditor_AcceptNewItem()) then
+                        --print"Accept----------"
+                        if pin1.kind == "input" then
+                            --print"swap"
+                            start, endp = endp, start
+                        end
+                        link.start_attr = start
+                        link.end_attr = endp
                         editor:addLink(link)
                     end
                 end
@@ -327,10 +386,11 @@ local function show_editor(editor)
         ig.ax_NodeEditor_EndDelete(); --// Wrap up deletion action
  
         ig.ax_NodeEditor_End()
-        if (m_FirstFrame) then
+        if (m_FirstFrame==2) then
             ig.ax_NodeEditor_NavigateToContent(0.0);
-            m_FirstFrame = false
         end
+        m_FirstFrame = m_FirstFrame + 1
+    --ig.ax_NodeEditor_SetCurrentEditor(nil)
     ig.End();
     
     -- The outputs
@@ -339,13 +399,14 @@ local function show_editor(editor)
 end
 
 local function Editor(name, nodetypes)
-    local E = {nodes={},links={},current_id=0,name=name,root_nodes={}, nodetypes= nodetypes}
+    local E = {nodes={},links={},current_id=0,name=name,root_nodes={}, pinToNode = {}, nodetypes= nodetypes}
     E.G = Graph()
     function E:evaluate()
         local outs = {}
         self.G:DFS_prepare()
         for i,root in ipairs(self.root_nodes) do
-            outs[i] = self.G:DFS(root)
+            self.G.nodes_explored = {}
+            outs[i] = self.G:DFS(root, self)
         end
         return outs
     end
@@ -384,7 +445,7 @@ local function Editor(name, nodetypes)
         if #dest==0 then
             link.id = self:newid();
             self.links[link.id] = link
-            self.G:insert_edge(link.start_attr,link.end_attr)
+            self.G:insert_edge(link.start_attr,link.end_attr,link.id)
             return link
         end
     end
@@ -398,6 +459,7 @@ local function Editor(name, nodetypes)
         --ig.imnodes_EditorContextFree(self.context);
     end
     function E:save_str()
+        ig.ax_NodeEditor_SetCurrentEditor(self.context)
         local str = [[local ffi = require"ffi"]]
         str = str .. "\n"
         for k,node in pairs(self.nodes) do
@@ -448,7 +510,7 @@ local function Editor(name, nodetypes)
             local link = Link()
             link:loadT(v)
             self.links[link.id] = link
-            self.G:insert_edge(link.start_attr,link.end_attr)
+            self.G:insert_edge(link.start_attr,link.end_attr,link.id)
         end
         self.current_id = loadedE.current_id
         --self.name = loadedE.name
@@ -502,7 +564,7 @@ local nodetypes = {
         local lisamem = self.lisamem
         ig.Text("x: %f, y: %f",v[1],v[2])
         local canvas_p0 = ig.GetCursorScreenPos();      -- ImDrawList API uses screen coordinates!
-        local canvas_sz = ig.ImVec2(150,150)--ig.GetContentRegionAvail();
+        local canvas_sz = ig.ImVec2(150,150)
         local canvas_p1 = canvas_p0 + canvas_sz
         local draw_list = ig.GetWindowDrawList();
         ig.Dummy(canvas_sz)
@@ -514,7 +576,6 @@ local nodetypes = {
             local u = lisamem[i] or v
             draw_list:AddCircleFilled(ig.ImVec2(u[1]*canvas_sz.x,u[2]*canvas_sz.y)+canvas_p0, 3, ig.U32(1,1,1,1));
         end
-        --ig.End();
     end,
     compute = function(t)
         local x,y = clamp(t[1]),clamp(t[2])

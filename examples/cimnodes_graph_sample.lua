@@ -1,24 +1,33 @@
 local igwin = require"imgui.window"
 
 --local win = igwin:SDL(800,400, "compute graph",{vsync=true})
-local win = igwin:GLFW(800,400, "compute graph",{vsync=false})
+local win = igwin:GLFW(800,600, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
 local serializer = require"libs.serializer"
 
-local function DFS(G,v)
+local function DFS(G,v, editor)
+    local is_root =  editor.nodes[v] and editor.nodes[v].is_root
     G.nodes_explored[v] = true
     local values = {}
     for i,id in ipairs(G.nodes[v].fromedges) do
+        if is_root then G.nodes_explored = {v=true} end
         local value
         if not G.nodes_explored[id] then
-            value = DFS(G,id)
-            G.nodes_values[id] = value
+            value = G.nodes_values[id]
+            if not value then
+                value = DFS(G,id, editor)
+                G.nodes_values[id] = value
+            --else
+                --print"already calc from other root"
+            end
         else
             value = G.nodes_values[id]
+            print("cicle found--",value,v,id,G.nodes[v].linkids[i])
+            editor:deleteLink(G.nodes[v].linkids[i])
             if not value then 
-                value = G.old_nodes_values[id]
-                --print("cicle found",value)
+                value = 0 --G.old_nodes_values[id]
+                print("cicle found",value)
             end
         end
         table.insert(values,value)
@@ -28,14 +37,8 @@ end
 
 local function Graph()
     local G = {nodes={},edges={}}
-    function G:insert_nodeIn(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="in"}
-    end
-    function G:insert_nodeOut(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="out"}
-    end
     function G:insert_node(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="?"}
+        self.nodes[id] = {fromedges={},linkids = {},compute=compute,kind="?"}
     end
     function G:delete_node(id)
         local fromedges = self.nodes[id].fromedges
@@ -44,14 +47,20 @@ local function Graph()
         end
         self.nodes[id] = nil
     end
-    function G:insert_edge(id1,id2)
+    function G:insert_edge(id1,id2, linkid)
         local fromedgs = self.nodes[id2].fromedges
+        local linkids = self.nodes[id2].linkids
         table.insert(fromedgs,id1)
+        table.insert(linkids,linkid or 0)
     end
     function G:delete_edge(id1,id2)
         local fromedgs = self.nodes[id2].fromedges
+        local linkids = self.nodes[id2].linkids
         for i,id in ipairs(fromedgs) do
-            if id == id1 then table.remove(fromedgs,i) end
+            if id == id1 then 
+                table.remove(fromedgs,i) 
+                table.remove(linkids,i)
+            end
         end
     end
     function G:DFS_prepare()
@@ -59,8 +68,8 @@ local function Graph()
         G.old_nodes_values = G.nodes_values or {}
         G.nodes_values = {}
     end
-    function G:DFS(root)
-        return DFS(self,root)
+    function G:DFS(root, editor)
+        return DFS(self,root, editor)
     end
     return G
 end
@@ -95,7 +104,7 @@ local function Node(value,editor,typen,loadT)
             node.input_names[i] = iname
         end
         if not typen.is_root then
-            node.output_id = node.id 
+            node.output_id = editor:newid() --node.id 
         end
         -- create static_id
         node.values = {}
@@ -191,7 +200,7 @@ local function Node(value,editor,typen,loadT)
         
         for i,root in ipairs(editor.root_nodes) do
             if root == self.id and editor.outs then
-                self:show(editor.outs[i],i)
+                if editor.outs[i] then self:show(editor.outs[i],i) end
             end
         end
         
@@ -279,6 +288,7 @@ local function show_editor(editor)
 
     local link = Link()
     if (ig.imnodes_IsLinkCreated(link.start_attr, link.end_attr)) then
+        --print("imnodes_IsLinkCreated",link.start_attr[0], link.end_attr[0])
         editor:addLink(link)
     end
 
@@ -317,9 +327,7 @@ local function show_editor(editor)
     
     -- The outputs
     editor.outs =  editor:evaluate()
-    -- for i,root in ipairs(editor.root_nodes) do
-        -- editor.nodes[root]:show(editor.outs[i],i)
-    -- end
+
 
 end
 
@@ -330,7 +338,8 @@ local function Editor(name, nodetypes)
         local outs = {}
         self.G:DFS_prepare()
         for i,root in ipairs(self.root_nodes) do
-            outs[i] = self.G:DFS(root)
+            self.G.nodes_explored = {}
+            outs[i] = self.G:DFS(root, self)
         end
         return outs
     end
@@ -370,7 +379,7 @@ local function Editor(name, nodetypes)
         if #dest==0 then
             link.id = self:newid();
             self.links[link.id] = link
-            self.G:insert_edge(link.start_attr[0],link.end_attr[0])
+            self.G:insert_edge(link.start_attr[0],link.end_attr[0],link.id)
             return link
         end
     end
@@ -434,7 +443,7 @@ local function Editor(name, nodetypes)
             local link = Link()
             link:loadT(v)
             self.links[link.id] = link
-            self.G:insert_edge(link.start_attr[0],link.end_attr[0])
+            self.G:insert_edge(link.start_attr[0],link.end_attr[0],link.id)
         end
         self.current_id = loadedE.current_id
         --self.name = loadedE.name
@@ -533,7 +542,7 @@ iog.EmulateThreeButtonMouse.Modifier = KeyCtrlPtr
 
 function win:draw(ig)
     editor1:draw()
-    --ig.ShowDemoWindow()
+    ig.ShowDemoWindow()
 end
 
 local function clean()

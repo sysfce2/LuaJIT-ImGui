@@ -1,24 +1,64 @@
 local igwin = require"imgui.window"
 
---local win = igwin:SDL(800,400, "compute graph",{vsync=true})
-local win = igwin:GLFW(800,400, "compute graph",{vsync=false})
+local win = igwin:SDL3(800,400, "compute graph",{vsync=true})
+--local win = igwin:GLFW(800,400, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
 local serializer = require"libs.serializer"
 
-local function DFS(G,v)
+local function idtokey(v)
+    return tonumber(ffi.cast("uintptr_t",v))
+end
+local function pinkey(isin,node,slotname)
+    return (isin and "in" or "out")..idtokey(node.id)..slotname
+end
+local function pinkey_node(key)
+    return tonumber(key:match"%d+")
+end
+local function pinkey_name(key)
+    return key:match("[^%d]+%d+([^%d]+)")
+end
+local function FindDeleteNodeConnection(editor,nn1,n1,p1,n2,p2)
+    --print("FindConnection",nn1, n1,p1,n2,p2)
+    local node = editor.nodes[nn1]
+    for i,c in ipairs(node.connections) do
+        --print("conn",idtokey(c.input_node[0]),ffi.string(c.input_slot[0]),idtokey(c.output_node[0]),ffi.string(c.output_slot[0]))
+        if idtokey(c.input_node[0])==n1 and
+            ffi.string(c.input_slot[0])==p1 and
+            idtokey(c.output_node[0])==n2 and
+            ffi.string(c.output_slot[0])==p2 then
+                node:delete_connection(c)
+                return true
+        end
+    end
+    return false
+end
+local function DFS(G,v, editor)
+    local is_root =  editor.nodes[v] and editor.nodes[v].is_root
     G.nodes_explored[v] = true
     local values = {}
     for i,id in ipairs(G.nodes[v].fromedges) do
+        if is_root then G.nodes_explored = {v=true} end
         local value
         if not G.nodes_explored[id] then
-            value = DFS(G,id)
-            G.nodes_values[id] = value
+            value = G.nodes_values[id]
+            if not value then
+                value = DFS(G,id, editor) 
+                G.nodes_values[id] = value
+            -- else
+                -- print"already calc from other root"
+            end
         else
             value = G.nodes_values[id]
-            if not value then 
-                value = G.old_nodes_values[id]
-                --print("cicle found",value)
+            print("cicle found--",value,v,id,pinkey_node(v),pinkey_node(id),pinkey_name(v),pinkey_name(id))--,editor.nodes[idtokey(v)].connections)
+            print("node connections",editor.nodes[pinkey_node(v)], editor.nodes[pinkey_node(id)])
+            G:delete_edge(id,v)
+            assert(FindDeleteNodeConnection(editor, pinkey_node(v), pinkey_node(v), pinkey_name(v), pinkey_node(id), pinkey_name(id)))
+            assert(FindDeleteNodeConnection(editor, pinkey_node(id), pinkey_node(v), pinkey_name(v), pinkey_node(id), pinkey_name(id)))
+            if not value then
+                value = 0
+                --value = G.old_nodes_values[id]
+                print("cicle found",value)
             end
         end
         table.insert(values,value)
@@ -28,14 +68,8 @@ end
 
 local function Graph()
     local G = {nodes={},edges={}}
-    function G:insert_nodeIn(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="in"}
-    end
-    function G:insert_nodeOut(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="out"}
-    end
     function G:insert_node(id, compute)
-        self.nodes[id] = {fromedges={},compute=compute,kind="?"}
+        self.nodes[id] = {fromedges={},linkids = {},compute=compute,kind="?"}
     end
     function G:delete_node(id)
         local fromedges = self.nodes[id].fromedges
@@ -44,14 +78,16 @@ local function Graph()
         end
         self.nodes[id] = nil
     end
-    function G:insert_edge(id1,id2)
-        local fromedgs = self.nodes[id2].fromedges
-        table.insert(fromedgs,id1)
+    function G:insert_edge(id1,id2,linkid)
+        local fromedges = self.nodes[id2].fromedges
+        local linkids = self.nodes[id2].linkids
+        table.insert(fromedges,id1)
+        table.insert(linkids,linkid or 0)
     end
     function G:delete_edge(id1,id2)
-        local fromedgs = self.nodes[id2].fromedges
-        for i,id in ipairs(fromedgs) do
-            if id == id1 then table.remove(fromedgs,i) end
+        local fromedges = self.nodes[id2].fromedges
+        for i,id in ipairs(fromedges) do
+            if id == id1 then table.remove(fromedges,i) end
         end
     end
     function G:DFS_prepare()
@@ -59,8 +95,8 @@ local function Graph()
         G.old_nodes_values = G.nodes_values or {}
         G.nodes_values = {}
     end
-    function G:DFS(root)
-        return DFS(self,root)
+    function G:DFS(root, editor)
+        return DFS(self,root, editor)
     end
     return G
 end
@@ -74,12 +110,7 @@ local function Connection()
     }
     return link
 end
-local function idtokey(v)
-    return tonumber(ffi.cast("uintptr_t",v))
-end
-local function pinkey(isin,node,slotname)
-    return (isin and "in" or "out")..idtokey(node.id)..slotname
-end
+
 local function Node(value,editor,typen,loadT)
     local node
     if not loadT then
@@ -182,11 +213,11 @@ local function Node(value,editor,typen,loadT)
         if ig.ImNodes_Ez_BeginNode(node.id,node.title,node.pos,node.selected) then
 
             ig.ImNodes_Ez_InputSlots(node.input_slots, node.nins);
-			ig.BeginGroup()
+            ig.BeginGroup()
             for i, input_id in ipairs(node.inputs) do
                 --if there is no input
                 local orig = editor.G.nodes[input_id].fromedges
-				if #orig==0 then
+                if #orig==0 then
                 ig.PushItemWidth(80.0);
                 if #orig==0 then
                     ig.DragFloat("##value"..i, node.values[i], 0.01);
@@ -194,22 +225,22 @@ local function Node(value,editor,typen,loadT)
                     ig.Dummy(ig.ImVec2(80,ig.GetTextLineHeightWithSpacing()))
                 end
                 ig.PopItemWidth();
-				end
+                end
             end
-			------------------------------
-			ig.EndGroup()
-			ig.SameLine()
-			ig.BeginGroup()
-			for i,root in ipairs(editor.root_nodes) do
-				--print("oooout",i,root,self.id,tonumber(ffi.cast("uintptr_t",self.id)))
-				if root == tonumber(ffi.cast("uintptr_t",self.id)) and editor.outs then
-					--print"out----"
-					self:show(editor.outs[i],i)
-				end
-			end
-			--ig.TextUnformatted"jñlkjs"
-			ig.EndGroup()
-			---------------------
+            ------------------------------
+            ig.EndGroup()
+            ig.SameLine()
+            ig.BeginGroup()
+            for i,root in ipairs(editor.root_nodes) do
+                --print("oooout",i,root,self.id,tonumber(ffi.cast("uintptr_t",self.id)))
+                if root == tonumber(ffi.cast("uintptr_t",self.id)) and editor.outs then
+                    --print("oooout",i,root,self.id,tonumber(ffi.cast("uintptr_t",self.id)),editor.outs[i])
+                    if editor.outs[i] then self:show(editor.outs[i],i) end
+                end
+            end
+            --ig.TextUnformatted"jñlkjs"
+            ig.EndGroup()
+            ---------------------
             ig.ImNodes_Ez_OutputSlots(node.output_slots, node.nouts);
             
             local conn = Connection()
@@ -239,36 +270,6 @@ local function Node(value,editor,typen,loadT)
         end
         ig.ImNodes_Ez_EndNode();
         
-        local dodelete = false
-        local user_key = ig.lib.ImGuiKey_X
-        if ig.IsWindowFocused(ig.lib.ImGuiFocusedFlags_RootAndChildWindows) and ig.IsKeyReleased(user_key)
-        then
-            dodelete = true
-        end
-        if node.selected[0] and dodelete then
-            for i,conn in ipairs(node.connections) do
-                if conn.output_node[0] == node.id then
-                    local iid = pinkey(true,editor.nodes[idtokey(conn.input_node[0])],ffi.string(conn.input_slot[0]))
-                    local oid = pinkey(false,editor.nodes[idtokey(conn.output_node[0])],ffi.string(conn.output_slot[0]))
-                    editor.G:delete_edge(oid,iid)
-                    editor.nodes[idtokey(conn.input_node[0])]:delete_connection(conn)
-                else
-                    local iid = pinkey(true,node,ffi.string(conn.input_slot[0]))
-                    local oid = pinkey(false,editor.nodes[idtokey(conn.output_node[0])],ffi.string(conn.output_slot[0]))
-                    editor.G:delete_edge(oid,iid)
-                    editor.nodes[idtokey(conn.output_node[0])]:delete_connection(conn)
-                end
-            end
-            node.connections = {}
-            if node.is_root then
-                for i,v in ipairs(editor.root_nodes) do
-                    if v == idtokey(node.id) then
-                        table.remove(editor.root_nodes,i)
-                    end
-                end
-            end
-            node:delete()
-        end
     end
     return node
 end
@@ -286,9 +287,11 @@ local function show_editor(editor)
     ig.TextUnformatted("X -- delete selected node");
     ig.TextUnformatted("double left click to delete connection");
 
-    --ig.ImNodes_BeginCanvas(editor.context);
-	ig.ImNodes_Ez_SetContext(editor.context)
-	ig.ImNodes_Ez_BeginCanvas();
+    
+    ig.ImNodes_Ez_SetContext(editor.context)
+    ig.BeginChild("canvas",nil,ig.lib.ImGuiChildFlags_AutoResizeX + ig.lib.ImGuiChildFlags_AutoResizeY)
+    ig.ImNodes_Ez_BeginCanvas();
+    --ig.ImNodes_BeginCanvas(editor.canvas_state);
 
     for _, node in pairs(editor.nodes) do
         node:draw()
@@ -310,25 +313,63 @@ local function show_editor(editor)
         end
         ig.EndPopup()
     end
+    ------------------
+    local dodelete = false
+        local user_key = ig.lib.ImGuiKey_X
+        if ig.IsWindowFocused(ig.lib.ImGuiFocusedFlags_RootAndChildWindows) and ig.IsKeyReleased(user_key)
+        then
+            dodelete = true
+        end
+        for i,node in pairs(editor.nodes) do
+        if node.selected[0] and dodelete then
+            for i,conn in ipairs(node.connections) do
+                if conn.output_node[0] == node.id then
+                    local iid = pinkey(true,editor.nodes[idtokey(conn.input_node[0])],ffi.string(conn.input_slot[0]))
+                    local oid = pinkey(false,editor.nodes[idtokey(conn.output_node[0])],ffi.string(conn.output_slot[0]))
+                    editor.G:delete_edge(oid,iid)
+                    editor.nodes[idtokey(conn.input_node[0])]:delete_connection(conn)
+                else
+                    local iid = pinkey(true,node,ffi.string(conn.input_slot[0]))
+                    local oid = pinkey(false,editor.nodes[idtokey(conn.output_node[0])],ffi.string(conn.output_slot[0]))
+                    editor.G:delete_edge(oid,iid)
+                    editor.nodes[idtokey(conn.output_node[0])]:delete_connection(conn)
+                end
+            end
+            node.connections = {}
+            if node.is_root then
+                for i,v in ipairs(editor.root_nodes) do
+                    if v == idtokey(node.id) then
+                        --print("========remove root",v,node.id)
+                        table.remove(editor.root_nodes,i)
+                    end
+                end
+            end
+            node:delete()
+        end
+        end
+    ------------------
     --ig.ImNodes_EndCanvas()
-	ig.ImNodes_Ez_EndCanvas()
+    ig.ImNodes_Ez_EndCanvas()
+    ig.EndChild()
     ig.End();
     
         -- The outputs
     editor.outs =  editor:evaluate()
-    for i,root in ipairs(editor.root_nodes) do
-		--print("outs",i,root)
-        --editor.nodes[root]:show(outs[i],i)
-    end
+
 end
 local function Editor(name, nodetypes)
     local E = {nodes={},current_id=0,name=name,nodetypes = nodetypes,root_nodes={}}
     E.G = Graph()
     function E:evaluate()
+        --print("evaluate==========================")
         local outs = {}
         self.G:DFS_prepare()
+        --require"anima.utils"
+        --prtable(self.root_nodes)
         for i,root in ipairs(self.root_nodes) do
-            outs[i] = self.G:DFS(root)
+            self.G.nodes_explored = {}
+            outs[i] = self.G:DFS(root,self)
+            --assert(type(outs[i])=="table")
         end
         return outs
     end
@@ -400,8 +441,8 @@ local function Editor(name, nodetypes)
         --self.name = loadedE.name
         self.root_nodes = loadedE.root_nodes
     end
-    --E.context = ig.CanvasState();
-	E.context = ig.ImNodes_Ez_CreateContext();
+    E.context = ig.ImNodes_Ez_CreateContext();
+    E.canvas_state = ig.CanvasState();
     return E
 end
 ---------------------------------------use it!!-------------------------------------
