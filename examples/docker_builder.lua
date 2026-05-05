@@ -30,15 +30,15 @@ function win:draw(ig)
 	ig.DockSpaceOverViewport(dockspace_id[0], viewport, lib.ImGuiDockNodeFlags_PassthruCentralNode);
 
 	--// Submit windows
-	ig.Begin("Properties");
+	ig.Begin("Properties",nil,ig.lib.ImGuiWindowFlags_NoMove);
 	ig.TextWrapped("1 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
 	ig.End()
 	
-	ig.Begin("Game");
+	ig.Begin("Game",nil,ig.lib.ImGuiWindowFlags_NoMove);
 	ig.TextWrapped("2 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
 	ig.End()
 	
-	ig.Begin("Scene");
+	ig.Begin("Scene",nil,ig.lib.ImGuiWindowFlags_NoMove);
 	ig.TextWrapped("3 Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. ");
 	ig.End()
 end
