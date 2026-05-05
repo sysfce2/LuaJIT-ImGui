@@ -218,6 +218,7 @@ local function Node(value,editor,typen,loadT)
         
         for i, input_id in ipairs(node.inputs) do
             ig.ax_NodeEditor_BeginPin(ig.PinId(input_id), ig.lib.Input);
+			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
                 ig.TextUnformatted(node.input_names[i]);
             ig.ax_NodeEditor_EndPin();
             --if there is no input
@@ -239,7 +240,7 @@ local function Node(value,editor,typen,loadT)
         end
         if node.output_id then
             ig.ax_NodeEditor_BeginPin(ig.PinId(node.output_id), ig.lib.Output);
-
+			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
             local text_width = ig.CalcTextSize("output").x;
             ig.Indent(80. + ig.CalcTextSize("value").x - text_width);
             ig.TextUnformatted("output");
