@@ -187,42 +187,7 @@ function M.dial(label,value_p,sz, fac)
 	return touched
 end
 
-function M.Curve(name,numpoints,LUTsize,pressed_on_modified)
-	if pressed_on_modified == nil then pressed_on_modified=true end
-	numpoints = numpoints or 10
-	LUTsize = LUTsize or 720
-	local CU = {name = name,numpoints=numpoints,LUTsize=LUTsize}
-	CU.LUT = ffi.new("float[?]",LUTsize)
-	CU.LUT[0] = -1
-	CU.points = ffi.new("ImVec2[?]",numpoints)
-	CU.points[0].x = -1
-	function CU:getpoints()
-		local pts = {}
-		for i=0,numpoints-1 do
-			pts[i+1] = {x=CU.points[i].x,y=CU.points[i].y}
-		end
-		return pts
-	end
-	function CU:setpoints(pts)
-		assert(#pts<=numpoints)
-		for i=1,#pts do
-			CU.points[i-1].x = pts[i].x
-			CU.points[i-1].y = pts[i].y
-		end
-		CU.LUT[0] = -1
-		lib.CurveGetData(CU.points, numpoints,CU.LUT, LUTsize )
-	end
-	function CU:get_data()
-		CU.LUT[0] = -1
-		lib.CurveGetData(CU.points, numpoints,CU.LUT, LUTsize )
-	end
-	function CU:draw(sz)
-		sz = sz or M.ImVec2(200,200)
-		return lib.Curve(name, sz,CU.points, CU.numpoints,CU.LUT, CU.LUTsize,pressed_on_modified) 
-	end
-	return CU
-end
-
+------------------------pad
 
 function M.pad(label,value,sz,minv,maxv)
 	minv = minv or -1
@@ -368,6 +333,246 @@ function M.LuaCombo(label,strs,action,args)
         return ffi.string(Items[self.currItem[0]])
     end
     return combo
+end
+---------------------LuaCurve
+local function gimp_curve_plot (points, p1,p2,p3,p4,data,datalen)
+	local    i;
+	local x0, x3;
+	local y0, y1, y2, y3;
+	local dx, dy;
+	local slope;
+	
+	--/* the outer control points for the bezier curve. */
+	x0 = points[p2].x;
+	y0 = points[p2].y;
+	x3 = points[p3].x;
+	y3 = points[p3].y;
+	
+	-- /*
+	-- * the x values of the inner control points are fixed at
+	-- * x1 = 2/3*x0 + 1/3*x3   and  x2 = 1/3*x0 + 2/3*x3
+	-- * this ensures that the x values increase linearily with the
+	-- * parameter t and enables us to skip the calculation of the x
+	-- * values altogehter - just calculate y(t) evenly spaced.
+	-- */
+	
+	dx = x3 - x0;
+	dy = y3 - y0;
+	
+	--assert(dx >= 0);
+	if dx == 0 then dx = 0.00000001 end
+	
+	if (p1 == p2 and p3 == p4)
+		then
+		-- /* No information about the neighbors,
+		-- * calculate y1 and y2 to get a straight line
+		-- */
+		y1 = y0 + dy / 3.0;
+		y2 = y0 + dy * 2.0 / 3.0;
+	elseif (p1 == p2 and p3 ~= p4)
+		then
+		-- /* only the right neighbor is available. Make the tangent at the
+		-- * right endpoint parallel to the line between the left endpoint
+		-- * and the right neighbor. Then point the tangent at the left towards
+		-- * the control handle of the right tangent, to ensure that the curve
+		-- * does not have an inflection point.
+		-- */
+		slope = (points[p4].y - y0) / (points[p4].x - x0);
+	
+		y2 = y3 - slope * dx / 3.0;
+		y1 = y0 + (y2 - y0) / 2.0;
+	elseif (p1 ~= p2 and p3 == p4)
+		then
+		--/* see previous case */
+		slope = (y3 - points[p1].y) / (x3 - points[p1].x);
+	
+		y1 = y0 + slope * dx / 3.0;
+		y2 = y3 + (y1 - y3) / 2.0;
+	else --/* (p1 != p2 && p3 != p4) */
+		-- /* Both neighbors are available. Make the tangents at the endpoints
+		-- * parallel to the line between the opposite endpoint and the adjacent
+		-- * neighbor.
+		-- */
+		slope = (y3 - points[p1].y) / (x3 - points[p1].x);
+	
+		y1 = y0 + slope * dx / 3.0;
+	
+		slope = (points[p4].y - y0) / (points[p4].x - x0);
+	
+		y2 = y3 - slope * dx / 3.0;
+	end
+	
+		-- /*
+		-- * finally calculate the y(t) values for the given bezier values. We can
+		-- * use homogenously distributed values for t, since x(t) increases linearily.
+		-- */
+		--for (i = 0; i <= int (dx * (float) (datalen - 1) + 0.5); i++)
+		for i=0, math.floor(dx *(datalen - 1) + 0.5)-1 do
+			local y, t;
+			local    index;
+		
+			t = i / dx / (datalen - 1);
+			y =     y0 * (1-t) * (1-t) * (1-t) +
+				3 * y1 * (1-t) * (1-t) * t     +
+				3 * y2 * (1-t) * t     * t     +
+					y3 * t     * t     * t;
+		
+			index = i + math.floor (x0 * (datalen - 1) + 0.5);
+		
+			if (index < datalen) then
+				data[index] = math.max(0.0, math.min(y, 1.0));
+			end
+		end
+	end
+	
+	local function CalcCurvesGimp(points, max, data, datalen)
+		--//before x0
+        local boundary = math.floor (points[0].x * (datalen - 1) + 0.5);
+		for i=0,boundary-1 do
+			data[i] = points[0].y;
+		end
+		--//after xn
+		local boundary2 = math.floor (points[max - 1].x * (datalen - 1) + 0.5);
+		for i=boundary2,datalen-1 do
+			data[i] = points[max - 1].y;
+		end
+		local  p1, p2, p3, p4;
+		for i = 0, max - 2 do
+          p1 = math.max (i - 1, 0);
+          p2 = i;
+          p3 = i + 1;
+          p4 = math.min (i + 2, max - 1);
+
+          gimp_curve_plot (points, p1, p2, p3, p4, data, datalen);
+        end
+	end
+
+
+function M.LuaCurve(name,LUTsize)
+	local points = {[0]={x=0,y=0},{x=1,y=1}}
+	local LC = {points = points}
+	LC.LUT = ffi.new("float[?]",LUTsize)
+	local is_active = nil
+	local function ControlPoint(ID,graph,points,i,r)
+		r = r or 3
+		local pos = points[i]
+		local origin = graph.origin
+		local size = graph.size
+		local x,y = pos.x,pos.y
+		local xpos = size.x*x
+		local ypos = size.y*y 
+		local b_pos = M.ImVec2(origin.x + xpos - r,origin.y - ypos - r)
+		M.SetCursorScreenPos(b_pos)
+		M.InvisibleButton("pp"..i,M.ImVec2(r*2, r*2))
+		local color = M.U32(1,0,0,1)
+		if M.IsItemHovered() then
+			color = M.U32(1,1,0,1)
+			if M.IsMouseDown(0) then
+				is_active = i
+			end
+		end
+	
+		local draw_list = M.GetWindowDrawList()
+		draw_list:AddCircleFilled(M.ImVec2(origin.x + xpos,origin.y - ypos), r, color)
+		if is_active == i then
+			--print"active"
+			local m = M.GetIO().MousePos
+			local xval = (m.x - origin.x)/size.x
+			local yval = (-m.y + origin.y)/size.y
+			xval = math.max(0,math.min(1,xval))
+			yval = math.max(0,math.min(1,yval))
+			local xprev = points[i-1] and points[i-1].x
+			local xpost = points[i+1] and points[i+1].x
+			if xprev then xval = math.max(xval, xprev) end
+			if xpost then xval = math.min(xval, xpost) end
+			pos.x = xval
+			pos.y = yval
+		end
+		return is_active == i
+	end
+function LC:setpoints(pts)
+	points = pts
+end
+function LC:getpoints()
+	return points
+end
+function LC:get_data()
+	CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
+end
+function LC:plotter_draw(size)
+
+		local desiredY = size.y
+		local w = size.x
+		
+		local pp = M.GetCursorScreenPos()
+
+		M.SetNextItemAllowOverlap()
+		M.PlotLines("##grafica",self.LUT,LUTsize,nil,nil,0,1,size)
+		local p = M.GetCursorScreenPos() 
+		p.y = p.y - M.GetStyle().FramePadding.y
+
+		self.origin = p
+		self.size = size
+		
+		local draw_list = M.GetWindowDrawList()
+		for i=0,10 do
+			local ylab = i*desiredY/10
+			draw_list:AddLine(M.ImVec2(p.x, p.y - ylab), M.ImVec2(p.x + w,p.y - ylab), M.U32(0.5,0.5,0.5,1))
+		end
+	
+		for i=0,10 do
+			local xlab = i*w/10
+			draw_list:AddLine(M.ImVec2(p.x + xlab,p.y), M.ImVec2(p.x + xlab,p.y - desiredY), M.U32(0.5,0.5,0.5,1))
+		end
+		
+end
+function LC:draw(size)
+	M.PushID(name)
+
+	CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
+
+	self:plotter_draw(size)
+	local used = false
+	if M.IsItemHovered() and M.IsMouseDoubleClicked(0) then
+		used = true
+		local m = M.GetIO().MousePos
+		local xval = (m.x - self.origin.x)/size.x
+		local yval = (-m.y + self.origin.y)/size.y
+		local iins
+		if xval <= points[0].x then
+			iins = 0
+		elseif xval >= points[#points].x then
+			iins = #points + 1
+		else	
+			for i=0,#points-1 do
+				if xval >= points[i].x and xval < points[i+1].x then
+					iins = i + 1
+					break
+				end
+			end
+		end
+		table.insert(points,iins,{x=xval,y=yval})
+	end
+
+	if M.IsMouseReleased(0) then is_active = nil end
+	for i=0,#points do
+		if ControlPoint("punto"..i,self,points,i) then
+			used = true
+		end
+	end
+
+	M.SetCursorScreenPos(self.origin)
+	M.SetNextItemAllowOverlap()
+	if M.Button"Reset" then
+		used = true
+		LC:setpoints({[0]={x=0,y=0},{x=1,y=1}})
+	end
+
+	M.PopID()
+
+	return used
+end
+	return LC
 end
 
 

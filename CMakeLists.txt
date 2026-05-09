@@ -118,7 +118,7 @@ if(IMPL_OPENGL2)
 endif(IMPL_OPENGL2)
 
 if(IMPL_EXTRAS)
-    list(APPEND IMGUI_SOURCES ./extras/knob.cpp  ./extras/curve.cpp)
+    list(APPEND IMGUI_SOURCES ./extras/knob.cpp)
 endif(IMPL_EXTRAS)
 
 add_library(cimgui_base OBJECT ${IMGUI_SOURCES})
