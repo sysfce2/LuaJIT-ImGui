@@ -204,7 +204,7 @@ function M.pad(label,value,sz,minv,maxv)
 		touched = true
 		local m = M.GetIO().MousePos
 		local md = M.GetIO().MouseDelta
-		if md.x == 0 and md.y == 0 and not M.IsMouseClicked(0,false) then touched=false end
+		if md.x == 0 and md.y == 0 and not M.IsMouseClicked(0) then touched=false end
 		value[0] = ((m.x - canvas_pos.x)/sz)*b + minv
 		value[1] = (1.0 - (m.y - canvas_pos.y)/sz)*b + minv
 		value[0] = clip(value[0], minv,maxv)
@@ -533,7 +533,7 @@ function LC:draw(size)
 
 	self:plotter_draw(size)
 	local used = false
-	if M.IsItemHovered() and M.IsMouseDoubleClicked(0) then
+	if M.IsItemHovered() and M.IsMouseClicked(0) then
 		used = true
 		local m = M.GetIO().MousePos
 		local xval = (m.x - self.origin.x)/size.x

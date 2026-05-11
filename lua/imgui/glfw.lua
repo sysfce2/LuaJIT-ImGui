@@ -205,7 +205,7 @@ function M.pad(label,value,sz,minv,maxv)
 		touched = true
 		local m = M.GetIO().MousePos
 		local md = M.GetIO().MouseDelta
-		if md.x == 0 and md.y == 0 and not M.IsMouseClicked(0,false) then touched=false end
+		if md.x == 0 and md.y == 0 and not M.IsMouseClicked(0) then touched=false end
 		value[0] = ((m.x - canvas_pos.x)/sz)*b + minv
 		value[1] = (1.0 - (m.y - canvas_pos.y)/sz)*b + minv
 		value[0] = clip(value[0], minv,maxv)
@@ -534,7 +534,7 @@ function LC:draw(size)
 
 	self:plotter_draw(size)
 	local used = false
-	if M.IsItemHovered() and M.IsMouseDoubleClicked(0) then
+	if M.IsItemHovered() and M.IsMouseClicked(0) then
 		used = true
 		local m = M.GetIO().MousePos
 		local xval = (m.x - self.origin.x)/size.x
@@ -7896,7 +7896,7 @@ function M.IsKeyPressed_InputFlags(key,flags,owner_id)
     return lib.igIsKeyPressed_InputFlags(key,flags,owner_id)
 end
 function M.IsKeyPressed(a1,a2,a3) -- generic version
-    if (ffi.istype('bool',a2) or type(a2)=='boolean') then return M.IsKeyPressed_Bool(a1,a2) end
+    if ((ffi.istype('bool',a2) or type(a2)=='boolean') or type(a2)=='nil') then return M.IsKeyPressed_Bool(a1,a2) end
     if (ffi.istype('int32_t',a2) or type(a2)=='number') then return M.IsKeyPressed_InputFlags(a1,a2,a3) end
     print(a1,a2,a3)
     error'M.IsKeyPressed could not find overloaded'
@@ -7921,7 +7921,7 @@ function M.IsMouseClicked_InputFlags(button,flags,owner_id)
     return lib.igIsMouseClicked_InputFlags(button,flags,owner_id)
 end
 function M.IsMouseClicked(a1,a2,a3) -- generic version
-    if (ffi.istype('bool',a2) or type(a2)=='boolean') then return M.IsMouseClicked_Bool(a1,a2) end
+    if ((ffi.istype('bool',a2) or type(a2)=='boolean') or type(a2)=='nil') then return M.IsMouseClicked_Bool(a1,a2) end
     if (ffi.istype('int32_t',a2) or type(a2)=='number') then return M.IsMouseClicked_InputFlags(a1,a2,a3) end
     print(a1,a2,a3)
     error'M.IsMouseClicked could not find overloaded'

@@ -74,9 +74,14 @@ local function sanitize_reserved(def)
 			def.call_args_old = def.call_args_old:gsub(pat,"%1"..w.."%3")
 			--print(def.call_args_old)
 			--sanitize defaults
-			if def.defaults[k] then
+			if def.defaults[k]~=nil then
 				def.defaults[w] = def.defaults[k]
 				def.defaults[k] = nil
+			end
+			for i,na in ipairs(def.argsT) do
+				if na.name == k then
+					na.name = w
+				end
 			end
 		end
 	end
@@ -351,7 +356,6 @@ end
 
 --require"anima.utils" --gives us prtable
 local function create_generic(code,defs,method)
-
 	if defs[1].skipped then return end
 	if defs[1].is_static_function then
 		method = nil
@@ -421,6 +425,7 @@ local function create_generic(code,defs,method)
 			end
 		end
 	end
+
 	--for j=1,#defs do if not done[j] then print("not done",defs[1].cimguiname) end end
 	--[[
 	--for decision tree
@@ -498,6 +503,7 @@ local function create_generic(code,defs,method)
 				local strcode = checktype(v,"a"..k,fname)
 				--if has a default take nil as valid check
 				--print("defs[i].defaults[k]",defs[i].ov_cimguiname,defs[i].defaults[defs[i].argsT[k].name])
+
 				if defs[i].defaults[defs[i].argsT[k].name]~=nil then
 					--if defs[i].argsT[k].type~="ImStrv" then 
 					--print("---overload with default",defs[i].ov_cimguiname)
