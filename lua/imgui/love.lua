@@ -249,7 +249,6 @@ void* SDL_GL_GetCurrentContext(void);
 int SDL_GL_MakeCurrent(SDL_Window* window,void* context);
 ]]
 local sdl = jit.os == "Windows" and ffi.load("SDL2") or ffi.C
-
 local ig = require "imgui.sdl"
 ig.has_imgui_viewport = pcall(function() return ig.lib.ImGuiConfigFlags_ViewportsEnable end)
 
@@ -258,18 +257,41 @@ local function MainDockSpace()
     if (bit.band(ig.GetIO().ConfigFlags , ig.lib.ImGuiConfigFlags_DockingEnable)==0) then return end
     
     local dockspace_flags = bit.bor(ig.lib.ImGuiDockNodeFlags_NoDockingOverCentralNode, ig.lib.ImGuiDockNodeFlags_AutoHideTabBar, ig.lib.ImGuiDockNodeFlags_PassthruCentralNode, ig.lib.ImGuiDockNodeFlags_NoTabBar, ig.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
-    ig.DockSpaceOverViewport(nil, dockspace_flags);
+    ig.DockSpaceOverViewport(nil, nil,dockspace_flags);
+end
+love.MouseMoved = function(x,y) ig.GetIO():AddMousePosEvent(x, y) end
+
+function love.mousemoved(x, y)
+    if love.window.hasMouseFocus() then
+        ig.GetIO():AddMousePosEvent(x, y)
+    end
 end
 
+local mouse_buttons = {true, true, true}
+
+function love.mousepressed(x,y,button,...)
+    if mouse_buttons[button] then
+        ig.GetIO():AddMouseButtonEvent(button - 1, true)
+    end
+end
+
+function love.mousereleased(x,y,button)
+    if mouse_buttons[button] then
+        ig.GetIO():AddMouseButtonEvent(button - 1, false)
+    end
+end
+
+
 local function update_key(scancodestr, pressed)
-    --print("scancode",scancode)
+
     local scancode = lovetoSDL[scancodestr]
+	    print("scancode",scancode,scancodestr)
     if not (scancode >= 0 and scancode < 512) then
         print("scancode",scancode)
     end
     local io = ig.GetIO()
 
-    io.KeysDown[scancode] = pressed
+    --ig.isKeysDown[scancode] = pressed
     io.KeyShift = love.keyboard.isDown("rshift") or love.keyboard.isDown("lshift")
     io.KeyCtrl = love.keyboard.isDown("rctrl") or love.keyboard.isDown("lctrl")
     io.KeyAlt = love.keyboard.isDown("ralt") or love.keyboard.isDown("lalt")
@@ -305,9 +327,11 @@ ig.love_load = function(args)
     instance:Init(sdlwindow, openglctx)
     instance.update_key = update_key
     instance.MainDockSpace = MainDockSpace
+	--instance.update = function() print"xxxxxxxxx" end
     instance.textinput = function(text)
         ig.GetIO():AddInputCharactersUTF8(text)
     end
+	--instance.mousemoved = function(...) print("move",...) end
     instance.wheelmoved = function(x,y)
         local ioig = ig.GetIO()
         if x > 0 then
@@ -321,6 +345,7 @@ ig.love_load = function(args)
             ioig.MouseWheel = ioig.MouseWheel - 1
         end
     end
+	
     return instance
 end
 

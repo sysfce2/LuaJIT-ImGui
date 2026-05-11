@@ -2,7 +2,7 @@ local ig = require "imgui.love"
 
 local instance
 love.load = function(args)
-    instance = ig.love_load{use_imgui_docking = true, use_imgui_viewport = false}
+    instance = ig.love_load{use_imgui_docking = false, use_imgui_viewport = false}
 end
 
 love.textinput = function(text)
@@ -21,6 +21,8 @@ love.wheelmoved = function(x,y)
     instance.wheelmoved(x,y)
 end
 
+
+
 local ffi = require"ffi"
 local val = ffi.new("float[1]")
 local padval = ffi.new("float[2]")
@@ -28,6 +30,7 @@ local curve = ig.LuaCurve("mycurve",100)
 local Quat = ffi.new("quat",{1,0,0,0})
 local v3 = ffi.new("vec3",{1,0,0})
 local mat4 = ig.mat4_cast(Quat)
+
 
 love.draw = function()
     instance:NewFrame()
@@ -78,8 +81,8 @@ love.draw = function()
         end
     end
     ig.End()
-    
+
     ig.ShowDemoWindow()
-    
+
     instance:Render()
 end
