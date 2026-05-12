@@ -6933,6 +6933,24 @@ typedef enum {
       WORLD
    }MODE;
 typedef enum {
+      MT_NONE,
+      MT_MOVE_X,
+      MT_MOVE_Y,
+      MT_MOVE_Z,
+      MT_MOVE_YZ,
+      MT_MOVE_ZX,
+      MT_MOVE_XY,
+      MT_MOVE_SCREEN,
+      MT_ROTATE_X,
+      MT_ROTATE_Y,
+      MT_ROTATE_Z,
+      MT_ROTATE_SCREEN,
+      MT_SCALE_X,
+      MT_SCALE_Y,
+      MT_SCALE_Z,
+      MT_SCALE_XYZ
+   }MOVETYPE;
+typedef enum {
       DIRECTION_X,
       DIRECTION_Y,
       DIRECTION_Z,
@@ -6996,6 +7014,10 @@ ImGuiID ImGuizmo_GetID_StrStr(const char* str_id_begin,const char* str_id_end);
 ImGuiID ImGuizmo_GetID_Ptr(const void* ptr_id);
 _Bool                ImGuizmo_IsOver_OPERATION(OPERATION op);
 void ImGuizmo_SetGizmoSizeClipSpace(float value);
+MOVETYPE ImGuizmo_GetActiveHandleType(void);
+MOVETYPE ImGuizmo_GetHoveredHandleType(void);
+MOVETYPE ImGuizmo_GetActiveMoveType(void);
+MOVETYPE ImGuizmo_GetHoveredMoveType(void);
 void ImGuizmo_AllowAxisFlip(                                      _Bool                                            value);
 void ImGuizmo_SetAxisLimit(float value);
 void ImGuizmo_SetAxisMask(                                    _Bool                                          x,                                           _Bool                                                 y,                                                  _Bool                                                        z);
