@@ -30,7 +30,7 @@ local function PiePopupSelectMenu(center, popup_id, items, items_count,  p_selec
         --ImGuiWindow* window = ig.GetCurrentWindow();
         draw_list:PushClipRectFullScreen();
         draw_list:PathArcTo(center, (RADIUS_MIN + RADIUS_MAX)*0.5, 0.0, IM_PI*2.0*0.99, 32);   -- FIXME: 0.99 look like full arc with closed thick stroke has a bug now
-        draw_list:PathStroke(ig.U32(0,0,0), true, RADIUS_MAX - RADIUS_MIN);
+        draw_list:PathStroke(ig.U32(0,0,0), RADIUS_MAX - RADIUS_MIN, 0);
 
         local item_arc_span = 2*IM_PI / math.max(ITEMS_MIN, items_count);
         local drag_angle = math.atan2(drag_delta.y, drag_delta.x);

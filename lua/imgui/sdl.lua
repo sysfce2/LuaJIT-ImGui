@@ -844,6 +844,7 @@ function ImDrawList:AddBezierQuadratic(p1,p2,p3,col,thickness,num_segments)
     return lib.ImDrawList_AddBezierQuadratic(self,p1,p2,p3,col,thickness,num_segments)
 end
 function ImDrawList:AddCallback(callback,userdata,userdata_size)
+    userdata = userdata or nil
     userdata_size = userdata_size or 0
     return lib.ImDrawList_AddCallback(self,callback,userdata,userdata_size)
 end
@@ -892,22 +893,33 @@ function ImDrawList:AddLine(p1,p2,col,thickness)
     thickness = thickness or 1.0
     return lib.ImDrawList_AddLine(self,p1,p2,col,thickness)
 end
+function ImDrawList:AddLineH(min_x,max_x,y,col,thickness)
+    thickness = thickness or 1.0
+    return lib.ImDrawList_AddLineH(self,min_x,max_x,y,col,thickness)
+end
+function ImDrawList:AddLineV(x,min_y,max_y,col,thickness)
+    thickness = thickness or 1.0
+    return lib.ImDrawList_AddLineV(self,x,min_y,max_y,col,thickness)
+end
 function ImDrawList:AddNgon(center,radius,col,num_segments,thickness)
     thickness = thickness or 1.0
     return lib.ImDrawList_AddNgon(self,center,radius,col,num_segments,thickness)
 end
 ImDrawList.AddNgonFilled = lib.ImDrawList_AddNgonFilled
-ImDrawList.AddPolyline = lib.ImDrawList_AddPolyline
+function ImDrawList:AddPolyline(points,num_points,col,thickness,flags)
+    flags = flags or 0
+    return lib.ImDrawList_AddPolyline(self,points,num_points,col,thickness,flags)
+end
 function ImDrawList:AddQuad(p1,p2,p3,p4,col,thickness)
     thickness = thickness or 1.0
     return lib.ImDrawList_AddQuad(self,p1,p2,p3,p4,col,thickness)
 end
 ImDrawList.AddQuadFilled = lib.ImDrawList_AddQuadFilled
-function ImDrawList:AddRect(p_min,p_max,col,rounding,flags,thickness)
+function ImDrawList:AddRect(p_min,p_max,col,rounding,thickness,flags)
     flags = flags or 0
     rounding = rounding or 0.0
     thickness = thickness or 1.0
-    return lib.ImDrawList_AddRect(self,p_min,p_max,col,rounding,flags,thickness)
+    return lib.ImDrawList_AddRect(self,p_min,p_max,col,rounding,thickness,flags)
 end
 function ImDrawList:AddRectFilled(p_min,p_max,col,rounding,flags)
     flags = flags or 0
@@ -973,10 +985,10 @@ function ImDrawList:PathRect(rect_min,rect_max,rounding,flags)
     rounding = rounding or 0.0
     return lib.ImDrawList_PathRect(self,rect_min,rect_max,rounding,flags)
 end
-function ImDrawList:PathStroke(col,flags,thickness)
+function ImDrawList:PathStroke(col,thickness,flags)
     flags = flags or 0
     thickness = thickness or 1.0
-    return lib.ImDrawList_PathStroke(self,col,flags,thickness)
+    return lib.ImDrawList_PathStroke(self,col,thickness,flags)
 end
 ImDrawList.PopClipRect = lib.ImDrawList_PopClipRect
 ImDrawList.PopTexture = lib.ImDrawList_PopTexture
@@ -2604,6 +2616,8 @@ function ImRect:Add(a2) -- generic version
     print(a2)
     error'ImRect:Add could not find overloaded'
 end
+ImRect.AddX = lib.ImRect_AddX
+ImRect.AddY = lib.ImRect_AddY
 ImRect.AsVec4 = lib.ImRect_AsVec4
 ImRect.ClipWith = lib.ImRect_ClipWith
 ImRect.ClipWithFull = lib.ImRect_ClipWithFull
@@ -7225,6 +7239,7 @@ M.FindBestWindowPosForPopup = lib.igFindBestWindowPosForPopup
 M.FindBestWindowPosForPopupEx = lib.igFindBestWindowPosForPopupEx
 M.FindBlockingModal = lib.igFindBlockingModal
 M.FindBottomMostVisibleWindowWithinBeginStack = lib.igFindBottomMostVisibleWindowWithinBeginStack
+M.FindFrontMostVisibleChildWindow = lib.igFindFrontMostVisibleChildWindow
 M.FindHoveredViewportFromPlatformWindowStack = lib.igFindHoveredViewportFromPlatformWindowStack
 M.FindHoveredWindowEx = lib.igFindHoveredWindowEx
 M.FindOrCreateColumns = lib.igFindOrCreateColumns
@@ -7677,6 +7692,7 @@ M.ImTextStrToUtf8 = lib.igImTextStrToUtf8
 M.ImTextureDataGetFormatBytesPerPixel = lib.igImTextureDataGetFormatBytesPerPixel
 M.ImTextureDataGetFormatName = lib.igImTextureDataGetFormatName
 M.ImTextureDataGetStatusName = lib.igImTextureDataGetStatusName
+M.ImTextureDataQueueUpload = lib.igImTextureDataQueueUpload
 M.ImToUpper = lib.igImToUpper
 M.ImTriangleArea = lib.igImTriangleArea
 M.ImTriangleBarycentricCoords = lib.igImTriangleBarycentricCoords
@@ -7821,6 +7837,7 @@ M.IsClippedEx = lib.igIsClippedEx
 M.IsDragDropActive = lib.igIsDragDropActive
 M.IsDragDropPayloadBeingAccepted = lib.igIsDragDropPayloadBeingAccepted
 M.IsGamepadKey = lib.igIsGamepadKey
+M.IsInNavFocusRoute = lib.igIsInNavFocusRoute
 M.IsItemActivated = lib.igIsItemActivated
 M.IsItemActive = lib.igIsItemActive
 M.IsItemActiveAsInputText = lib.igIsItemActiveAsInputText
@@ -8754,6 +8771,7 @@ M.TabItemLabelAndCloseButton = lib.igTabItemLabelAndCloseButton
 M.TabItemSpacing = lib.igTabItemSpacing
 M.TableAngledHeadersRow = lib.igTableAngledHeadersRow
 M.TableAngledHeadersRowEx = lib.igTableAngledHeadersRowEx
+M.TableApplyExternalUnclipRect = lib.igTableApplyExternalUnclipRect
 M.TableBeginApplyRequests = lib.igTableBeginApplyRequests
 M.TableBeginCell = lib.igTableBeginCell
 M.TableBeginContextMenuPopup = lib.igTableBeginContextMenuPopup

@@ -722,6 +722,7 @@ typedef enum {
     ImGuiCol_ScrollbarGrabHovered,
     ImGuiCol_ScrollbarGrabActive,
     ImGuiCol_CheckMark,
+    ImGuiCol_CheckboxSelectedBg,
     ImGuiCol_SliderGrab,
     ImGuiCol_SliderGrabActive,
     ImGuiCol_Button,
@@ -803,6 +804,7 @@ typedef enum {
     ImGuiStyleVar_TableAngledHeadersTextAlign,
     ImGuiStyleVar_TreeLinesSize,
     ImGuiStyleVar_TreeLinesRounding,
+    ImGuiStyleVar_DragDropTargetRounding,
     ImGuiStyleVar_ButtonTextAlign,
     ImGuiStyleVar_SelectableTextAlign,
     ImGuiStyleVar_SeparatorSize,
@@ -1231,6 +1233,7 @@ struct ImGuiWindowClass
     ImGuiDockNodeFlags DockNodeFlagsOverrideSet;
    _Bool         DockingAlwaysTabBar;
    _Bool         DockingAllowUnclassed;
+    void* PlatformIconData;
 };
 struct ImGuiPayload
 {
@@ -1399,12 +1402,12 @@ struct ImDrawListSplitter
 };
 typedef enum {
     ImDrawFlags_None = 0,
-    ImDrawFlags_Closed = 1 << 0,
     ImDrawFlags_RoundCornersTopLeft = 1 << 4,
     ImDrawFlags_RoundCornersTopRight = 1 << 5,
     ImDrawFlags_RoundCornersBottomLeft = 1 << 6,
     ImDrawFlags_RoundCornersBottomRight = 1 << 7,
     ImDrawFlags_RoundCornersNone = 1 << 8,
+    ImDrawFlags_Closed = 1 << 9,
     ImDrawFlags_RoundCornersTop = ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight,
     ImDrawFlags_RoundCornersBottom = ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight,
     ImDrawFlags_RoundCornersLeft = ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersTopLeft,
@@ -1412,6 +1415,7 @@ typedef enum {
     ImDrawFlags_RoundCornersAll = ImDrawFlags_RoundCornersTopLeft | ImDrawFlags_RoundCornersTopRight | ImDrawFlags_RoundCornersBottomLeft | ImDrawFlags_RoundCornersBottomRight,
     ImDrawFlags_RoundCornersDefault_ = ImDrawFlags_RoundCornersAll,
     ImDrawFlags_RoundCornersMask_ = ImDrawFlags_RoundCornersAll | ImDrawFlags_RoundCornersNone,
+    ImDrawFlags_InvalidMask_ = (ImDrawFlags)0x8000000F,
 }ImDrawFlags_;
 typedef enum {
     ImDrawListFlags_None = 0,
@@ -1615,6 +1619,7 @@ typedef enum {
     ImFontFlags_NoLoadError = 1 << 1,
     ImFontFlags_NoLoadGlyphs = 1 << 2,
     ImFontFlags_LockBakedSizes = 1 << 3,
+    ImFontFlags_ImplicitRefSize = 1 << 4,
 }ImFontFlags_;
 typedef struct ImVector_ImFontConfigPtr {int Size;int Capacity;ImFontConfig** Data;} ImVector_ImFontConfigPtr;
 struct ImFont
@@ -1664,6 +1669,7 @@ struct ImGuiViewport
     ImDrawData* DrawData;
     void* RendererUserData;
     void* PlatformUserData;
+    void* PlatformIconData;
     void* PlatformHandle;
     void* PlatformHandleRaw;
    _Bool         PlatformWindowCreated;
@@ -1686,6 +1692,9 @@ struct ImGuiPlatformIO
     int Renderer_TextureMaxWidth;
     int Renderer_TextureMaxHeight;
     void* Renderer_RenderState;
+    ImDrawCallback DrawCallback_ResetRenderState;
+    ImDrawCallback DrawCallback_SetSamplerLinear;
+    ImDrawCallback DrawCallback_SetSamplerNearest;
     void (*Platform_CreateWindow)(ImGuiViewport* vp);
     void (*Platform_DestroyWindow)(ImGuiViewport* vp);
     void (*Platform_ShowWindow)(ImGuiViewport* vp);
@@ -1937,6 +1946,7 @@ typedef enum {
     ImGuiItemStatusFlags_Visible = 1 << 8,
     ImGuiItemStatusFlags_HasClipRect = 1 << 9,
     ImGuiItemStatusFlags_HasShortcut = 1 << 10,
+    ImGuiItemStatusFlags_EditedInternal = 1 << 11,
 }ImGuiItemStatusFlags_;
 typedef enum {
     ImGuiHoveredFlags_DelayMask_ = ImGuiHoveredFlags_DelayNone | ImGuiHoveredFlags_DelayShort | ImGuiHoveredFlags_DelayNormal | ImGuiHoveredFlags_NoSharedDelay,
@@ -2538,6 +2548,7 @@ struct ImGuiBoxSelectState
     ImGuiWindow* Window;
    _Bool         UnclipMode;
     ImRect_c UnclipRect;
+    ImRect_c UnclipRects[2];
     ImRect_c BoxSelectRectPrev;
     ImRect_c BoxSelectRectCurr;
 };
@@ -2549,7 +2560,6 @@ struct ImGuiMultiSelectTempData
     ImGuiMultiSelectFlags Flags;
     ImVec2_c ScopeRectMin;
     ImVec2_c BackupCursorMaxPos;
-    ImGuiSelectionUserData LastSubmittedItem;
     ImGuiID BoxSelectId;
     ImGuiKeyChord KeyMods;
     ImS8 LoopRequestSetAll;
@@ -2619,8 +2629,8 @@ struct ImGuiDockNode
     ImVec2_c Size;
     ImVec2_c SizeRef;
     ImGuiAxis SplitAxis;
-    ImGuiWindowClass WindowClass;
     ImU32 LastBgColor;
+    ImGuiWindowClass WindowClass;
     ImGuiWindow* HostWindow;
     ImGuiWindow* VisibleWindow;
     ImGuiDockNode* CentralNode;
@@ -2897,6 +2907,7 @@ struct ImGuiContext
     float CurrentDpiScale;
     ImDrawListSharedData DrawListSharedData;
     ImGuiID WithinEndChildID;
+    ImGuiID WithinEndPopupID;
     void* TestEngine;
     ImVector_ImGuiInputEvent InputEventsQueue;
     ImVector_ImGuiInputEvent InputEventsTrail;
@@ -4138,7 +4149,7 @@ const char* igGetKeyName(ImGuiKey key);
 void igSetNextFrameWantCaptureKeyboard(                                                 _Bool                                                       want_capture_keyboard);
 _Bool                igShortcut_Nil(ImGuiKeyChord key_chord,ImGuiInputFlags flags);
 void igSetNextItemShortcut(ImGuiKeyChord key_chord,ImGuiInputFlags flags);
-void igSetItemKeyOwner_Nil(ImGuiKey key);
+_Bool                igSetItemKeyOwner_Nil(ImGuiKey key);
 _Bool                igIsMouseDown_Nil(ImGuiMouseButton button);
 _Bool                igIsMouseClicked_Bool(ImGuiMouseButton button,                                                             _Bool                                                                   repeat);
 _Bool                igIsMouseReleased_Nil(ImGuiMouseButton button);
@@ -4311,7 +4322,9 @@ void ImDrawList_PopTexture(ImDrawList* self);
 ImVec2_c ImDrawList_GetClipRectMin(ImDrawList* self);
 ImVec2_c ImDrawList_GetClipRectMax(ImDrawList* self);
 void ImDrawList_AddLine(ImDrawList* self,const ImVec2_c p1,const ImVec2_c p2,ImU32 col,float thickness);
-void ImDrawList_AddRect(ImDrawList* self,const ImVec2_c p_min,const ImVec2_c p_max,ImU32 col,float rounding,ImDrawFlags flags,float thickness);
+void ImDrawList_AddLineH(ImDrawList* self,float min_x,float max_x,float y,ImU32 col,float thickness);
+void ImDrawList_AddLineV(ImDrawList* self,float x,float min_y,float max_y,ImU32 col,float thickness);
+void ImDrawList_AddRect(ImDrawList* self,const ImVec2_c p_min,const ImVec2_c p_max,ImU32 col,float rounding,float thickness,ImDrawFlags flags);
 void ImDrawList_AddRectFilled(ImDrawList* self,const ImVec2_c p_min,const ImVec2_c p_max,ImU32 col,float rounding,ImDrawFlags flags);
 void ImDrawList_AddRectFilledMultiColor(ImDrawList* self,const ImVec2_c p_min,const ImVec2_c p_max,ImU32 col_upr_left,ImU32 col_upr_right,ImU32 col_bot_right,ImU32 col_bot_left);
 void ImDrawList_AddQuad(ImDrawList* self,const ImVec2_c p1,const ImVec2_c p2,const ImVec2_c p3,const ImVec2_c p4,ImU32 col,float thickness);
@@ -4328,7 +4341,7 @@ void ImDrawList_AddText_Vec2(ImDrawList* self,const ImVec2_c pos,ImU32 col,const
 void ImDrawList_AddText_FontPtr(ImDrawList* self,ImFont* font,float font_size,const ImVec2_c pos,ImU32 col,const char* text_begin,const char* text_end,float wrap_width,const ImVec4* cpu_fine_clip_rect);
 void ImDrawList_AddBezierCubic(ImDrawList* self,const ImVec2_c p1,const ImVec2_c p2,const ImVec2_c p3,const ImVec2_c p4,ImU32 col,float thickness,int num_segments);
 void ImDrawList_AddBezierQuadratic(ImDrawList* self,const ImVec2_c p1,const ImVec2_c p2,const ImVec2_c p3,ImU32 col,float thickness,int num_segments);
-void ImDrawList_AddPolyline(ImDrawList* self,const ImVec2_c* points,int num_points,ImU32 col,ImDrawFlags flags,float thickness);
+void ImDrawList_AddPolyline(ImDrawList* self,const ImVec2_c* points,int num_points,ImU32 col,float thickness,ImDrawFlags flags);
 void ImDrawList_AddConvexPolyFilled(ImDrawList* self,const ImVec2_c* points,int num_points,ImU32 col);
 void ImDrawList_AddConcavePolyFilled(ImDrawList* self,const ImVec2_c* points,int num_points,ImU32 col);
 void ImDrawList_AddImage(ImDrawList* self,ImTextureRef_c tex_ref,const ImVec2_c p_min,const ImVec2_c p_max,const ImVec2_c uv_min,const ImVec2_c uv_max,ImU32 col);
@@ -4339,7 +4352,7 @@ void ImDrawList_PathLineTo(ImDrawList* self,const ImVec2_c pos);
 void ImDrawList_PathLineToMergeDuplicate(ImDrawList* self,const ImVec2_c pos);
 void ImDrawList_PathFillConvex(ImDrawList* self,ImU32 col);
 void ImDrawList_PathFillConcave(ImDrawList* self,ImU32 col);
-void ImDrawList_PathStroke(ImDrawList* self,ImU32 col,ImDrawFlags flags,float thickness);
+void ImDrawList_PathStroke(ImDrawList* self,ImU32 col,float thickness,ImDrawFlags flags);
 void ImDrawList_PathArcTo(ImDrawList* self,const ImVec2_c center,float radius,float a_min,float a_max,int num_segments);
 void ImDrawList_PathArcToFast(ImDrawList* self,const ImVec2_c center,float radius,int a_min_of_12,int a_max_of_12);
 void ImDrawList_PathEllipticalArcTo(ImDrawList* self,const ImVec2_c center,const ImVec2_c radius,float rot,float a_min,float a_max,int num_segments);
@@ -4417,10 +4430,10 @@ ImFont* ImFontAtlas_AddFontFromMemoryCompressedTTF(ImFontAtlas* self,const void*
 ImFont* ImFontAtlas_AddFontFromMemoryCompressedBase85TTF(ImFontAtlas* self,const char* compressed_font_data_base85,float size_pixels,const ImFontConfig* font_cfg,const ImWchar* glyph_ranges);
 void ImFontAtlas_RemoveFont(ImFontAtlas* self,ImFont* font);
 void ImFontAtlas_Clear(ImFontAtlas* self);
+void ImFontAtlas_ClearFonts(ImFontAtlas* self);
 void ImFontAtlas_CompactCache(ImFontAtlas* self);
 void ImFontAtlas_SetFontLoader(ImFontAtlas* self,const ImFontLoader* font_loader);
 void ImFontAtlas_ClearInputData(ImFontAtlas* self);
-void ImFontAtlas_ClearFonts(ImFontAtlas* self);
 void ImFontAtlas_ClearTexData(ImFontAtlas* self);
 const ImWchar* ImFontAtlas_GetGlyphRangesDefault(ImFontAtlas* self);
 ImFontAtlasRectId ImFontAtlas_AddCustomRect(ImFontAtlas* self,int width,int height,ImFontAtlasRect* out_r);
@@ -4593,6 +4606,8 @@ _Bool                ImRect_ContainsWithPad(ImRect* self,const ImVec2_c p,const 
 _Bool                ImRect_Overlaps(ImRect* self,const ImRect_c r);
 void ImRect_Add_Vec2(ImRect* self,const ImVec2_c p);
 void ImRect_Add_Rect(ImRect* self,const ImRect_c r);
+void ImRect_AddX(ImRect* self,float x);
+void ImRect_AddY(ImRect* self,float y);
 void ImRect_Expand_Float(ImRect* self,const float amount);
 void ImRect_Expand_Vec2(ImRect* self,const ImVec2_c amount);
 void ImRect_Translate(ImRect* self,const ImVec2_c d);
@@ -4898,6 +4913,7 @@ void igLogToBuffer(int auto_open_depth);
 void igLogRenderedText(const ImVec2_c* ref_pos,const char* text,const char* text_end);
 void igLogSetNextTextDecoration(const char* prefix,const char* suffix);
 _Bool                igBeginChildEx(const char* name,ImGuiID id,const ImVec2_c size_arg,ImGuiChildFlags child_flags,ImGuiWindowFlags window_flags);
+ImGuiWindow* igFindFrontMostVisibleChildWindow(ImGuiWindow* window);
 _Bool                igBeginPopupEx(ImGuiID id,ImGuiWindowFlags extra_window_flags);
 _Bool                igBeginPopupMenuEx(ImGuiID id,const char* label,ImGuiWindowFlags extra_window_flags);
 void igOpenPopupEx(ImGuiID id,ImGuiPopupFlags popup_flags);
@@ -4966,7 +4982,7 @@ _Bool                igIsActiveIdUsingNavDir(ImGuiDir dir);
 ImGuiID igGetKeyOwner(ImGuiKey key);
 void igSetKeyOwner(ImGuiKey key,ImGuiID owner_id,ImGuiInputFlags flags);
 void igSetKeyOwnersForKeyChord(ImGuiKeyChord key,ImGuiID owner_id,ImGuiInputFlags flags);
-void igSetItemKeyOwner_InputFlags(ImGuiKey key,ImGuiInputFlags flags);
+_Bool                igSetItemKeyOwner_InputFlags(ImGuiKey key,ImGuiInputFlags flags);
 _Bool                igTestKeyOwner(ImGuiKey key,ImGuiID owner_id);
 ImGuiKeyOwnerData* igGetKeyOwnerData(ImGuiContext* ctx,ImGuiKey key);
 _Bool                igIsKeyDown_ID(ImGuiKey key,ImGuiID owner_id);
@@ -5025,6 +5041,7 @@ void igDockBuilderCopyWindowSettings(const char* src_name,const char* dst_name);
 void igDockBuilderFinish(ImGuiID node_id);
 void igPushFocusScope(ImGuiID id);
 void igPopFocusScope(void);
+_Bool                igIsInNavFocusRoute(ImGuiID focus_scope_id);
 ImGuiID igGetCurrentFocusScope(void);
 _Bool                igIsDragDropActive(void);
 _Bool                igBeginDragDropTargetCustom(const ImRect_c bb,ImGuiID id);
@@ -5032,7 +5049,7 @@ _Bool                igBeginDragDropTargetViewport(ImGuiViewport* viewport,const
 void igClearDragDrop(void);
 _Bool                igIsDragDropPayloadBeingAccepted(void);
 void igRenderDragDropTargetRectForItem(const ImRect_c bb);
-void igRenderDragDropTargetRectEx(ImDrawList* draw_list,const ImRect_c bb);
+void igRenderDragDropTargetRectEx(ImDrawList* draw_list,const ImRect_c bb,float rounding);
 ImGuiTypingSelectRequest* igGetTypingSelectRequest(ImGuiTypingSelectFlags flags);
 int igTypingSelectFindMatch(ImGuiTypingSelectRequest* req,int items_count,const char*(*get_item_name_func)(void*,int),void* user_data,int nav_item_idx);
 int igTypingSelectFindNextSingleCharMatch(ImGuiTypingSelectRequest* req,int items_count,const char*(*get_item_name_func)(void*,int),void* user_data,int nav_item_idx);
@@ -5075,6 +5092,7 @@ void igTableSetupDrawChannels(ImGuiTable* table);
 void igTableUpdateLayout(ImGuiTable* table);
 void igTableUpdateBorders(ImGuiTable* table);
 void igTableUpdateColumnsWeightFromWidth(ImGuiTable* table);
+void igTableApplyExternalUnclipRect(ImGuiTable* table,ImRect* rect);
 void igTableDrawBorders(ImGuiTable* table);
 void igTableDrawDefaultContextMenu(ImGuiTable* table,ImGuiTableFlags flags_for_section_to_display);
 _Bool                igTableBeginContextMenuPopup(ImGuiTable* table);
@@ -5313,6 +5331,7 @@ void igImFontAtlasTextureBlockPostProcessMultiply(ImFontAtlasPostProcessData* da
 void igImFontAtlasTextureBlockFill(ImTextureData* dst_tex,int dst_x,int dst_y,int w,int h,ImU32 col);
 void igImFontAtlasTextureBlockCopy(ImTextureData* src_tex,int src_x,int src_y,ImTextureData* dst_tex,int dst_x,int dst_y,int w,int h);
 void igImFontAtlasTextureBlockQueueUpload(ImFontAtlas* atlas,ImTextureData* tex,int x,int y,int w,int h);
+void igImTextureDataQueueUpload(ImTextureData* tex,int x,int y,int w,int h);
 int igImTextureDataGetFormatBytesPerPixel(ImTextureFormat format);
 const char* igImTextureDataGetStatusName(ImTextureStatus status);
 const char* igImTextureDataGetFormatName(ImTextureFormat format);
