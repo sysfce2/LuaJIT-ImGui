@@ -51,6 +51,7 @@ local cdefs = get_all_cdefs(sources)
 
 print"get cimgui_impl cdefs"
 cdefs = get_cdefs([[gcc -E -DCIMGUI_API="" -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_SDL2 -DCIMGUI_USE_SDL3 -DCIMGUI_USE_GLFW -DCIMGUI_USE_OPENGL2 -DCIMGUI_DEFINE_ENUMS_AND_STRUCTS ../cimgui/cimgui_impl.h]],"cimgui_impl",cdefs)
+--cdefs = get_cdefs([[gcc -E -DCIMGUI_API="" -DCIMGUI_USE_OPENGL3 -DCIMGUI_USE_SDL2 -DCIMGUI_USE_SDL3 -DCIMGUI_USE_GLFW -DCIMGUI_USE_OPENGL2 -DCIMGUI_USE_VULKAN -DCIMGUI_DEFINE_ENUMS_AND_STRUCTS ../cimgui/cimgui_impl.h]],"cimgui_impl",cdefs)
 
 table.insert(cdefs,1,"typedef void FILE;")
 

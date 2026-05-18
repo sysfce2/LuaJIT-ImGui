@@ -95,6 +95,7 @@ local function sanitize_reserved(def)
 				local enumname = v:gsub("[%w:]-::([%w]+)","%1")
 				local ok,val = pcall(cpp2ffi.parse_enum_value,enumname,enumsvalues)
 				if ok then
+					--print("parse_enum_value1",v,enumname,val,enumsvalues[enumname])
 					def.defaults[k] = val
 				else
 					print("deleting default ",v)
@@ -106,8 +107,8 @@ local function sanitize_reserved(def)
 				def.defaults[k] = constants[v]
 			else
 				local ok,val = pcall(cpp2ffi.parse_enum_value,v,enumsvalues,true)
-				
 				if ok then
+					--print("parse_enum_value2",v,val)
 					--if v~=val then print("sanitize",k,v,ok,val) end
 					def.defaults[k] = val
 				elseif def.defaults[k]:match"FLT_MAX" then
