@@ -407,7 +407,7 @@ local function gimp_curve_plot (points, p1,p2,p3,p4,data,datalen)
 		-- * use homogenously distributed values for t, since x(t) increases linearily.
 		-- */
 		--for (i = 0; i <= int (dx * (float) (datalen - 1) + 0.5); i++)
-		for i=0, math.floor(dx *(datalen - 1) + 0.5)-1 do
+		for i=0, math.floor(dx *(datalen - 1) + 0.5) do
 			local y, t;
 			local    index;
 		
