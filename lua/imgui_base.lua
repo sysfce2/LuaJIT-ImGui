@@ -458,6 +458,7 @@ local function gimp_curve_plot (points, p1,p2,p3,p4,data,datalen)
 function M.LuaCurve(name,LUTsize)
 	local points = {[0]={x=0,y=0},{x=1,y=1}}
 	local LC = {points = points}
+	LC.LUTsize = LUTsize
 	LC.LUT = ffi.new("float[?]",LUTsize)
 	local is_active = nil
 	local function ControlPoint(ID,graph,points,i,r)
@@ -534,6 +535,7 @@ function LC:plotter_draw(size)
 		
 end
 function LC:draw(size)
+	size = size or {x=200,y=200}
 	M.PushID(name)
 
 	--CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
