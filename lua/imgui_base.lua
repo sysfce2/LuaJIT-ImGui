@@ -445,6 +445,13 @@ local function gimp_curve_plot (points, p1,p2,p3,p4,data,datalen)
 
           gimp_curve_plot (points, p1, p2, p3, p4, data, datalen);
         end
+        --/* ensure that the control points are used exactly */
+        for i = 0,max-1 do
+          local x = points[i].x;
+          local y = points[i].y;
+          data[math.floor(x * (datalen - 1) + 0.5)] = y;
+        end
+
 	end
 
 
@@ -529,7 +536,7 @@ end
 function LC:draw(size)
 	M.PushID(name)
 
-	CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
+	--CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
 
 	self:plotter_draw(size)
 	local used = false

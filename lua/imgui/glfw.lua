@@ -446,6 +446,13 @@ local function gimp_curve_plot (points, p1,p2,p3,p4,data,datalen)
 
           gimp_curve_plot (points, p1, p2, p3, p4, data, datalen);
         end
+        --/* ensure that the control points are used exactly */
+        for i = 0,max-1 do
+          local x = points[i].x;
+          local y = points[i].y;
+          data[math.floor(x * (max - 1) + 0.5)] = y;
+        end
+
 	end
 
 
