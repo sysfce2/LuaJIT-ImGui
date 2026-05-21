@@ -49,4 +49,4 @@ If already cloned and updating do from this repo folder:
 # used in
 
 * https://github.com/sonoro1234/anima
-* can be used for LOVE2D as explained in https://github.com/sonoro1234/LuaJIT-ImGui/issues/20
+* can be used for LOVE2D as explained in https://github.com/sonoro1234/LuaJIT-ImGui/issues/47
