@@ -84,6 +84,15 @@ option(IMPL_OPENGL2 "add OPENGL2 implementation" ON)
 option(IMPL_OPENGL3 "add OPENGL3 implementation" ON)
 option(IMGUI_FREETYPE "add Freetype2" OFF)
 option(IMPL_EXTRAS "knob and curve" ON)
+option(IMPL_LOVE "add love impl" ON)
+
+if(IMPL_LOVE)
+	set(IMPL_GLFW OFF)
+	set(IMPL_SDL OFF)
+	set(IMPL_SDL3 OFF)
+	set(IMPL_OPENGL2 OFF)
+	set(IMPL_OPENGL3 OFF)
+endif(IMPL_LOVE)
 
 
 if(IMGUI_FREETYPE)
@@ -138,6 +147,15 @@ if(UNIX)
 set_property(TARGET cimgui_base PROPERTY POSITION_INDEPENDENT_CODE ON)
 endif(UNIX)
 
+if(IMPL_LOVE)
+	add_library(cimgui SHARED $<TARGET_OBJECTS:cimgui_base>)
+	target_link_libraries(cimgui PUBLIC ${IMGUI_LIBRARIES})
+	install(TARGETS cimgui
+              RUNTIME DESTINATION  ${LUAJIT_BIN}
+              LIBRARY DESTINATION  ${LUAJIT_BIN}
+              #ARCHIVE DESTINATION lib 
+              )
+endif(IMPL_LOVE)
 
 if(IMPL_GLFW)
     list(APPEND IMGUI_SOURCES_glfw ${BACKENDS_FOLDER}imgui_impl_glfw.cpp)
