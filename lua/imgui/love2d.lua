@@ -12,7 +12,7 @@ local function MainDockSpace()
     if not M.has_imgui_viewport then return end
     if (bit.band(M.GetIO().ConfigFlags , M.lib.ImGuiConfigFlags_DockingEnable)==0) then return end
     
-    local dockspace_flags = bit.bor(M.lib.ImGuiDockNodeFlags_NoDockingOverCentralNode, M.lib.ImGuiDockNodeFlags_AutoHideTabBar, M.lib.ImGuiDockNodeFlags_PassthruCentralNode, M.lib.ImGuiDockNodeFlags_NoTabBar, M.lib.ImGuiDockNodeFlags_HiddenTabBar) --ImGuiDockNodeFlags_NoSplit
+    local dockspace_flags = bit.bor(M.lib.ImGuiDockNodeFlags_NoDockingOverCentralNode, M.lib.ImGuiDockNodeFlags_AutoHideTabBar, M.lib.ImGuiDockNodeFlags_PassthruCentralNode)
     M.DockSpaceOverViewport(nil, nil,dockspace_flags);
 end
 M.MainDockSpace = MainDockSpace
@@ -190,7 +190,8 @@ function L.Init(args)
     io.DisplayFramebufferScale.x, io.DisplayFramebufferScale.y = dpiscale, dpiscale
 
     love.filesystem.createDirectory("/")
-    strings.ini_filename = love.filesystem.getSaveDirectory() .. "/imgui.ini"
+    --strings.ini_filename = love.filesystem.getSaveDirectory() .. "/imgui.ini"
+	strings.ini_filename = "./imgui.ini"
     io.IniFilename = strings.ini_filename
 
     strings.impl_name = "cimgui-love"
