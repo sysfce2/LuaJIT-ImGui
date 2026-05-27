@@ -691,7 +691,7 @@ end
 function Glyph.__new(ctype,a1,a2) -- generic version
     if a1==nil then return Glyph.Glyph_Nil() end
     if (ffi.istype('uint32_t',a1) or type(a1)=='number') and a2==nil then return Glyph.Glyph_Wchar(a1) end
-    if (ffi.istype('uint32_t',a1) or type(a1)=='number') and ffi.istype('Color',a2) then return Glyph.Glyph_WcharColor(a1,a2) end
+    if (ffi.istype('uint32_t',a1) or type(a1)=='number') and (ffi.istype('Color',a2) or type(a2)=='number') then return Glyph.Glyph_WcharColor(a1,a2) end
     print(ctype,a1,a2)
     error'Glyph.__new could not find overloaded'
 end
@@ -3111,7 +3111,7 @@ M.ImGuizmo_IsOver_OPERATION = lib.ImGuizmo_IsOver_OPERATION
 M.ImGuizmo_IsOver_FloatPtr = lib.ImGuizmo_IsOver_FloatPtr
 function M.ImGuizmo_IsOver(a1,a2) -- generic version
     if a1==nil then return M.ImGuizmo_IsOver_Nil() end
-    if ffi.istype('OPERATION',a1) then return M.ImGuizmo_IsOver_OPERATION(a1) end
+    if (ffi.istype('OPERATION',a1) or type(a1)=='number') then return M.ImGuizmo_IsOver_OPERATION(a1) end
     if (ffi.istype('float*',a1) or ffi.istype('float[]',a1)) then return M.ImGuizmo_IsOver_FloatPtr(a1,a2) end
     print(a1,a2)
     error'M.ImGuizmo_IsOver could not find overloaded'
@@ -7324,7 +7324,7 @@ M.GetKeyData_ContextPtr = lib.igGetKeyData_ContextPtr
 M.GetKeyData_Key = lib.igGetKeyData_Key
 function M.GetKeyData(a1,a2) -- generic version
     if (ffi.istype('ImGuiContext*',a1) or ffi.istype('ImGuiContext',a1) or ffi.istype('ImGuiContext[]',a1)) then return M.GetKeyData_ContextPtr(a1,a2) end
-    if ffi.istype('ImGuiKey',a1) then return M.GetKeyData_Key(a1) end
+    if (ffi.istype('ImGuiKey',a1) or type(a1)=='number') then return M.GetKeyData_Key(a1) end
     print(a1,a2)
     error'M.GetKeyData could not find overloaded'
 end

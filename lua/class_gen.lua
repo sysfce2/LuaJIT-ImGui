@@ -24,6 +24,7 @@ local strsplit = cpp2ffi.strsplit
 
 -------------------------------------------------
 -------------------------------------------------
+local enumnames = {}
 local enumsvalues = {}
 local constants = {}
 local opaque_structs = {}
@@ -308,6 +309,7 @@ end
 
 local badtypes = {}
 local function checktype(typ,va,fname)
+	--if enumnames[typ] then print("==============",typ) end
 	local cond = CHK_types(typ,va)
 	if cond then return cond end
 	
@@ -485,7 +487,29 @@ local function create_generic(code,defs,method)
 	fname = method and (methodnotconst and defs[1].stname..":"..fname_e or defs[1].stname..".__new") or "M."..fname_e
 
 	table.insert(code2, "function "..fname.."("..args..") -- generic version")
-	
+	---------float and int check
+	--require"anima.utils"
+	--prtable(check)
+	for j=1,maxnargs do
+		local isint,isfloat
+		for i=1,#check do
+			local chk = check[i]
+			if chk and chk[j] then
+			if chk[j] == "int" then isint = true end
+			if chk[j]:match"Im[SU]+%d+$" then isint = true end
+			if chk[j] == "float" then isfloat = true end
+			if chk[j] == "double" then isfloat = true end
+			local ok,res = pcall(ffi.typeof,chk[j])
+			if ok then
+				if tostring(res):match("<enum") then isint = true;print("enum",chk[j],fname,#defs,"arg",j) end
+			end
+			end
+		end
+		if isint and isfloat then
+			print("----------",fname,"int-float in arg",j)
+		end
+	end
+	-------------------------------------------
 	for i=1,#check do
 		local chk = check[i]
 		table.insert(code2,"\n    if ")
@@ -510,6 +534,10 @@ local function create_generic(code,defs,method)
 					--print("---overload with default",defs[i].ov_cimguiname)
 					strcode = "("..strcode.." or type(a"..k..")=='nil')"
 					--end
+				end
+				--if type enum accept number
+				if enumnames[v] then
+					strcode = "("..strcode.." or type(a"..k..")=='number')"
 				end
 				table.insert(code2 , strcode)
 				---table.insert(code2,"ffi.istype('"..v.."',a"..k..")")
@@ -602,6 +630,7 @@ local function make_enums(sources)
 		local standenu = dofile([[../]]..v..[[/generator/output/structs_and_enums.lua]])
 		--first enums
 		for k,enu in pairs(standenu.enums) do
+			enumnames[k]=true
 			for i,v in ipairs(enu) do
 				assert(v.calc_value)
 				enumsvalues[v.name] = v.calc_value
