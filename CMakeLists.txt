@@ -84,7 +84,7 @@ option(IMPL_OPENGL2 "add OPENGL2 implementation" ON)
 option(IMPL_OPENGL3 "add OPENGL3 implementation" ON)
 option(IMGUI_FREETYPE "add Freetype2" OFF)
 option(IMPL_EXTRAS "knob and curve" ON)
-option(IMPL_LOVE "add love impl" ON)
+option(IMPL_LOVE "add love impl" OFF)
 
 if(IMPL_LOVE)
 	set(IMPL_GLFW OFF)
