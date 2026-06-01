@@ -654,13 +654,19 @@ local function make_enums(sources)
 end
 
 local function make_funcdefs(sources)
+	local count = 0
+	local gen_count = 0
 	local fundefs = {}
 	for i,v in ipairs(sources) do
 		local fundefs1 = dofile([[../]]..v..[[/generator/output/definitions.lua]])
 		for fun,defs in pairs(fundefs1) do
+			--print("make_funcdefs",fun,#defs)
+			gen_count = gen_count + 1
+			count = count + #defs
 			fundefs[fun] = defs
 		end
 	end
+	print("---number of funcs",count,"generic count",gen_count)
 	return fundefs
 end
 --------------------------------------------------------------
