@@ -495,18 +495,19 @@ local function create_generic(code,defs,method)
 		for i=1,#check do
 			local chk = check[i]
 			if chk and chk[j] then
-			if chk[j] == "int" then isint = true end
-			if chk[j]:match"Im[SU]+%d+$" then isint = true end
-			if chk[j] == "float" then isfloat = true end
-			if chk[j] == "double" then isfloat = true end
+			if chk[j] == "int" then isint = defs[i].ov_cimguiname end
+			if chk[j]:match"Im[SU]+%d+$" then isint = defs[i].ov_cimguiname end
+			if chk[j] == "float" then isfloat = defs[i].ov_cimguiname end
+			if chk[j] == "double" then isfloat = defs[i].ov_cimguiname end
 			local ok,res = pcall(ffi.typeof,chk[j])
 			if ok then
-				if tostring(res):match("<enum") then isint = true;print("enum",chk[j],fname,#defs,"arg",j) end
+				if tostring(res):match("<enum") then isint = defs[i].ov_cimguiname; end
 			end
 			end
 		end
 		if isint and isfloat then
 			print("----------",fname,"int-float in arg",j)
+			print(isint,isfloat)
 		end
 	end
 	-------------------------------------------
