@@ -8,8 +8,18 @@ local function preparepath(patt)
 end
 local sep = "/"
 
+local fr_t = 1/10;
+local toyield_t 
 local function funcdir(path, func, patt, recur, funcd, tree)
-	--print(path, func, patt, recur, funcd, tree)
+
+	if (os.clock() - toyield_t) >= fr_t then
+		local co,is_main = coroutine.running()
+		if not is_main then 
+			coroutine.yield(path) 
+		end
+		toyield_t = os.clock()
+	end
+
 	if type(patt)=="string" then patt = {patt} end
 	if not tree then preparepath(patt) end --if first time
 	tree = tree or ""
@@ -28,7 +38,6 @@ local function funcdir(path, func, patt, recur, funcd, tree)
 					if not ok then 
 						print("--------------------------------error on",f)
 						print(err)
-						--prtable(attr)
 					else
 						func(f, file, attr, tree, newtree)
 					end
@@ -48,9 +57,13 @@ local function ff(f, file, attr, tree, newtree)
 		dirsizes[tree] = (dirsizes[tree] or 0) + attr.size
 	end
 end
+local corout
 
 local function get_sizes(inidir)
+	local co,bb = coroutine.running()
+	if not bb then coroutine.yield() end
 	local time1 = os.clock()
+	toyield_t = time1
 	dirsizes = {}
 	funcdir(inidir, ff,nil, true)
 	
@@ -76,7 +89,10 @@ local curdir = ""
 local subdir = ""
 local fb = gui.FileBrowser(nil,{key="loader",pattern=nil,choose_dir=true},function(fname,dir) 
 	print("load",fname,dir); 
-	thesizes = get_sizes(dir);
+	corout = coroutine.create(get_sizes)
+	local ok,err = coroutine.resume(corout,dir) 
+	if not ok then print(err, "status:", coroutine.status(corout)) end
+	--thesizes = get_sizes(dir);
 	allsizes = thesizes
 	curdir = dir
 	subdir = dir
@@ -110,9 +126,30 @@ local function thousands(n)
 	return thousands(a).."."..format("%03d",b)
 end
 
+local ig = win.ig
+local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize , ig.lib.ImGuiWindowFlags_NoMove , ig.lib.ImGuiWindowFlags_NoDocking, ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
+
 function win:draw(ig)
 	--ig.ShowDemoWindow()
-	if ig.Begin"sizes" then
+	local viewport = ig.GetMainViewport();
+    --Submit a window filling the entire viewport
+    ig.SetNextWindowPos(viewport.WorkPos);
+    ig.SetNextWindowSize(viewport.WorkSize);
+    ig.SetNextWindowViewport(viewport.ID);
+	
+	if corout and coroutine.status(corout)~="dead" then
+		local ok,res = coroutine.resume(corout)
+		ig.Begin"sizes"
+		ig.Text("doing..."..tostring(res))
+		ig.End()
+		if not ok then 
+			print(res, "status:",coroutine.status(corout)); print(debug.traceback(corout))
+		elseif res then
+			thesizes = res
+			allsizes = thesizes
+		end
+	else
+	if ig.Begin("sizes",nil,host_window_flags) then
 		if ig.SmallButton("load") then
 			fb.open()
 		end
@@ -125,7 +162,7 @@ function win:draw(ig)
 			get_subdirs("")
 		end
 		ig.SameLine()
-		if ig.Button("<-") then
+		if ig.Button("<-") then	
 			local re = spch_sub(curdir)..[[(.*)[/\][^/\]*$]]
 			local updir = subdir:match(re) or ""
 			get_subdirs(updir)
@@ -179,6 +216,7 @@ function win:draw(ig)
 		end
 	end
 	ig.End()
+	end
 end
 
 win:start()
