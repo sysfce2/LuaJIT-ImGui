@@ -103,9 +103,16 @@ local spch = "[%^%$%(%)%%%.%[%]%*%+%-%?]"
 local function spch_sub(aa)
 	return aa:gsub(spch,"%%%1")
 end
+local ffi = require"ffi"
+local onelevel = ffi.new("bool[?]",1,false)
 local function get_subdirs(pp)
+	--print("get_subdirs",pp)
 	local pp1 = spch_sub(pp)
-	pp1 = pp1=="" and pp1 or "^"..pp1.."[/\\]+"
+	if onelevel[0] then
+		pp1 = pp1=="" and pp1.."^[^/\\]+$" or "^"..pp1.."[/\\]+[^/\\]+$"
+	else
+		pp1 = pp1=="" and pp1 or "^"..pp1.."[/\\]+"
+	end
 	thesizes = {}
 	subdir = curdir..pp
 	for i,v in ipairs(allsizes) do
@@ -171,6 +178,7 @@ function win:draw(ig)
 		ig.TextUnformatted(subdir)
 		ig.SameLine()
 		ig.TextUnformatted("| num folders:"..tostring(#thesizes))
+		ig.Checkbox("subdir 1 level",onelevel)
 		if ig.BeginTable("dirsizes",2,ig.lib.ImGuiTableFlags_Sortable + ig.lib.ImGuiTableFlags_Borders + ig.lib.ImGuiTableFlags_RowBg + ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable) then
 			ig.TableSetupColumn("folder");
             ig.TableSetupColumn("size");
