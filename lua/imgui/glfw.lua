@@ -698,6 +698,7 @@ local CodePoint= {}
 CodePoint.__index = CodePoint
 M.CodePoint_isBracketCloser = lib.CodePoint_isBracketCloser
 M.CodePoint_isBracketOpener = lib.CodePoint_isBracketOpener
+M.CodePoint_isEastAsian = lib.CodePoint_isEastAsian
 M.CodePoint_isLetter = lib.CodePoint_isLetter
 M.CodePoint_isLower = lib.CodePoint_isLower
 M.CodePoint_isMatchingBrackets = lib.CodePoint_isMatchingBrackets
@@ -726,42 +727,42 @@ function Config.__new(ctype)
     return ffi.gc(ptr,lib.Config_destroy)
 end
 M.Config = ffi.metatype("Config",Config)
---------------------------CursorPosition----------------------------
-local CursorPosition= {}
-CursorPosition.__index = CursorPosition
-function CursorPosition.CursorPosition_Nil()
-    local ptr = lib.CursorPosition_CursorPosition_Nil()
-    return ffi.gc(ptr,lib.CursorPosition_destroy)
+--------------------------DocPos----------------------------
+local DocPos= {}
+DocPos.__index = DocPos
+function DocPos.DocPos_Nil()
+    local ptr = lib.DocPos_DocPos_Nil()
+    return ffi.gc(ptr,lib.DocPos_destroy)
 end
-function CursorPosition.CursorPosition_Int(l,c)
-    local ptr = lib.CursorPosition_CursorPosition_Int(l,c)
-    return ffi.gc(ptr,lib.CursorPosition_destroy)
+function DocPos.DocPos_size_t(line,index)
+    local ptr = lib.DocPos_DocPos_size_t(line,index)
+    return ffi.gc(ptr,lib.DocPos_destroy)
 end
-function CursorPosition.__new(ctype,a1,a2) -- generic version
-    if a1==nil then return CursorPosition.CursorPosition_Nil() end
-    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return CursorPosition.CursorPosition_Int(a1,a2) end
+function DocPos.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return DocPos.DocPos_Nil() end
+    if (ffi.istype('uint32_t',a1) or type(a1)=='number') then return DocPos.DocPos_size_t(a1,a2) end
     print(ctype,a1,a2)
-    error'CursorPosition.__new could not find overloaded'
+    error'DocPos.__new could not find overloaded'
 end
-M.CursorPosition = ffi.metatype("CursorPosition",CursorPosition)
---------------------------CursorSelection----------------------------
-local CursorSelection= {}
-CursorSelection.__index = CursorSelection
-function CursorSelection.CursorSelection_Nil()
-    local ptr = lib.CursorSelection_CursorSelection_Nil()
-    return ffi.gc(ptr,lib.CursorSelection_destroy)
+M.DocPos = ffi.metatype("DocPos",DocPos)
+--------------------------DocSelection----------------------------
+local DocSelection= {}
+DocSelection.__index = DocSelection
+function DocSelection.DocSelection_Nil()
+    local ptr = lib.DocSelection_DocSelection_Nil()
+    return ffi.gc(ptr,lib.DocSelection_destroy)
 end
-function CursorSelection.CursorSelection_CursorPosition(s,e)
-    local ptr = lib.CursorSelection_CursorSelection_CursorPosition(s,e)
-    return ffi.gc(ptr,lib.CursorSelection_destroy)
+function DocSelection.DocSelection_DocPos(start,_end)
+    local ptr = lib.DocSelection_DocSelection_DocPos(start,_end)
+    return ffi.gc(ptr,lib.DocSelection_destroy)
 end
-function CursorSelection.__new(ctype,a1,a2) -- generic version
-    if a1==nil then return CursorSelection.CursorSelection_Nil() end
-    if ffi.istype('CursorPosition',a1) then return CursorSelection.CursorSelection_CursorPosition(a1,a2) end
+function DocSelection.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return DocSelection.DocSelection_Nil() end
+    if ffi.istype('DocPos',a1) then return DocSelection.DocSelection_DocPos(a1,a2) end
     print(ctype,a1,a2)
-    error'CursorSelection.__new could not find overloaded'
+    error'DocSelection.__new could not find overloaded'
 end
-M.CursorSelection = ffi.metatype("CursorSelection",CursorSelection)
+M.DocSelection = ffi.metatype("DocSelection",DocSelection)
 --------------------------EmulateThreeButtonMouse----------------------------
 local EmulateThreeButtonMouse= {}
 EmulateThreeButtonMouse.__index = EmulateThreeButtonMouse
@@ -2817,13 +2818,26 @@ function ImVec2ih.__new(ctype,a1,a2) -- generic version
 end
 M.ImVec2ih = ffi.metatype("ImVec2ih",ImVec2ih)
 --------------------------Iterator----------------------------
-function M.Iterator_Iterator(a1) -- generic version
-    if a1==nil then return M.Iterator_Iterator_Nil() end
-    if (ffi.istype('Glyph*',a1) or ffi.istype('Glyph',a1) or ffi.istype('Glyph[]',a1)) then return M.Iterator_Iterator_GlyphPtr(a1) end
-    print(a1)
-    error'M.Iterator_Iterator could not find overloaded'
+local Iterator= {}
+Iterator.__index = Iterator
+function Iterator.Iterator_Nil()
+    local ptr = lib.Iterator_Iterator_Nil()
+    return ffi.gc(ptr,lib.Iterator_destroy)
 end
+function Iterator.Iterator_GlyphPtr(g)
+    local ptr = lib.Iterator_Iterator_GlyphPtr(g)
+    return ffi.gc(ptr,lib.Iterator_destroy)
+end
+function Iterator.__new(ctype,a1) -- generic version
+    if a1==nil then return Iterator.Iterator_Nil() end
+    if (ffi.istype('Glyph*',a1) or ffi.istype('Glyph',a1) or ffi.istype('Glyph[]',a1)) then return Iterator.Iterator_GlyphPtr(a1) end
+    print(ctype,a1)
+    error'Iterator.__new could not find overloaded'
+end
+M.Iterator = ffi.metatype("Iterator",Iterator)
 --------------------------Language----------------------------
+local Language= {}
+Language.__index = Language
 M.Language_AngelScript = lib.Language_AngelScript
 M.Language_C = lib.Language_C
 M.Language_Cpp = lib.Language_Cpp
@@ -2835,6 +2849,7 @@ M.Language_Lua = lib.Language_Lua
 M.Language_Markdown = lib.Language_Markdown
 M.Language_Python = lib.Language_Python
 M.Language_Sql = lib.Language_Sql
+M.Language = ffi.metatype("Language",Language)
 --------------------------LinkDetachWithModifierClick----------------------------
 local LinkDetachWithModifierClick= {}
 LinkDetachWithModifierClick.__index = LinkDetachWithModifierClick
@@ -2851,7 +2866,24 @@ function MultipleSelectModifier.__new(ctype)
     return ffi.gc(ptr,lib.MultipleSelectModifier_destroy)
 end
 M.MultipleSelectModifier = ffi.metatype("MultipleSelectModifier",MultipleSelectModifier)
+--------------------------Notifications----------------------------
+local Notifications= {}
+Notifications.__index = Notifications
+function Notifications:Add(type,message,dismissTime)
+    dismissTime = dismissTime or 4000
+    return lib.Notifications_Add(self,type,message,dismissTime)
+end
+function Notifications.__new(ctype)
+    local ptr = lib.Notifications_Notifications()
+    return ffi.gc(ptr,lib.Notifications_destroy)
+end
+Notifications.Render = lib.Notifications_Render
+M.Notifications = ffi.metatype("Notifications",Notifications)
 --------------------------Palette----------------------------
+local Palette= {}
+Palette.__index = Palette
+Palette.get = lib.Palette_get
+M.Palette = ffi.metatype("Palette",Palette)
 --------------------------Style----------------------------
 local Style= {}
 Style.__index = Style
@@ -2863,16 +2895,34 @@ M.Style = ffi.metatype("Style",Style)
 --------------------------TextDiff----------------------------
 local TextDiff= {}
 TextDiff.__index = TextDiff
+TextDiff.GetLanguage = lib.TextDiff_GetLanguage
+TextDiff.GetLineSpacing = lib.TextDiff_GetLineSpacing
+TextDiff.GetPalette = lib.TextDiff_GetPalette
 TextDiff.GetSideBySideMode = lib.TextDiff_GetSideBySideMode
+TextDiff.GetTabSize = lib.TextDiff_GetTabSize
+TextDiff.IsShowScrollbarMiniMapEnabled = lib.TextDiff_IsShowScrollbarMiniMapEnabled
+TextDiff.IsShowSpacesEnabled = lib.TextDiff_IsShowSpacesEnabled
+TextDiff.IsShowTabsEnabled = lib.TextDiff_IsShowTabsEnabled
+TextDiff.IsShowWhitespacesEnabled = lib.TextDiff_IsShowWhitespacesEnabled
+TextDiff.IsWordWrapEnabled = lib.TextDiff_IsWordWrapEnabled
 function TextDiff:Render(title,size,border)
     border = border or false
     size = size or ImVec2()
     return lib.TextDiff_Render(self,title,size,border)
 end
 TextDiff.SetColors = lib.TextDiff_SetColors
+TextDiff.SetFocus = lib.TextDiff_SetFocus
 TextDiff.SetLanguage = lib.TextDiff_SetLanguage
+TextDiff.SetLineSpacing = lib.TextDiff_SetLineSpacing
+TextDiff.SetPalette = lib.TextDiff_SetPalette
+TextDiff.SetShowScrollbarMiniMapEnabled = lib.TextDiff_SetShowScrollbarMiniMapEnabled
+TextDiff.SetShowSpacesEnabled = lib.TextDiff_SetShowSpacesEnabled
+TextDiff.SetShowTabsEnabled = lib.TextDiff_SetShowTabsEnabled
+TextDiff.SetShowWhitespacesEnabled = lib.TextDiff_SetShowWhitespacesEnabled
 TextDiff.SetSideBySideMode = lib.TextDiff_SetSideBySideMode
+TextDiff.SetTabSize = lib.TextDiff_SetTabSize
 TextDiff.SetText = lib.TextDiff_SetText
+TextDiff.SetWordWrapEnabled = lib.TextDiff_SetWordWrapEnabled
 function TextDiff.__new(ctype)
     local ptr = lib.TextDiff_TextDiff()
     return ffi.gc(ptr,lib.TextDiff_destroy)
@@ -2893,75 +2943,90 @@ TextEditor.ClearLineNumberContextMenuCallback = lib.TextEditor_ClearLineNumberCo
 TextEditor.ClearMarkers = lib.TextEditor_ClearMarkers
 TextEditor.ClearText = lib.TextEditor_ClearText
 TextEditor.ClearTextContextMenuCallback = lib.TextEditor_ClearTextContextMenuCallback
+TextEditor.ClearTextHoverCallback = lib.TextEditor_ClearTextHoverCallback
 TextEditor.CloseFindReplaceWindow = lib.TextEditor_CloseFindReplaceWindow
 TextEditor.Copy = lib.TextEditor_Copy
 TextEditor.CurrentCursorHasSelection = lib.TextEditor_CurrentCursorHasSelection
 TextEditor.Cut = lib.TextEditor_Cut
 TextEditor.DeindentLines = lib.TextEditor_DeindentLines
+TextEditor.DocPos2VisPos = lib.TextEditor_DocPos2VisPos
 TextEditor.FilterLines = lib.TextEditor_FilterLines
 TextEditor.FilterSelections = lib.TextEditor_FilterSelections
 TextEditor.FindAll = lib.TextEditor_FindAll
 TextEditor.FindNext = lib.TextEditor_FindNext
-TextEditor.GetCurrentCursor = lib.TextEditor_GetCurrentCursor
+TextEditor.FoldAroundLine = lib.TextEditor_FoldAroundLine
 TextEditor.GetCurrentCursorPosition = lib.TextEditor_GetCurrentCursorPosition
-TextEditor.GetCursor_size_t = lib.TextEditor_GetCursor_size_t
-TextEditor.GetCursor_IntPtr = lib.TextEditor_GetCursor_IntPtr
-function TextEditor:GetCursor(a2,a3,a4,a5,a6) -- generic version
-    if (ffi.istype('uint32_t',a4) or type(a4)=='number') then return self:GetCursor_size_t(a2,a3,a4) end
-    if ffi.typeof('int32_t*') == ffi.typeof(a4) or ffi.typeof('const int32_t*') == ffi.typeof(a4) or ffi.typeof('int32_t[?]') == ffi.typeof(a4) or ffi.typeof('const int32_t[?]') == ffi.typeof(a4) then return self:GetCursor_IntPtr(a2,a3,a4,a5,a6) end
-    print(a2,a3,a4,a5,a6)
-    error'TextEditor:GetCursor could not find overloaded'
-end
+TextEditor.GetCurrentCursorSelection = lib.TextEditor_GetCurrentCursorSelection
 TextEditor.GetCursorPosition = lib.TextEditor_GetCursorPosition
 TextEditor.GetCursorSelection = lib.TextEditor_GetCursorSelection
 TextEditor.GetCursorText = lib.TextEditor_GetCursorText
 M.TextEditor_GetDarkPalette = lib.TextEditor_GetDarkPalette
 M.TextEditor_GetDefaultPalette = lib.TextEditor_GetDefaultPalette
+TextEditor.GetDocPosAtMousePos = lib.TextEditor_GetDocPosAtMousePos
 TextEditor.GetFirstVisibleColumn = lib.TextEditor_GetFirstVisibleColumn
-TextEditor.GetFirstVisibleLine = lib.TextEditor_GetFirstVisibleLine
+TextEditor.GetFirstVisibleRow = lib.TextEditor_GetFirstVisibleRow
 TextEditor.GetGlyphWidth = lib.TextEditor_GetGlyphWidth
 TextEditor.GetLanguage = lib.TextEditor_GetLanguage
 TextEditor.GetLanguageName = lib.TextEditor_GetLanguageName
 TextEditor.GetLastVisibleColumn = lib.TextEditor_GetLastVisibleColumn
-TextEditor.GetLastVisibleLine = lib.TextEditor_GetLastVisibleLine
+TextEditor.GetLastVisibleRow = lib.TextEditor_GetLastVisibleRow
 M.TextEditor_GetLightPalette = lib.TextEditor_GetLightPalette
 TextEditor.GetLineCount = lib.TextEditor_GetLineCount
 TextEditor.GetLineHeight = lib.TextEditor_GetLineHeight
 TextEditor.GetLineSpacing = lib.TextEditor_GetLineSpacing
 TextEditor.GetLineText = lib.TextEditor_GetLineText
-TextEditor.GetMainCursor = lib.TextEditor_GetMainCursor
 TextEditor.GetMainCursorPosition = lib.TextEditor_GetMainCursorPosition
 TextEditor.GetMainCursorSelection = lib.TextEditor_GetMainCursorSelection
+TextEditor.GetMiniMapColumns = lib.TextEditor_GetMiniMapColumns
 TextEditor.GetNumberOfCursors = lib.TextEditor_GetNumberOfCursors
 TextEditor.GetPalette = lib.TextEditor_GetPalette
-TextEditor.GetSectionText = lib.TextEditor_GetSectionText
+TextEditor.GetSectionText_DocPos = lib.TextEditor_GetSectionText_DocPos
+TextEditor.GetSectionText_DocSelection = lib.TextEditor_GetSectionText_DocSelection
+function TextEditor:GetSectionText(a2,a3) -- generic version
+    if ffi.istype('DocPos',a2) then return self:GetSectionText_DocPos(a2,a3) end
+    if ffi.istype('DocSelection',a2) then return self:GetSectionText_DocSelection(a2) end
+    print(a2,a3)
+    error'TextEditor:GetSectionText could not find overloaded'
+end
 TextEditor.GetTabSize = lib.TextEditor_GetTabSize
 TextEditor.GetText = lib.TextEditor_GetText
 TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
 TextEditor.GetUserData = lib.TextEditor_GetUserData
-TextEditor.GetWordAtScreenPos = lib.TextEditor_GetWordAtScreenPos
-TextEditor.GrowSelectionsToCurlyBrackets = lib.TextEditor_GrowSelectionsToCurlyBrackets
+TextEditor.GetWordAtMousePos = lib.TextEditor_GetWordAtMousePos
+TextEditor.GrowSelections = lib.TextEditor_GrowSelections
 TextEditor.HasFindString = lib.TextEditor_HasFindString
 TextEditor.HasLanguage = lib.TextEditor_HasLanguage
 TextEditor.HasLineDecorator = lib.TextEditor_HasLineDecorator
 TextEditor.HasLineNumberContextMenuCallback = lib.TextEditor_HasLineNumberContextMenuCallback
 TextEditor.HasMarkers = lib.TextEditor_HasMarkers
 TextEditor.HasTextContextMenuCallback = lib.TextEditor_HasTextContextMenuCallback
+TextEditor.HasTextHoverCallback = lib.TextEditor_HasTextHoverCallback
 TextEditor.IndentLines = lib.TextEditor_IndentLines
 TextEditor.IsAutoIndentEnabled = lib.TextEditor_IsAutoIndentEnabled
+TextEditor.IsCaretsVisible = lib.TextEditor_IsCaretsVisible
 TextEditor.IsCompletingPairedGlyphs = lib.TextEditor_IsCompletingPairedGlyphs
+TextEditor.IsDocPosVisible = lib.TextEditor_IsDocPosVisible
 TextEditor.IsEmpty = lib.TextEditor_IsEmpty
 TextEditor.IsInsertSpacesOnTabs = lib.TextEditor_IsInsertSpacesOnTabs
+TextEditor.IsLineFoldable = lib.TextEditor_IsLineFoldable
+TextEditor.IsLineFolded = lib.TextEditor_IsLineFolded
+TextEditor.IsLineFoldingEnabled = lib.TextEditor_IsLineFoldingEnabled
+TextEditor.IsLineHidden = lib.TextEditor_IsLineHidden
+TextEditor.IsLineVisible = lib.TextEditor_IsLineVisible
 TextEditor.IsMiddleMousePanMode = lib.TextEditor_IsMiddleMousePanMode
+TextEditor.IsMousePosOverGlyph = lib.TextEditor_IsMousePosOverGlyph
 TextEditor.IsOverwriteEnabled = lib.TextEditor_IsOverwriteEnabled
 TextEditor.IsReadOnlyEnabled = lib.TextEditor_IsReadOnlyEnabled
 TextEditor.IsShowLineNumbersEnabled = lib.TextEditor_IsShowLineNumbersEnabled
+TextEditor.IsShowMiniMapEnabled = lib.TextEditor_IsShowMiniMapEnabled
 TextEditor.IsShowPanScrollIndicatorEnabled = lib.TextEditor_IsShowPanScrollIndicatorEnabled
 TextEditor.IsShowScrollbarMiniMapEnabled = lib.TextEditor_IsShowScrollbarMiniMapEnabled
 TextEditor.IsShowSpacesEnabled = lib.TextEditor_IsShowSpacesEnabled
 TextEditor.IsShowTabsEnabled = lib.TextEditor_IsShowTabsEnabled
 TextEditor.IsShowWhitespacesEnabled = lib.TextEditor_IsShowWhitespacesEnabled
 TextEditor.IsShowingMatchingBrackets = lib.TextEditor_IsShowingMatchingBrackets
+TextEditor.IsVisPosOverGlyph = lib.TextEditor_IsVisPosOverGlyph
+TextEditor.IsWordWrapEnabled = lib.TextEditor_IsWordWrapEnabled
 TextEditor.IterateIdentifiers = lib.TextEditor_IterateIdentifiers
 TextEditor.IterateUserData = lib.TextEditor_IterateUserData
 TextEditor.MoveDownLines = lib.TextEditor_MoveDownLines
@@ -2974,7 +3039,14 @@ function TextEditor:Render(title,size,border)
     size = size or ImVec2()
     return lib.TextEditor_Render(self,title,size,border)
 end
-TextEditor.ReplaceSectionText = lib.TextEditor_ReplaceSectionText
+TextEditor.ReplaceSectionText_DocPos = lib.TextEditor_ReplaceSectionText_DocPos
+TextEditor.ReplaceSectionText_DocSelection = lib.TextEditor_ReplaceSectionText_DocSelection
+function TextEditor:ReplaceSectionText(a2,a3,a4) -- generic version
+    if ffi.istype('DocPos',a2) then return self:ReplaceSectionText_DocPos(a2,a3,a4) end
+    if ffi.istype('DocSelection',a2) then return self:ReplaceSectionText_DocSelection(a2,a3) end
+    print(a2,a3,a4)
+    error'TextEditor:ReplaceSectionText could not find overloaded'
+end
 TextEditor.ReplaceTextInAllCursors = lib.TextEditor_ReplaceTextInAllCursors
 TextEditor.ReplaceTextInCurrentCursor = lib.TextEditor_ReplaceTextInCurrentCursor
 TextEditor.ScrollToLine = lib.TextEditor_ScrollToLine
@@ -3007,6 +3079,7 @@ TextEditor.SelectionToUpperCase = lib.TextEditor_SelectionToUpperCase
 TextEditor.SetAutoCompleteConfig = lib.TextEditor_SetAutoCompleteConfig
 
 TextEditor.SetAutoIndentEnabled = lib.TextEditor_SetAutoIndentEnabled
+TextEditor.SetCaretsVisible = lib.TextEditor_SetCaretsVisible
 function TextEditor:SetChangeCallback(callback,delay)
     delay = delay or 0
     return lib.TextEditor_SetChangeCallback(self,callback,delay)
@@ -3022,11 +3095,15 @@ M.TextEditor_SetImGuiContext = lib.TextEditor_SetImGuiContext
 TextEditor.SetInsertSpacesOnTabs = lib.TextEditor_SetInsertSpacesOnTabs
 TextEditor.SetInsertor = lib.TextEditor_SetInsertor
 TextEditor.SetLanguage = lib.TextEditor_SetLanguage
+TextEditor.SetLanguageChangeCallback = lib.TextEditor_SetLanguageChangeCallback
+TextEditor.SetLineBreakConfig = lib.TextEditor_SetLineBreakConfig
 TextEditor.SetLineDecorator = lib.TextEditor_SetLineDecorator
+TextEditor.SetLineFoldingEnabled = lib.TextEditor_SetLineFoldingEnabled
 TextEditor.SetLineNumberContextMenuCallback = lib.TextEditor_SetLineNumberContextMenuCallback
 TextEditor.SetLineSpacing = lib.TextEditor_SetLineSpacing
 TextEditor.SetMiddleMousePanMode = lib.TextEditor_SetMiddleMousePanMode
 TextEditor.SetMiddleMouseScrollMode = lib.TextEditor_SetMiddleMouseScrollMode
+TextEditor.SetMiniMapColumns = lib.TextEditor_SetMiniMapColumns
 TextEditor.SetOverwriteEnabled = lib.TextEditor_SetOverwriteEnabled
 TextEditor.SetPalette = lib.TextEditor_SetPalette
 TextEditor.SetReadOnlyEnabled = lib.TextEditor_SetReadOnlyEnabled
@@ -3034,6 +3111,7 @@ TextEditor.SetReplaceAllButtonLabel = lib.TextEditor_SetReplaceAllButtonLabel
 TextEditor.SetReplaceButtonLabel = lib.TextEditor_SetReplaceButtonLabel
 TextEditor.SetShowLineNumbersEnabled = lib.TextEditor_SetShowLineNumbersEnabled
 TextEditor.SetShowMatchingBrackets = lib.TextEditor_SetShowMatchingBrackets
+TextEditor.SetShowMiniMapEnabled = lib.TextEditor_SetShowMiniMapEnabled
 TextEditor.SetShowPanScrollIndicatorEnabled = lib.TextEditor_SetShowPanScrollIndicatorEnabled
 TextEditor.SetShowScrollbarMiniMapEnabled = lib.TextEditor_SetShowScrollbarMiniMapEnabled
 TextEditor.SetShowSpacesEnabled = lib.TextEditor_SetShowSpacesEnabled
@@ -3042,9 +3120,11 @@ TextEditor.SetShowWhitespacesEnabled = lib.TextEditor_SetShowWhitespacesEnabled
 TextEditor.SetTabSize = lib.TextEditor_SetTabSize
 TextEditor.SetText = lib.TextEditor_SetText
 TextEditor.SetTextContextMenuCallback = lib.TextEditor_SetTextContextMenuCallback
+TextEditor.SetTextHoverCallback = lib.TextEditor_SetTextHoverCallback
 
 TextEditor.SetUserData = lib.TextEditor_SetUserData
-TextEditor.ShrinkSelectionsToCurlyBrackets = lib.TextEditor_ShrinkSelectionsToCurlyBrackets
+TextEditor.SetWordWrapEnabled = lib.TextEditor_SetWordWrapEnabled
+TextEditor.ShrinkSelections = lib.TextEditor_ShrinkSelections
 TextEditor.SpacesToTabs = lib.TextEditor_SpacesToTabs
 TextEditor.StripTrailingWhitespaces = lib.TextEditor_StripTrailingWhitespaces
 TextEditor.TabsToSpaces = lib.TextEditor_TabsToSpaces
@@ -3052,20 +3132,42 @@ function TextEditor.__new(ctype)
     local ptr = lib.TextEditor_TextEditor()
     return ffi.gc(ptr,lib.TextEditor_destroy)
 end
+TextEditor.ToggleAtLine = lib.TextEditor_ToggleAtLine
 TextEditor.ToggleComments = lib.TextEditor_ToggleComments
 TextEditor.Undo = lib.TextEditor_Undo
+TextEditor.UnfoldAll = lib.TextEditor_UnfoldAll
+TextEditor.UnfoldAroundLine = lib.TextEditor_UnfoldAroundLine
+TextEditor.VisPos2DocPos = lib.TextEditor_VisPos2DocPos
 M.TextEditor = ffi.metatype("TextEditor",TextEditor)
---------------------------Trie----------------------------
-local Trie= {}
-Trie.__index = Trie
-function Trie.__new(ctype)
-    local ptr = lib.Trie_Trie()
-    return ffi.gc(ptr,lib.Trie_destroy)
+--------------------------TrieAutoComplete----------------------------
+local TrieAutoComplete= {}
+TrieAutoComplete.__index = TrieAutoComplete
+TrieAutoComplete.Connect = lib.TrieAutoComplete_Connect
+TrieAutoComplete.Disconnect = lib.TrieAutoComplete_Disconnect
+TrieAutoComplete.IsConnected = lib.TrieAutoComplete_IsConnected
+function TrieAutoComplete.__new(ctype)
+    local ptr = lib.TrieAutoComplete_TrieAutoComplete()
+    return ffi.gc(ptr,lib.TrieAutoComplete_destroy)
 end
-Trie.clear = lib.Trie_clear
-
-Trie.insert = lib.Trie_insert
-M.Trie = ffi.metatype("Trie",Trie)
+M.TrieAutoComplete = ffi.metatype("TrieAutoComplete",TrieAutoComplete)
+--------------------------VisPos----------------------------
+local VisPos= {}
+VisPos.__index = VisPos
+function VisPos.VisPos_Nil()
+    local ptr = lib.VisPos_VisPos_Nil()
+    return ffi.gc(ptr,lib.VisPos_destroy)
+end
+function VisPos.VisPos_size_t(row,column)
+    local ptr = lib.VisPos_VisPos_size_t(row,column)
+    return ffi.gc(ptr,lib.VisPos_destroy)
+end
+function VisPos.__new(ctype,a1,a2) -- generic version
+    if a1==nil then return VisPos.VisPos_Nil() end
+    if (ffi.istype('uint32_t',a1) or type(a1)=='number') then return VisPos.VisPos_size_t(a1,a2) end
+    print(ctype,a1,a2)
+    error'VisPos.__new could not find overloaded'
+end
+M.VisPos = ffi.metatype("VisPos",VisPos)
 --------------------------imguiGizmo----------------------------
 local imguiGizmo= {}
 imguiGizmo.__index = imguiGizmo

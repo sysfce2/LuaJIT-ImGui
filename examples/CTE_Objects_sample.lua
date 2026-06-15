@@ -24,7 +24,7 @@ local function toint(x) return ffi.new("int",x) end
 
 function win:draw(ig)
 	local cupos = editor:GetMainCursorPosition()
-	local mLine, mColumn = cupos.line, cupos.column
+	local mLine, mColumn = cupos.line, cupos.index
 	ig.Begin("Text Editor Demo", nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
 		ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
 		if (ig.BeginMenuBar())

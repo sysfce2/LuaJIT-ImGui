@@ -43,6 +43,8 @@ set(IMGUI_SOURCES ./cimgui/cimgui.cpp
 ./cimCTE/cimCTE.cpp 
 ./cimCTE/ImGuiColorTextEdit/TextEditor.cpp
 ./cimCTE/ImGuiColorTextEdit/TextDiff.cpp
+./cimCTE/ImGuiColorTextEdit/extras/TrieAutoComplete.cpp
+./cimCTE/ImGuiColorTextEdit/extras/Notifications.h
 ./cimnodes_editor/cimnodes_editor.cpp
 ./cimnodes_editor/imgui-node-editor/imgui_node_editor.cpp
 ./cimnodes_editor/imgui-node-editor/imgui_node_editor_api.cpp

@@ -7515,18 +7515,24 @@ void ImNodes_Ez_PushStyleColor_U32(ImNodesStyleCol idx,ImU32 col);
 void ImNodes_Ez_PushStyleColor_Vec4(ImNodesStyleCol idx,const ImVec4_c col);
 void ImNodes_Ez_PopStyleColor(int count);
 typedef struct TextEditor TextEditor;
-struct CursorPosition_c
+struct DocPos_c
 {
-  int line;
-  int column;
+  size_t line;
+  size_t index;
 };
-typedef struct CursorPosition_c CursorPosition_c;
-struct CursorSelection_c
+typedef struct DocPos_c DocPos_c;
+struct DocSelection_c
 {
-  CursorPosition_c start;
-  CursorPosition_c end;
+  DocPos_c start;
+  DocPos_c end;
 };
-typedef struct CursorSelection_c CursorSelection_c;
+typedef struct DocSelection_c DocSelection_c;
+struct VisPos_c
+{
+  size_t row;
+  size_t column;
+};
+typedef struct VisPos_c VisPos_c;
 typedef enum {
   alignTop,
   alignMiddle,
@@ -7534,13 +7540,19 @@ typedef enum {
  }Scroll;
 struct Decorator
 {
-  int line;
+  size_t line;
   float width;
   float height;
   ImVec2_c glyphSize;
   void* userData;
 };
 typedef struct Decorator Decorator;
+struct PopupData
+{
+  DocPos_c pos;
+  void* userData;
+};
+typedef struct PopupData PopupData;
 typedef enum {
 text=0,
 keyword=1,
@@ -7566,16 +7578,19 @@ lineNumber=20,
 currentLineNumber=21,
 count=22,
 }Color;
+typedef enum {
+mustBreak=0,
+allowBreak=1,
+noBreak=2,
+undefined=3,
+}BreakOption;
 struct Glyph
 {
   ImWchar codepoint;
   Color color;
+  BreakOption breakOption;
 };
 typedef struct Glyph Glyph;
-struct Trie
-{
-};
-typedef struct Trie Trie;
 struct CodePoint
 {
 };
@@ -7583,35 +7598,64 @@ typedef struct CodePoint CodePoint;
 struct TextEditor
 {
 };
-typedef struct CursorPosition_c CursorPosition_c;
-typedef struct CursorSelection_c CursorSelection_c;
+typedef struct DocPos_c DocPos_c;
+typedef struct DocSelection_c DocSelection_c;
+typedef struct VisPos_c VisPos_c;
 typedef struct Change Change;
 typedef struct Decorator Decorator;
+typedef struct PopupData PopupData;
 typedef struct Palette Palette;
 typedef struct Glyph Glyph;
 typedef struct Iterator Iterator;
 typedef struct Language Language;
 typedef struct AutoCompleteState AutoCompleteState;
 typedef struct AutoCompleteConfig AutoCompleteConfig;
-typedef struct Trie Trie;
 typedef struct CodePoint CodePoint;
+typedef struct LineBreakConfig LineBreakConfig;
 typedef struct TextDiff TextDiff;
 struct TextDiff
 {
-    TextEditor _TextEditor;
 };
-typedef struct CursorPosition_c CursorPosition;
-typedef struct CursorSelection_c CursorSelection;
+typedef struct TrieAutoComplete TrieAutoComplete;
+struct TrieAutoComplete
+{
+};
+typedef struct Notifications Notifications;
+typedef enum {
+  success,
+  warning,
+  error,
+  info
+ }Type;
+struct Notifications
+{
+};
+typedef struct DocPos_c DocPos;
+typedef struct VisPos_c VisPos;
+typedef struct DocSelection_c DocSelection;
 TextEditor* TextEditor_TextEditor(void);
 void TextEditor_destroy(TextEditor* self);
-void TextEditor_SetTabSize(TextEditor* self,int value);
-int TextEditor_GetTabSize(TextEditor* self);
+DocPos* DocPos_DocPos_Nil(void);
+void DocPos_destroy(DocPos* self);
+DocPos* DocPos_DocPos_size_t(size_t line,size_t index);
+DocSelection* DocSelection_DocSelection_Nil(void);
+void DocSelection_destroy(DocSelection* self);
+DocSelection* DocSelection_DocSelection_DocPos(DocPos_c start,DocPos_c end);
+VisPos* VisPos_VisPos_Nil(void);
+void VisPos_destroy(VisPos* self);
+VisPos* VisPos_VisPos_size_t(size_t row,size_t column);
+void TextEditor_SetTabSize(TextEditor* self,size_t value);
+size_t TextEditor_GetTabSize(TextEditor* self);
 void TextEditor_SetInsertSpacesOnTabs(TextEditor* self,                                                                 _Bool                                                                       value);
 _Bool                TextEditor_IsInsertSpacesOnTabs(TextEditor* self);
 void TextEditor_SetLineSpacing(TextEditor* self,float value);
 float TextEditor_GetLineSpacing(TextEditor* self);
+void TextEditor_SetWordWrapEnabled(TextEditor* self,                                                              _Bool                                                                    value);
+_Bool                TextEditor_IsWordWrapEnabled(TextEditor* self);
 void TextEditor_SetReadOnlyEnabled(TextEditor* self,                                                              _Bool                                                                    value);
 _Bool                TextEditor_IsReadOnlyEnabled(TextEditor* self);
+void TextEditor_SetCaretsVisible(TextEditor* self,                                                            _Bool                                                                  value);
+_Bool                TextEditor_IsCaretsVisible(TextEditor* self);
 void TextEditor_SetAutoIndentEnabled(TextEditor* self,                                                                _Bool                                                                      value);
 _Bool                TextEditor_IsAutoIndentEnabled(TextEditor* self);
 void TextEditor_SetShowWhitespacesEnabled(TextEditor* self,                                                                     _Bool                                                                           value);
@@ -7622,6 +7666,10 @@ void TextEditor_SetShowTabsEnabled(TextEditor* self,                            
 _Bool                TextEditor_IsShowTabsEnabled(TextEditor* self);
 void TextEditor_SetShowLineNumbersEnabled(TextEditor* self,                                                                     _Bool                                                                           value);
 _Bool                TextEditor_IsShowLineNumbersEnabled(TextEditor* self);
+void TextEditor_SetShowMiniMapEnabled(TextEditor* self,                                                                 _Bool                                                                       value);
+_Bool                TextEditor_IsShowMiniMapEnabled(TextEditor* self);
+void TextEditor_SetMiniMapColumns(TextEditor* self,size_t value);
+size_t TextEditor_GetMiniMapColumns(TextEditor* self);
 void TextEditor_SetShowScrollbarMiniMapEnabled(TextEditor* self,                                                                          _Bool                                                                                value);
 _Bool                TextEditor_IsShowScrollbarMiniMapEnabled(TextEditor* self);
 void TextEditor_SetShowPanScrollIndicatorEnabled(TextEditor* self,                                                                            _Bool                                                                                  value);
@@ -7630,6 +7678,8 @@ void TextEditor_SetShowMatchingBrackets(TextEditor* self,                       
 _Bool                TextEditor_IsShowingMatchingBrackets(TextEditor* self);
 void TextEditor_SetCompletePairedGlyphs(TextEditor* self,                                                                   _Bool                                                                         value);
 _Bool                TextEditor_IsCompletingPairedGlyphs(TextEditor* self);
+void TextEditor_SetLineFoldingEnabled(TextEditor* self,                                                                 _Bool                                                                       value);
+_Bool                TextEditor_IsLineFoldingEnabled(TextEditor* self);
 void TextEditor_SetOverwriteEnabled(TextEditor* self,                                                               _Bool                                                                     value);
 _Bool                TextEditor_IsOverwriteEnabled(TextEditor* self);
 void TextEditor_SetMiddleMousePanMode(TextEditor* self);
@@ -7638,12 +7688,14 @@ _Bool                TextEditor_IsMiddleMousePanMode(TextEditor* self);
 void TextEditor_SetText(TextEditor* self,const char* text);
 const char* TextEditor_GetText(TextEditor* self);
 const char* TextEditor_GetCursorText(TextEditor* self,size_t cursor);
-const char* TextEditor_GetLineText(TextEditor* self,int line);
-const char* TextEditor_GetSectionText(TextEditor* self,int startLine,int startColumn,int endLine,int endColumn);
-void TextEditor_ReplaceSectionText(TextEditor* self,int startLine,int startColumn,int endLine,int endColumn,const char* text);
+const char* TextEditor_GetLineText(TextEditor* self,size_t line);
+const char* TextEditor_GetSectionText_DocPos(TextEditor* self,DocPos_c start,DocPos_c end);
+const char* TextEditor_GetSectionText_DocSelection(TextEditor* self,DocSelection_c selection);
+void TextEditor_ReplaceSectionText_DocPos(TextEditor* self,DocPos_c start,DocPos_c end,const char* text);
+void TextEditor_ReplaceSectionText_DocSelection(TextEditor* self,DocSelection_c selection,const char* text);
 void TextEditor_ClearText(TextEditor* self);
 _Bool                TextEditor_IsEmpty(TextEditor* self);
-int TextEditor_GetLineCount(TextEditor* self);
+size_t TextEditor_GetLineCount(TextEditor* self);
 void TextEditor_Render(TextEditor* self,const char* title,const ImVec2_c size,                                                                                        _Bool                                                                                              border);
 void TextEditor_SetFocus(TextEditor* self);
 void TextEditor_Cut(TextEditor* self);
@@ -7654,14 +7706,13 @@ void TextEditor_Redo(TextEditor* self);
 _Bool                TextEditor_CanUndo(TextEditor* self);
 _Bool                TextEditor_CanRedo(TextEditor* self);
 size_t TextEditor_GetUndoIndex(TextEditor* self);
-void TextEditor_SetCursor(TextEditor* self,int line,int column);
 void TextEditor_SelectAll(TextEditor* self);
-void TextEditor_SelectLine(TextEditor* self,int line);
-void TextEditor_SelectLines(TextEditor* self,int start,int end);
-void TextEditor_SelectRegion(TextEditor* self,int startLine,int startColumn,int endLine,int endColumn);
+void TextEditor_SelectLine(TextEditor* self,size_t line);
+void TextEditor_SelectLines(TextEditor* self,size_t start,size_t end);
+void TextEditor_SelectRegion(TextEditor* self,DocPos_c start,DocPos_c end);
 void TextEditor_SelectToBrackets(TextEditor* self,                                                            _Bool                                                                  includeBrackets);
-void TextEditor_GrowSelectionsToCurlyBrackets(TextEditor* self);
-void TextEditor_ShrinkSelectionsToCurlyBrackets(TextEditor* self);
+void TextEditor_GrowSelections(TextEditor* self);
+void TextEditor_ShrinkSelections(TextEditor* self);
 void TextEditor_AddNextOccurrence(TextEditor* self);
 void TextEditor_SelectAllOccurrences(TextEditor* self);
 _Bool                TextEditor_AnyCursorHasSelection(TextEditor* self);
@@ -7669,29 +7720,27 @@ _Bool                TextEditor_AllCursorsHaveSelection(TextEditor* self);
 _Bool                TextEditor_CurrentCursorHasSelection(TextEditor* self);
 void TextEditor_ClearCursors(TextEditor* self);
 size_t TextEditor_GetNumberOfCursors(TextEditor* self);
-void TextEditor_GetCursor_size_t(TextEditor* self,int* line,int* column,size_t cursor);
-void TextEditor_GetCursor_IntPtr(TextEditor* self,int* startLine,int* startColumn,int* endLine,int* endColumn,size_t cursor);
-void TextEditor_GetMainCursor(TextEditor* self,int* line,int* column);
-void TextEditor_GetCurrentCursor(TextEditor* self,int* line,int* column);
-CursorPosition* CursorPosition_CursorPosition_Nil(void);
-void CursorPosition_destroy(CursorPosition* self);
-CursorPosition* CursorPosition_CursorPosition_Int(int l,int c);
-CursorSelection* CursorSelection_CursorSelection_Nil(void);
-void CursorSelection_destroy(CursorSelection* self);
-CursorSelection* CursorSelection_CursorSelection_CursorPosition(CursorPosition_c s,CursorPosition_c e);
-CursorPosition_c TextEditor_GetMainCursorPosition(TextEditor* self);
-CursorPosition_c TextEditor_GetCurrentCursorPosition(TextEditor* self);
-CursorPosition_c TextEditor_GetCursorPosition(TextEditor* self,size_t cursor);
-CursorSelection_c TextEditor_GetCursorSelection(TextEditor* self,size_t cursor);
-CursorSelection_c TextEditor_GetMainCursorSelection(TextEditor* self);
-const char* TextEditor_GetWordAtScreenPos(TextEditor* self,const ImVec2_c screenPos);
-void TextEditor_ScrollToLine(TextEditor* self,int line,Scroll alignment);
-int TextEditor_GetFirstVisibleLine(TextEditor* self);
-int TextEditor_GetLastVisibleLine(TextEditor* self);
-int TextEditor_GetFirstVisibleColumn(TextEditor* self);
-int TextEditor_GetLastVisibleColumn(TextEditor* self);
+DocPos_c TextEditor_GetCursorPosition(TextEditor* self,size_t cursor);
+DocPos_c TextEditor_GetMainCursorPosition(TextEditor* self);
+DocPos_c TextEditor_GetCurrentCursorPosition(TextEditor* self);
+DocSelection_c TextEditor_GetCursorSelection(TextEditor* self,size_t cursor);
+DocSelection_c TextEditor_GetMainCursorSelection(TextEditor* self);
+DocSelection_c TextEditor_GetCurrentCursorSelection(TextEditor* self);
+_Bool                TextEditor_IsMousePosOverGlyph(TextEditor* self,const ImVec2_c mousePos);
+DocPos_c TextEditor_GetDocPosAtMousePos(TextEditor* self,const ImVec2_c mousePos);
+const char* TextEditor_GetWordAtMousePos(TextEditor* self,const ImVec2_c mousePos);
+void TextEditor_ScrollToLine(TextEditor* self,size_t line,Scroll alignment);
+size_t TextEditor_GetFirstVisibleRow(TextEditor* self);
+size_t TextEditor_GetLastVisibleRow(TextEditor* self);
+size_t TextEditor_GetFirstVisibleColumn(TextEditor* self);
+size_t TextEditor_GetLastVisibleColumn(TextEditor* self);
+void TextEditor_SetCursor(TextEditor* self,DocPos_c pos);
 float TextEditor_GetLineHeight(TextEditor* self);
 float TextEditor_GetGlyphWidth(TextEditor* self);
+VisPos_c TextEditor_DocPos2VisPos(TextEditor* self,DocPos_c pos);
+DocPos_c TextEditor_VisPos2DocPos(TextEditor* self,VisPos_c pos);
+_Bool                TextEditor_IsDocPosVisible(TextEditor* self,DocPos_c pos);
+_Bool                TextEditor_IsVisPosOverGlyph(TextEditor* self,VisPos_c pos);
 void TextEditor_SelectFirstOccurrenceOf(TextEditor* self,const char* text,                                                                                    _Bool                                                                                          caseSensitive,                                                                                                       _Bool                                                                                                             wholeWord);
 void TextEditor_SelectNextOccurrenceOf(TextEditor* self,const char* text,                                                                                   _Bool                                                                                         caseSensitive,                                                                                                      _Bool                                                                                                            wholeWord);
 void TextEditor_SelectAllOccurrencesOf(TextEditor* self,const char* text,                                                                                   _Bool                                                                                         caseSensitive,                                                                                                      _Bool                                                                                                            wholeWord);
@@ -7706,24 +7755,35 @@ void TextEditor_SetReplaceAllButtonLabel(TextEditor* self,const char* label);
 _Bool                TextEditor_HasFindString(TextEditor* self);
 void TextEditor_FindNext(TextEditor* self);
 void TextEditor_FindAll(TextEditor* self);
-void TextEditor_AddMarker(TextEditor* self,int line,ImU32 lineNumberColor,ImU32 textColor,const char* lineNumberTooltip,const char* textTooltip);
+void TextEditor_AddMarker(TextEditor* self,size_t line,ImU32 lineNumberColor,ImU32 textColor,const char* lineNumberTooltip,const char* textTooltip);
 void TextEditor_ClearMarkers(TextEditor* self);
 _Bool                TextEditor_HasMarkers(TextEditor* self);
 void TextEditor_SetChangeCallback(TextEditor* self,void(*cb)(),int delay);
-void TextEditor_SetInsertor(TextEditor* self,void*(*cb)(int));
-void TextEditor_SetDeletor(TextEditor* self,void(*cb)(int,void*));
-void TextEditor_SetUserData(TextEditor* self,int line,void* data);
-void* TextEditor_GetUserData(TextEditor* self,int line);
-void TextEditor_IterateUserData(TextEditor* self,void(*cb)(int,void*));
-void TextEditor_SetLineDecorator(TextEditor* self,float width,void(*cb)(Decorator&));
+void TextEditor_SetInsertor(TextEditor* self,void*(*cb)(size_t));
+void TextEditor_SetDeletor(TextEditor* self,void(*cb)(size_t,void*));
+void TextEditor_SetUserData(TextEditor* self,size_t line,void* data);
+void* TextEditor_GetUserData(TextEditor* self,size_t line);
+void TextEditor_IterateUserData(TextEditor* self,void(*cb)(size_t,void*));
+void TextEditor_SetLineDecorator(TextEditor* self,float width,void(*cb)(Decorator*));
 void TextEditor_ClearLineDecorator(TextEditor* self);
 _Bool                TextEditor_HasLineDecorator(TextEditor* self);
-void TextEditor_SetLineNumberContextMenuCallback(TextEditor* self,void(*cb)(int));
+void TextEditor_SetLineNumberContextMenuCallback(TextEditor* self,void(*cb)(PopupData*));
 void TextEditor_ClearLineNumberContextMenuCallback(TextEditor* self);
 _Bool                TextEditor_HasLineNumberContextMenuCallback(TextEditor* self);
-void TextEditor_SetTextContextMenuCallback(TextEditor* self,void(*cb)(int,int));
+void TextEditor_SetTextContextMenuCallback(TextEditor* self,void(*cb)(PopupData*));
 void TextEditor_ClearTextContextMenuCallback(TextEditor* self);
 _Bool                TextEditor_HasTextContextMenuCallback(TextEditor* self);
+void TextEditor_SetTextHoverCallback(TextEditor* self,void(*cb)(PopupData*));
+void TextEditor_ClearTextHoverCallback(TextEditor* self);
+_Bool                TextEditor_HasTextHoverCallback(TextEditor* self);
+void TextEditor_FoldAroundLine(TextEditor* self,size_t line);
+void TextEditor_UnfoldAroundLine(TextEditor* self,size_t line);
+void TextEditor_ToggleAtLine(TextEditor* self,size_t line);
+void TextEditor_UnfoldAll(TextEditor* self);
+_Bool                TextEditor_IsLineFoldable(TextEditor* self,size_t line);
+_Bool                TextEditor_IsLineFolded(TextEditor* self,size_t line);
+_Bool                TextEditor_IsLineVisible(TextEditor* self,size_t line);
+_Bool                TextEditor_IsLineHidden(TextEditor* self,size_t line);
 void TextEditor_IndentLines(TextEditor* self);
 void TextEditor_DeindentLines(TextEditor* self);
 void TextEditor_MoveUpLines(TextEditor* self);
@@ -7736,6 +7796,7 @@ void TextEditor_StripTrailingWhitespaces(TextEditor* self);
 void TextEditor_FilterLines(TextEditor* self,const char*(*cb)(const char*));
 void TextEditor_TabsToSpaces(TextEditor* self);
 void TextEditor_SpacesToTabs(TextEditor* self);
+ImU32 Palette_get(Palette* self,Color color);
 void TextEditor_SetPalette(TextEditor* self,const Palette* newPalette);
 const Palette* TextEditor_GetPalette(TextEditor* self);
 void TextEditor_SetDefaultPalette(const Palette* aValue);
@@ -7746,6 +7807,9 @@ Glyph* Glyph_Glyph_Nil(void);
 void Glyph_destroy(Glyph* self);
 Glyph* Glyph_Glyph_Wchar(ImWchar cp);
 Glyph* Glyph_Glyph_WcharColor(ImWchar cp,Color col);
+Iterator* Iterator_Iterator_Nil(void);
+void Iterator_destroy(Iterator* self);
+Iterator* Iterator_Iterator_GlyphPtr(Glyph* g);
 const Language* Language_C(void);
 const Language* Language_Cpp(void);
 const Language* Language_Cs(void);
@@ -7757,16 +7821,13 @@ const Language* Language_Hlsl(void);
 const Language* Language_Json(void);
 const Language* Language_Markdown(void);
 const Language* Language_Sql(void);
-void TextEditor_SetLanguage(TextEditor* self,const Language* l);
+void TextEditor_SetLanguage(TextEditor* self,const Language* language);
 const Language* TextEditor_GetLanguage(TextEditor* self);
 _Bool                TextEditor_HasLanguage(TextEditor* self);
 const char* TextEditor_GetLanguageName(TextEditor* self);
+void TextEditor_SetLanguageChangeCallback(TextEditor* self,void(*cb)());
 void TextEditor_IterateIdentifiers(TextEditor* self,void(*cb)(const char*));
-void TextEditor_SetAutoCompleteConfig(TextEditor* self,const AutoCompleteConfig* config);
-Trie* Trie_Trie(void);
-void Trie_destroy(Trie* self);
-void Trie_clear(Trie* self);
-void Trie_insert(Trie* self,const char* word);
+void TextEditor_SetAutoCompleteConfig(TextEditor* self,const AutoCompleteConfig* autoCompleteConfig);
 size_t CodePoint_write(char* i,ImWchar codepoint);
 _Bool                CodePoint_isLetter(ImWchar codepoint);
 _Bool                CodePoint_isNumber(ImWchar codepoint);
@@ -7776,6 +7837,7 @@ _Bool                CodePoint_isXidStart(ImWchar codepoint);
 _Bool                CodePoint_isXidContinue(ImWchar codepoint);
 _Bool                CodePoint_isLower(ImWchar codepoint);
 _Bool                CodePoint_isUpper(ImWchar codepoint);
+_Bool                CodePoint_isEastAsian(ImWchar codepoint);
 ImWchar CodePoint_toUpper(ImWchar codepoint);
 ImWchar CodePoint_toLower(ImWchar codepoint);
 _Bool                CodePoint_isPairOpener(ImWchar ch);
@@ -7786,15 +7848,47 @@ _Bool                CodePoint_isMatchingPair(ImWchar open,ImWchar close);
 _Bool                CodePoint_isBracketOpener(ImWchar ch);
 _Bool                CodePoint_isBracketCloser(ImWchar ch);
 _Bool                CodePoint_isMatchingBrackets(ImWchar open,ImWchar close);
+void TextEditor_SetLineBreakConfig(TextEditor* self,LineBreakConfig* newConfig);
 void TextEditor_SetImGuiContext(ImGuiContext* ctx);
 TextDiff* TextDiff_TextDiff(void);
 void TextDiff_destroy(TextDiff* self);
 void TextDiff_SetSideBySideMode(TextDiff* self,                                                         _Bool                                                               flag);
 _Bool                TextDiff_GetSideBySideMode(TextDiff* self);
-void TextDiff_SetText(TextDiff* self,const char* left,const char* right);
-void TextDiff_SetLanguage(TextDiff* self,const Language* l);
+void TextDiff_SetTabSize(TextDiff* self,size_t value);
+size_t TextDiff_GetTabSize(TextDiff* self);
+void TextDiff_SetLineSpacing(TextDiff* self,float value);
+float TextDiff_GetLineSpacing(TextDiff* self);
+void TextDiff_SetWordWrapEnabled(TextDiff* self,                                                          _Bool                                                                value);
+_Bool                TextDiff_IsWordWrapEnabled(TextDiff* self);
+void TextDiff_SetShowWhitespacesEnabled(TextDiff* self,                                                                 _Bool                                                                       value);
+_Bool                TextDiff_IsShowWhitespacesEnabled(TextDiff* self);
+void TextDiff_SetShowSpacesEnabled(TextDiff* self,                                                            _Bool                                                                  value);
+_Bool                TextDiff_IsShowSpacesEnabled(TextDiff* self);
+void TextDiff_SetShowTabsEnabled(TextDiff* self,                                                          _Bool                                                                value);
+_Bool                TextDiff_IsShowTabsEnabled(TextDiff* self);
+void TextDiff_SetShowScrollbarMiniMapEnabled(TextDiff* self,                                                                      _Bool                                                                            value);
+_Bool                TextDiff_IsShowScrollbarMiniMapEnabled(TextDiff* self);
+void TextDiff_SetLanguage(TextDiff* self,const Language* language);
+const Language* TextDiff_GetLanguage(TextDiff* self);
 void TextDiff_SetColors(TextDiff* self,ImU32 ac,ImU32 dc);
+void TextDiff_SetPalette(TextDiff* self,const Palette* newPalette);
+const Palette* TextDiff_GetPalette(TextDiff* self);
+void TextDiff_SetFocus(TextDiff* self);
+void TextDiff_SetText(TextDiff* self,const char* left,const char* right);
 void TextDiff_Render(TextDiff* self,const char* title,const ImVec2_c size,                                                                                    _Bool                                                                                          border);
+TrieAutoComplete* TrieAutoComplete_TrieAutoComplete(void);
+void TrieAutoComplete_destroy(TrieAutoComplete* self);
+void TrieAutoComplete_Connect(TrieAutoComplete* self,TextEditor* editor);
+void TrieAutoComplete_Disconnect(TrieAutoComplete* self);
+_Bool                TrieAutoComplete_IsConnected(TrieAutoComplete* self);
+Notifications* Notifications_Notifications(void);
+void Notifications_destroy(Notifications* self);
+void Notifications_Add(Notifications* self,Type type,const char* message,int dismissTime);
+void Notifications_Render(Notifications* self,ImVec2_c pos);
+Palette* Palette_Palette();
+void Palette_destroy(Palette*);
+void Palette_set(Palette*,ImU32,int);
+ImU32 Palette_const_get(const Palette*,Color);
 char* TextEditor_GetText_alloc(TextEditor* self);
 void TextEditor_GetText_free(char* ptr);
 const char* TextEditor_GetText_static(TextEditor* self);

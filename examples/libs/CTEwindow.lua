@@ -52,12 +52,108 @@ local function showDiff(self)
 	self.diff:SetText(self.originalText, self.editor:GetText());
 	self.render_diff = true
 end
-local function Render(self)
+local function renderStatusBar(self)
+		local editor = self.editor
+		local cupos = editor:GetMainCursorPosition()
+		local mLine, mColumn = cupos.line, cupos.index
+		--local  cursorPos = editor:DocPos2VisPos(editor:GetCurrentCursorPosition());
+		ig.Text("%6d/%-6d %6d lines  | %s |", toint(mLine + 1), toint(mColumn + 1), toint(editor:GetLineCount()),
+		editor:IsOverwriteEnabled() and "Ovr" or "Ins")
+		ig.SameLine()
+		local dirty = editor:CanUndo()
+		local tcolor = dirty and ig.ImVec4(1,0,0,1) or ig.ImVec4(1,1,1,1)
+		ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.file_name)
+		ig.SameLine()
+		self.lang_combo:draw()
+		ig.SameLine()
+		ig.SetNextItemWidth(100)
+		if (ig.DragFloat("window scale", self.window_scale, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)) then
+            --ig.SetWindowFontScale(self.window_scale[0]);
+             ig.GetStyle().FontScaleMain = self.window_scale[0]
+		end	
+end
+local function renderMenuOptions(self)
+		local editor = self.editor
+		if (ig.BeginMenu("Options"))  then 
+			if (ig.BeginMenu("Tab Size"))  then 
+				if (ig.MenuItem("1"))  then  editor:SetTabSize(1);  end 
+				if (ig.MenuItem("2"))  then  editor:SetTabSize(2);  end 
+				if (ig.MenuItem("4"))  then  editor:SetTabSize(4);  end 
+				if (ig.MenuItem("8"))  then  editor:SetTabSize(8);  end 
+				ig.EndMenu();
+			 end 
+
+			if (ig.BeginMenu("Line Spacing"))  then 
+				if (ig.MenuItem("1.0"))  then  editor:SetLineSpacing(1.0);  end 
+				if (ig.MenuItem("1.25"))  then  editor:SetLineSpacing(1.25);  end 
+				if (ig.MenuItem("1.5"))  then  editor:SetLineSpacing(1.5);  end 
+				if (ig.MenuItem("1.75"))  then  editor:SetLineSpacing(1.75);  end 
+				if (ig.MenuItem("2.0"))  then  editor:SetLineSpacing(2.0);  end 
+				ig.EndMenu();
+			 end 
+
+			if (ig.BeginMenu("MiniMap Columns"))  then 
+				local width = ffi.new("int[?]",1,editor:GetMiniMapColumns())
+				if (ig.SliderInt("##miniMapColumns", width, 0, 200))  then  editor:SetMiniMapColumns(width[0]);  end 
+				ig.EndMenu();
+			 end 
+
+			if (ig.BeginMenu("Color Palette"))  then 
+				if (ig.MenuItem("Dark"))  then  ig.StyleColorsDark();editor:SetPalette(ig.TextEditor_GetDarkPalette());self.diff:SetPalette(ig.TextEditor_GetDarkPalette());  end 
+				if (ig.MenuItem("Light"))  then  ig.StyleColorsLight();editor:SetPalette(ig.TextEditor_GetLightPalette());self.diff:SetPalette(ig.TextEditor_GetLightPalette());  end 
+				if (ig.MenuItem("Custom"))  then  ig.StyleColorsLight();editor:SetPalette(self.custom_palette);self.diff:SetPalette(self.custom_palette);  end 
+				ig.EndMenu();
+			 end 
+
+			ig.Separator();
+
+			local flag = ffi.new("bool[?]",1)
+			flag[0] = editor:IsReadOnlyEnabled(); if (ig.MenuItem("Read Only", nullptr, flag))  then  editor:SetReadOnlyEnabled(flag[0]);  end ;
+			flag[0] = editor:IsCaretsVisible(); if (ig.MenuItem("Carets Visible", nullptr, flag))  then  editor:SetCaretsVisible(flag[0]);  end ;
+			flag[0] = editor:IsOverwriteEnabled(); if (ig.MenuItem("Overwrite", nullptr, flag))  then  editor:SetOverwriteEnabled(flag[0]);  end ;
+			flag[0] = editor:IsWordWrapEnabled(); if (ig.MenuItem("Word Wrap", nullptr, flag))  then  editor:SetWordWrapEnabled(flag[0]);  end ;
+			flag[0] = editor:IsLineFoldingEnabled(); if (ig.MenuItem("Line Folding", nullptr, flag))  then  editor:SetLineFoldingEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowWhitespacesEnabled(); if (ig.MenuItem("Show Whitespaces", nullptr, flag))  then  editor:SetShowWhitespacesEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowSpacesEnabled(); if (ig.MenuItem("Show Spaces", nullptr, flag))  then  editor:SetShowSpacesEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowTabsEnabled(); if (ig.MenuItem("Show Tabs", nullptr, flag))  then  editor:SetShowTabsEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowLineNumbersEnabled(); if (ig.MenuItem("Show Line Numbers", nullptr, flag))  then  editor:SetShowLineNumbersEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowingMatchingBrackets(); if (ig.MenuItem("Show Matching Brackets", nullptr, flag))  then  editor:SetShowMatchingBrackets(flag[0]);  end ;
+			flag[0] = editor:IsCompletingPairedGlyphs(); if (ig.MenuItem("Complete Matching Glyphs", nullptr, flag))  then  editor:SetCompletePairedGlyphs(flag[0]);  end ;
+			flag[0] = editor:IsShowMiniMapEnabled(); if (ig.MenuItem("Show Mini Map", nullptr, flag))  then  editor:SetShowMiniMapEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowScrollbarMiniMapEnabled(); if (ig.MenuItem("Show Scrollbar Mini Map", nullptr, flag))  then  editor:SetShowScrollbarMiniMapEnabled(flag[0]);  end ;
+			flag[0] = editor:IsShowPanScrollIndicatorEnabled(); if (ig.MenuItem("Show Pan/Scroll Indicator", nullptr, flag))  then  editor:SetShowPanScrollIndicatorEnabled(flag[0]);  end ;
+			flag[0] = editor:IsMiddleMousePanMode(); if (ig.MenuItem("Middle Mouse Pan Mode", nullptr, flag))  then  if (flag[0])  then editor:SetMiddleMousePanMode(); else editor:SetMiddleMouseScrollMode();  end  end ;
+			--ig.MenuItem("Unicode Line Break Algorithm", nullptr, lineBreakConfig.useUnicodeAnnex14);
+			ig.EndMenu();
+		 end 
+end
+
+
+local function toggleTrieAutoComplete(self) 
 	local editor = self.editor
-	local cupos = editor:GetMainCursorPosition()
-	local mLine, mColumn = cupos.line, cupos.column
-	if (ig.BeginMenuBar()) then
-	
+	local trieAutoComplete = self.trieAutoComplete
+	-- see if we are turning it on or off
+	if (self.demoTrieAutoComplete[0]) then
+		-- deactivate language server demo (if required)
+		-- if (demoLspBridge) {
+			-- demoLspBridge = false;
+			-- toggleLspBridge();
+		-- }
+
+		-- connect autocomplete helper to editor
+		trieAutoComplete:Connect(editor);
+		self.notifications:Add(ig.lib.info, "Autocomplete activated");
+
+	else 
+		--// disconnect autocomplete helper from editor
+		trieAutoComplete:Disconnect();
+		self.notifications:Add(ig.lib.info, "Autocomplete deactivated");
+	end
+end
+
+local function renderMenuBar(self)
+		local editor = self.editor
+		if (ig.BeginMenuBar()) then
 			if (ig.BeginMenu("Edit")) then
 				local ro = ffi.new("bool[?]",1,editor:IsReadOnlyEnabled());
 				if (ig.MenuItem("Read-only mode", nil, ro)) then
@@ -98,6 +194,28 @@ local function Render(self)
 				-- end
 				ig.EndMenu();
 			end
+			
+			if (ig.BeginMenu("Selection"))  then 
+				if (ig.MenuItem("Select All", "Ctrl-A", nullptr, not editor:IsEmpty()))  then  editor:SelectAll();  end 
+
+				ig.Separator();
+				if (ig.MenuItem("Indent Line(s)",  "Ctrl-]", nullptr, not editor:IsEmpty()))  then  editor:IndentLines();  end 
+				if (ig.MenuItem("Deindent Line(s)", "Ctrl-[", nullptr, not editor:IsEmpty()))  then  editor:DeindentLines();  end 
+				if (ig.MenuItem("Move Line(s) Up", nullptr, nullptr, not editor:IsEmpty()))  then  editor:MoveUpLines();  end 
+				if (ig.MenuItem("Move Line(s) Down", nullptr, nullptr, not editor:IsEmpty()))  then  editor:MoveDownLines();  end 
+				if (ig.MenuItem("Toggle Comments",  "Ctrl-/", nullptr, editor:HasLanguage()))  then  editor:ToggleComments();  end 
+	
+				ig.Separator();
+				if (ig.MenuItem("To Uppercase", nullptr, nullptr, editor:AnyCursorHasSelection()))  then  editor:SelectionToUpperCase();  end 
+				if (ig.MenuItem("To Lowercase", nullptr, nullptr, editor:AnyCursorHasSelection()))  then  editor:SelectionToLowerCase();  end 
+	
+				ig.Separator();
+				if (ig.MenuItem("Add Next Occurrence", "Ctrl-D", nullptr, editor:CurrentCursorHasSelection()))  then  editor:AddNextOccurrence();  end 
+				if (ig.MenuItem("Select All Occurrences", "^Ctrl-D", nullptr, editor:CurrentCursorHasSelection()))  then  editor:SelectAllOccurrences();  end 
+	
+				ig.EndMenu();
+			end 
+			
 			if (ig.BeginMenu("Find")) then
 				if (ig.MenuItem("Find", "Ctrl-F")) then editor:OpenFindReplaceWindow(); end
 				if (ig.MenuItem("Find Next","Ctrl-G", nil, editor:HasFindString())) then editor:FindNext(); end
@@ -107,14 +225,6 @@ local function Render(self)
 			end
 
 			if (ig.BeginMenu("View")) then
-			
-				if (ig.MenuItem("Dark palette")) then
-					editor:SetPalette(ig.TextEditor_GetDarkPalette());
-				end
-				if (ig.MenuItem("Light palette")) then
-					editor:SetPalette(ig.TextEditor_GetLightPalette());
-				end
-				ig.Separator()
 				-- if (ig.MenuItem("Zoom In", "Ctrl-+")) then increaseFontSIze(); end
 				-- if (ig.MenuItem("Zoom Out", "Ctrl--")) then decreaseFontSIze(); end
 				-- ig.Separator();
@@ -144,6 +254,20 @@ local function Render(self)
 				ig.EndMenu()
 			end
 			
+			renderMenuOptions(self)
+			
+			if (ig.BeginMenu("Examples")) then
+				if (ig.MenuItem("Trie-based AutoComplete", nullptr, self.demoTrieAutoComplete)) then toggleTrieAutoComplete(self); end
+				--if (ig.MenuItem("Language Server Protocol Bridge", nullptr, &demoLspBridge)) { toggleLspBridge(); }
+				--if (ig.MenuItem("Show Word at Mouse", nullptr, &showWordAtMouse)) { toggleShowWordAtMouse(); }
+				-- if (ig.MenuItem("Show Line Markers", nullptr, &showLineMarkers)) { toggleLineMarkers(); }
+				-- if (ig.MenuItem("Show Line Decorator", nullptr, &showLineDecorator)) { toggleLineDecorator(); }
+				-- if (ig.MenuItem("Show Context Menus", nullptr, &showContextMenus)) { toggleContextMenus(); }
+				ig.Separator();
+				--ig.MenuItem("Show Debug Information", nullptr, &showDebugInformation);
+				ig.EndMenu();
+			end
+			
 			if ig.BeginMenu("Help") then
 				if (ig.MenuItem("Show")) then
 					showhelp = true
@@ -154,26 +278,19 @@ local function Render(self)
 				end
 				ig.EndMenu()
 			end
+			
+			
 			ig.EndMenuBar();
 		end
+end
 
+local function Render(self)
+	local editor = self.editor
+
+	renderMenuBar(self)
+	renderStatusBar(self)
 	--ig.BeginChild(self.ID)--, nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
 		--ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
-	
-		ig.Text("%6d/%-6d %6d lines  | %s |", toint(mLine + 1), toint(mColumn + 1), toint(editor:GetLineCount()),
-		editor:IsOverwriteEnabled() and "Ovr" or "Ins")
-		ig.SameLine()
-		local dirty = editor:CanUndo()
-		local tcolor = dirty and ig.ImVec4(1,0,0,1) or ig.ImVec4(1,1,1,1)
-		ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.file_name)
-		ig.SameLine()
-		self.lang_combo:draw()
-		ig.SameLine()
-		ig.SetNextItemWidth(100)
-		if (ig.DragFloat("window scale", self.window_scale, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)) then
-            --ig.SetWindowFontScale(self.window_scale[0]);
-             ig.GetStyle().FontScaleMain = self.window_scale[0]
-		end	
 		
 		--ig.PushFont(nil, self.window_scale[0] * ig.GetStyle().FontSizeBase)
 		editor:Render("texteditor"..self.ID)
@@ -181,6 +298,17 @@ local function Render(self)
 		if self.render_diff then
 			RenderDiff(self)
 		end
+		
+		-- render notifications
+		local style = ig.GetStyle()
+		local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
+		local mainWindowSize = ig.GetMainViewport().Size;
+		local mainWindowPos = ig.GetMainViewport().Pos;
+		local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
+
+		self.notifications:Render(ig.ImVec2(
+		mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
+		mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
 		
 		if showhelp then
 			ig.SetNextWindowSize(ig.ImVec2(500,200));
@@ -201,12 +329,6 @@ local function Save(self,fname)
 	if fname then
 		local file,err = io.open(fname,"w")
 		assert(file,err)
-		
-		-- local cstr = ig.lib.TextEditor_GetText_alloc(editor)
-		-- local str = ffi.string(cstr)
-		-- ig.lib.TextEditor_GetText_free(cstr)
-		
-		--local str = ffi.string(ig.lib.TextEditor_GetText_static(editor))
 		
 		local str = ffi.string(editor:GetText())
 		
@@ -229,6 +351,9 @@ local function CTEwindow(file_name)
 	local editor = ig.TextEditor()
 	W.editor = editor
 	W.diff = ig.TextDiff()
+	W.trieAutoComplete = ig.TrieAutoComplete()
+	W.demoTrieAutoComplete = ffi.new("bool[?]",1,false);
+	W.notifications = ig.Notifications()
 	W.render_diff = false
 	W.originalText = strtext
 	editor:SetText( strtext)
@@ -253,6 +378,120 @@ local function CTEwindow(file_name)
 		W.lang_combo:set_index(1)
 		print"unknown language"
 	end
+	-----------------------------
+	--[[
+	local Colors={
+      [1]={
+        calc_value=0,
+        name="text",
+        value="0"},
+      [2]={
+        calc_value=1,
+        name="keyword",
+        value="1"},
+      [3]={
+        calc_value=2,
+        name="declaration",
+        value="2"},
+      [4]={
+        calc_value=3,
+        name="number",
+        value="3"},
+      [5]={
+        calc_value=4,
+        name="string",
+        value="4"},
+      [6]={
+        calc_value=5,
+        name="punctuation",
+        value="5"},
+      [7]={
+        calc_value=6,
+        name="preprocessor",
+        value="6"},
+      [8]={
+        calc_value=7,
+        name="identifier",
+        value="7"},
+      [9]={
+        calc_value=8,
+        name="knownIdentifier",
+        value="8"},
+      [10]={
+        calc_value=9,
+        name="comment",
+        value="9"},
+      [11]={
+        calc_value=10,
+        name="background",
+        value="10"},
+      [12]={
+        calc_value=11,
+        name="cursor",
+        value="11"},
+      [13]={
+        calc_value=12,
+        name="selection",
+        value="12"},
+      [14]={
+        calc_value=13,
+        name="whitespace",
+        value="13"},
+      [15]={
+        calc_value=14,
+        name="matchingBracketBackground",
+        value="14"},
+      [16]={
+        calc_value=15,
+        name="matchingBracketActive",
+        value="15"},
+      [17]={
+        calc_value=16,
+        name="matchingBracketLevel1",
+        value="16"},
+      [18]={
+        calc_value=17,
+        name="matchingBracketLevel2",
+        value="17"},
+      [19]={
+        calc_value=18,
+        name="matchingBracketLevel3",
+        value="18"},
+      [20]={
+        calc_value=19,
+        name="matchingBracketError",
+        value="19"},
+      [21]={
+        calc_value=20,
+        name="lineNumber",
+        value="20"},
+      [22]={
+        calc_value=21,
+        name="currentLineNumber",
+        value="21"},
+      [23]={
+        calc_value=22,
+        name="count",
+        value="22"}}
+	--]]
+	W.custom_palette = ig.lib.Palette_Palette()
+	local lpal = ig.TextEditor_GetLightPalette()
+	--for i,col in ipairs(Colors) do
+	for i=0,ig.lib.count-1 do
+		if i<23 then
+		--print("get color",col.name)
+		--local a = ig.lib.Palette_const_get(lpal, col.calc_value)
+		local a = ig.lib.Palette_get(ffi.cast("Palette*",lpal), i)
+		--print("value",a)
+		ig.lib.Palette_set(W.custom_palette, a, i)
+		end
+	end
+	ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,0,1),ig.lib.identifier)
+	ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
+	W.editor:SetPalette(W.custom_palette)
+	W.diff:SetPalette(W.custom_palette)
+	ig.StyleColorsLight()
+	--------------------------------
 	W.window_scale = ffi.new("float[?]",1,1)
 	W.Render = Render
 	W.ID = "CTE##"..tostring(W)
