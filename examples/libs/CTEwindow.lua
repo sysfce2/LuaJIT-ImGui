@@ -151,6 +151,28 @@ local function toggleTrieAutoComplete(self)
 	end
 end
 
+local function IM_COL32(a,b,c,d)
+	return ig.U32(a/255,b/255,c/255,d/255)
+end
+
+local function toggleLineMarkers(self)
+	local editor = self.editor
+	--// see if we are turning it on or off
+	if (self.showLineMarkers[0]) then
+		local errorlineNumber = 7;
+		local breakPointLineNumber = 9;
+		local justBecauseLineNumber = 12;
+		editor:AddMarker(errorlineNumber, 0, IM_COL32(128, 0, 32, 128), "", "Error detected on this line");
+		editor:AddMarker(breakPointLineNumber, IM_COL32(0, 255, 32, 100), 0, "", "");
+		editor:AddMarker(breakPointLineNumber, IM_COL32(0, 255, 32, 100), 0, "", "");
+		editor:AddMarker(justBecauseLineNumber, IM_COL32(255, 224, 32, 100), IM_COL32(255, 224, 32, 100), "Just Because", "Just Because");
+		self.notifications:Add(ig.lib.info, "Line markers activated");
+	else 
+		editor:ClearMarkers();
+		self.notifications:Add(ig.lib.info, "Line markers deactivated");
+	end
+end
+
 local function renderMenuBar(self)
 		local editor = self.editor
 		if (ig.BeginMenuBar()) then
@@ -260,7 +282,7 @@ local function renderMenuBar(self)
 				if (ig.MenuItem("Trie-based AutoComplete", nullptr, self.demoTrieAutoComplete)) then toggleTrieAutoComplete(self); end
 				--if (ig.MenuItem("Language Server Protocol Bridge", nullptr, &demoLspBridge)) { toggleLspBridge(); }
 				--if (ig.MenuItem("Show Word at Mouse", nullptr, &showWordAtMouse)) { toggleShowWordAtMouse(); }
-				-- if (ig.MenuItem("Show Line Markers", nullptr, &showLineMarkers)) { toggleLineMarkers(); }
+				if (ig.MenuItem("Show Line Markers", nullptr, self.showLineMarkers)) then toggleLineMarkers(self); end
 				-- if (ig.MenuItem("Show Line Decorator", nullptr, &showLineDecorator)) { toggleLineDecorator(); }
 				-- if (ig.MenuItem("Show Context Menus", nullptr, &showContextMenus)) { toggleContextMenus(); }
 				ig.Separator();
@@ -353,6 +375,7 @@ local function CTEwindow(file_name)
 	W.diff = ig.TextDiff()
 	W.trieAutoComplete = ig.TrieAutoComplete()
 	W.demoTrieAutoComplete = ffi.new("bool[?]",1,false);
+	W.showLineMarkers = ffi.new("bool[?]",1,false);
 	W.notifications = ig.Notifications()
 	W.render_diff = false
 	W.originalText = strtext
@@ -488,6 +511,7 @@ local function CTEwindow(file_name)
 	end
 	ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,0,1),ig.lib.identifier)
 	ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
+	ig.lib.Palette_set(W.custom_palette,ig.U32(0.5,0.5,0.5,1),ig.lib.string)
 	W.editor:SetPalette(W.custom_palette)
 	W.diff:SetPalette(W.custom_palette)
 	ig.StyleColorsLight()
