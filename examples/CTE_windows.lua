@@ -69,6 +69,10 @@ function win:draw(ig)
                 if (ig.MenuItem("Load")) then
                     openfilepopup = true
                 end
+				if (ig.MenuItem("Save")) then
+                    local doc = opendocs[curr_opendoc]
+					doc:Save(doc.file_name)
+                end
 				if (ig.MenuItem("Save As")) then
                     savefilepopup = true
                 end
@@ -82,7 +86,7 @@ function win:draw(ig)
     if openfilepopup then fb.open() end
     fb.draw()
 	if savefilepopup then fbs.open() end
-	fbs.draw()
+	fbs.draw(opendocs[curr_opendoc].shrt_name)
 
     ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
     if (ig.BeginTabBar("##Tabs", ig.lib.ImGuiTabBarFlags_None)) then

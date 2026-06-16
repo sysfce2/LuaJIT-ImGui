@@ -131,8 +131,9 @@ function gui.FileBrowser(filename_p, args, funcOK)
     
     --local regionsize = ffi.new("ImVec2[1]")
     local save_file_name = ffi.new("char[256]",args.filename or "")
-    local function filechooser()
-    
+    local function filechooser(sfile)
+        if sfile then save_file_name = ffi.new("char[256]",sfile) end
+        
         
         if (ig.BeginPopupModal(args.key, nil, ffi.C.ImGuiWindowFlags_AlwaysAutoResize)) then
 

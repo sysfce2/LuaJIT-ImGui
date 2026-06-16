@@ -1,5 +1,61 @@
+WINUSEPTHREAD=true
+local hasThread, Thread = pcall(require, "lj-async.thread")
+
 local ig
 local ffi = require"ffi"
+
+--------Thread execute
+local Execute
+if hasThread then
+
+local os_execute_async = function(cmd,...)
+	local Thread = require"lj-async.thread"
+	local args = {...}
+	return function(ud)
+		local ffi = require"ffi"
+		local ret = os.execute(cmd)
+		--print("ret from wrapper",ret)
+		if ret then return Thread._return(1) else return Thread._return(0) end
+	end
+end
+
+Execute = function(cmd)
+	local thread = Thread(os_execute_async, nil, cmd)
+	return thread
+end
+
+end -- hasThread
+
+---------get LuaJIT path
+local function get_executable(arg)
+	local i=0
+	local v
+	while true do 
+		v = arg[i]
+		if not v then
+			i = i + 1 --was the last (inverse order)
+			break
+		end
+		i = i - 1
+	end
+	return arg[i]
+end
+
+local executable = get_executable(arg)
+
+local function renderMenuExecute(self)
+	if (hasThread and executable and not self.runningThread and ig.BeginMenu("Execute"))  then 
+		if (ig.MenuItem("Execute1"))  then 
+			local cmd = executable.." "..self.file_name
+			print(cmd) 
+			local thread = Execute(cmd)
+			print("thread is",thread,thread)
+			self.runningThread = thread
+		end 
+		ig.EndMenu();
+	end 
+
+end
 
 local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl","Markdown"}
 local function toint(x) return ffi.new("int",x) end
@@ -62,7 +118,7 @@ local function renderStatusBar(self)
 		ig.SameLine()
 		local dirty = editor:CanUndo()
 		local tcolor = dirty and ig.ImVec4(1,0,0,1) or ig.ImVec4(1,1,1,1)
-		ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.file_name)
+		ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.shrt_name)
 		ig.SameLine()
 		self.lang_combo:draw()
 		ig.SameLine()
@@ -290,6 +346,8 @@ local function renderMenuBar(self)
 				ig.EndMenu();
 			end
 			
+			renderMenuExecute(self)
+			
 			if ig.BeginMenu("Help") then
 				if (ig.MenuItem("Show")) then
 					showhelp = true
@@ -308,7 +366,25 @@ end
 
 local function Render(self)
 	local editor = self.editor
-
+	----check execute
+	if self.runningThread then
+			local ok, err = self.runningThread:join(0.01, true) --true for getting number
+			if ok then
+				print("  Joined",err)
+				if err == 1 then
+					self.notifications:Add(ig.lib.info, "Execute finished",10000);
+				else
+					self.notifications:Add(ig.lib.error, "Execute error",10000);
+				end
+				self.runningThread = nil
+			elseif not err then
+				print("  Timed out")
+			else
+				print("  Error:")
+				print(err)
+			end
+	end
+	--------------
 	renderMenuBar(self)
 	renderStatusBar(self)
 	--ig.BeginChild(self.ID)--, nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
@@ -348,28 +424,36 @@ local function Render(self)
 end
 local function Save(self,fname)
 	local editor = self.editor
+	
 	if fname then
+		print("saving",fname)
 		local file,err = io.open(fname,"w")
 		assert(file,err)
 		
-		local str = ffi.string(editor:GetText())
-		
+		local txt = editor:GetText()
+		local str = ffi.string(txt)
 		file:write(str)
 		file:close()
+		if fname == self.file_name then
+			print"fname == self.file_name"
+			editor:SetText(str)
+		end
 	end
 end
 local function CTEwindow(file_name)
 	local strtext = ""
-	local ext = ""
+	local ext shrt_name = "" , ""
 	if file_name then
 		local file,err = io.open(file_name,"r")
 		assert(file,err)
 		strtext = file:read"*a"
 		file:close()
 		ext = file_name:match("[^%.]+$")
+		shrt_name = file_name:match("[^/\\]+%."..ext.."$")
+		shrt_name = shrt_name.."."..ext
 	end
 
-	local W = {file_name = file_name or ""}
+	local W = {file_name = file_name or "", shrt_name = shrt_name or ""}
 	local editor = ig.TextEditor()
 	W.editor = editor
 	W.diff = ig.TextDiff()
