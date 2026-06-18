@@ -33,8 +33,8 @@ struct Log
 	
     void    Draw(const char* title, bool* p_open = NULL)
     {
-        ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
-        ImGui::Begin(title, p_open);
+        //ImGui::SetNextWindowSize(ImVec2(500,400), ImGuiCond_FirstUseEver);
+        ImGui::BeginChild(title);//, p_open);
         if (ImGui::Button("Clear")) Clear();
         ImGui::SameLine();
         bool copy = ImGui::Button("Copy");
@@ -65,7 +65,7 @@ struct Log
             ImGui::SetScrollHereY(1.0f);
         ScrollToBottom = false;
         ImGui::EndChild();
-        ImGui::End();
+        ImGui::EndChild();
     }
 };
 
@@ -85,6 +85,11 @@ IMGUI_IMPL_API void Log_Draw(Log* log, const char* title)
 {
 	bool open = true;
 	log->Draw(title,&open);
+}
+
+IMGUI_IMPL_API void Log_Clear(Log* log) 
+{
+	log->Clear();
 }
 
 IMGUI_IMPL_API void Log_delete(Log* log)

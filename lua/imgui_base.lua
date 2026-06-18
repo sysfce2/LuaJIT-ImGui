@@ -97,6 +97,9 @@ function Log:Draw(title)
     title = title or "Log"
     lib.Log_Draw(self,title)
 end
+function Log:Clear()
+    lib.Log_Clear(self)
+end
 M.Log = ffi.metatype("Log",Log)
 
 ------------convenience function

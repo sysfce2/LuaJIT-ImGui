@@ -5,23 +5,106 @@ local ig
 local ffi = require"ffi"
 
 --------Thread execute
-local Execute
+local Execute, ExecutePull = nil, function() end 
 if hasThread then
 
-local os_execute_async = function(cmd,...)
+local Kmaker = require"lj-async.keeper"
+local K = Kmaker.MakeKeeper()
+
+local os_execute_async = function(executable, cmd, inprocess, K, ...)
 	local Thread = require"lj-async.thread"
+	local Kmaker = require"lj-async.keeper"
+	K = Kmaker.KeeperCast(K)
 	local args = {...}
 	return function(ud)
 		local ffi = require"ffi"
-		local ret = os.execute(cmd)
-		--print("ret from wrapper",ret)
+		
+		K:send("clave","going to execute")
+		K:send("clave","inprocess: "..tostring(inprocess))
+		K:send("clave",nil)
+		K:send("clave","una linea\notra linea\n")
+		K:send("clave","inprocess end")
+
+		if inprocess then
+		---[[--------loadstring bad for same process sdl or glfw
+		local f,err = loadfile("./libs/runner.lua")--cmd)
+		if f then 
+			f()(cmd, K) 
+		else 
+			K:send("clave","loadfile error:"..tostring(err)) 
+		end
+		--]]
+		else
+		
+		---for another process we have:
+		------- 1 execute
+		-- but needs ipc 
+		--local ret = os.execute(executable.." ".." ./libs/runner.lua "..cmd)
+		
+		--------2 popen
+		--pero se me queda pegado en exe:read("*l") hasta que el programa acaba y viene a ser como execute
+		--pero leo stdout
+		---[=[
+		local pcomand = executable.." ".." ./libs/runner.lua "..cmd
+		if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
+		K:send("clave","pcomand is:"..pcomand)
+		local exe,err = io.popen(pcomand, "r")
+		if not exe then
+			K:send("clave","Could not popen. Error: "..tostring(err))
+		else
+			K:send("clave","exe opened. Error: "..tostring(err))
+			exe:setvbuf("no")
+			K:send("clave","going to lopp............")
+			repeat
+				exe:flush()
+				local line = exe:read("*l")
+				if line then
+					if line == "" then
+					else K:send("clave",line) end
+				else
+					break
+				end
+			until false
+			exe:close()
+		end
+		ret = err 
+		end
+		--]=]
+		
+		K:send("clave","............finished ret: "..tostring(ret))
 		if ret then return Thread._return(1) else return Thread._return(0) end
 	end
 end
 
-Execute = function(cmd)
-	local thread = Thread(os_execute_async, nil, cmd)
+Execute = function(self, exe, cmd, inprocess)
+	self.Log:Clear()
+	local thread = Thread(os_execute_async, nil,exe, cmd, inprocess, K)
 	return thread
+end
+
+
+ExecutePull = function(self)
+	local key,value = K:receive("clave")
+	if key then
+		self.Log:Add("-- keeper receives %s %s: %s\n", self.shrt_name, key,value)
+	end
+	if self.runningThread then
+			local ok, err = self.runningThread:join(0.01, true) --true for getting number
+			if ok then
+				self.Log:Add("-- Joined %s %d\n", self.shrt_name, err)
+				if err == 1 then
+					self.notifications:Add(ig.lib.info, "Execute finished",10000);
+				else
+					self.notifications:Add(ig.lib.error, "Execute error",10000);
+				end
+				self.runningThread = nil
+			elseif not err then
+				--print("  Timed out")
+			else
+				print("  Error:")
+				print(err)
+			end
+	end
 end
 
 end -- hasThread
@@ -45,11 +128,14 @@ local executable = get_executable(arg)
 
 local function renderMenuExecute(self)
 	if (hasThread and executable and not self.runningThread and ig.BeginMenu("Execute"))  then 
-		if (ig.MenuItem("Execute1"))  then 
-			local cmd = executable.." "..self.file_name
-			print(cmd) 
-			local thread = Execute(cmd)
-			print("thread is",thread,thread)
+		if (ig.MenuItem("Execute in this process"))  then 
+			local thread = Execute(self, executable, self.file_name, true)
+			self.Log:Add("thread is "..tostring(thread).."\n")
+			self.runningThread = thread
+		end 
+		if (ig.MenuItem("Execute in other process"))  then 
+			local thread = Execute(self, executable, self.file_name, false)
+			self.Log:Add("thread is "..tostring(thread).."\n")
 			self.runningThread = thread
 		end 
 		ig.EndMenu();
@@ -367,23 +453,8 @@ end
 local function Render(self)
 	local editor = self.editor
 	----check execute
-	if self.runningThread then
-			local ok, err = self.runningThread:join(0.01, true) --true for getting number
-			if ok then
-				print("  Joined",err)
-				if err == 1 then
-					self.notifications:Add(ig.lib.info, "Execute finished",10000);
-				else
-					self.notifications:Add(ig.lib.error, "Execute error",10000);
-				end
-				self.runningThread = nil
-			elseif not err then
-				print("  Timed out")
-			else
-				print("  Error:")
-				print(err)
-			end
-	end
+	ExecutePull(self)
+	
 	--------------
 	renderMenuBar(self)
 	renderStatusBar(self)
@@ -440,7 +511,7 @@ local function Save(self,fname)
 		end
 	end
 end
-local function CTEwindow(file_name)
+local function CTEwindow(file_name, Log)
 	local strtext = ""
 	local ext shrt_name = "" , ""
 	if file_name then
@@ -455,6 +526,7 @@ local function CTEwindow(file_name)
 
 	local W = {file_name = file_name or "", shrt_name = shrt_name or ""}
 	local editor = ig.TextEditor()
+	W.Log = Log
 	W.editor = editor
 	W.diff = ig.TextDiff()
 	W.trieAutoComplete = ig.TrieAutoComplete()

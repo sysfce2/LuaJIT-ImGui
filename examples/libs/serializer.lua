@@ -54,8 +54,8 @@ local function basicSerialize (o)
     end
 end
 
-local function SerializeTable(name, value, saved)
-    
+local function SerializeTable(name, value, endline, saved)
+    endline = endline or "\n"
     local string_table = {}
     if not saved then 
         table.insert(string_table, "local "..name.." = ") 
@@ -66,16 +66,16 @@ local function SerializeTable(name, value, saved)
     saved = saved or {}       -- initial value
     
     if type(value)~= "table" then
-        table.insert(string_table,basicSerialize(value).."\n")
+        table.insert(string_table,basicSerialize(value)..endline)
     elseif type(value) == "table" then
         if saved[value] then    -- value already saved?
-            table.insert(string_table,saved[value].."\n")          
+            table.insert(string_table,saved[value]..endline)          
         else
             saved[value] = name   -- save name for next time
-            table.insert(string_table, "{}\n")          
+            table.insert(string_table, "{}"..endline)          
             for k,v in pairs(value) do      -- save its fields
                 local fieldname = string.format("%s[%s]", name,basicSerialize(k))
-                table.insert(string_table, SerializeTable(fieldname, v, saved))
+                table.insert(string_table, SerializeTable(fieldname, v, endline, saved))
             end
         end
     end

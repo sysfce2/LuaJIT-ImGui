@@ -8770,7 +8770,8 @@ typedef struct Log Log;
 Log* Log_new();
 void Log_Add(Log* log,const char* fmt, ...);
 void Log_Draw(Log* log, const char* title); //, bool* p_open = NULL
-void Log_delete(Log* log); 
+void Log_delete(Log* log);
+void Log_Clear(Log* log);  
 
 ]]
 
