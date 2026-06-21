@@ -52,15 +52,36 @@ function M.chain(...)
     local res={}
     for i=1, select('#', ...) do
         local t = select(i, ...)
-        table.insert(res,t)
+		if t == ".." then
+			res[i-1] = res[i-1]:gsub("[/\\][^/\\]+$","")
+		else
+			table.insert(res,t)
+		end
     end
     return table.concat(res,sep)
 end
 local function splitpath(P)
     return P:match("(.+)"..sep.."([^"..sep.."]+)")
 end
+--path of main script
 function M.this_script_path()
     return splitpath(abspath(arg[0])) --.. sep
 end
+M.main_script_path = M.this_script_path
+--path of file calling file_path
+function M.file_path()
+	local scpath = debug.getinfo(2,'S').source:match("@(.*)$") 
+	return splitpath(abspath(scpath)) --.. sep
+end
+function M.file_open_here()
+   -- local here_path = splitpath(abspath(arg[0])) --.. sep
+	local here_path = debug.getinfo(2,'S').source:match("@(.*)$") 
+	here_path = splitpath(abspath(here_path))
+	return function(fname, fmode)
+		print("open_here", here_path, fname, M.chain(here_path, fname))
+		return io.open(M.chain(here_path, fname), fmode)
+	end
+end
+
 
 return M

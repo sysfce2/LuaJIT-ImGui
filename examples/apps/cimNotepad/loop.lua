@@ -1,6 +1,6 @@
 local ffi = require"ffi"
 ffi.cdef[[void Sleep(uint32_t);]]
-local caca = require"caca"
+--local caca = require"caca"
 local function run()
 	local i = 0
 	while i < 5 do

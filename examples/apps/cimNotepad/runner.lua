@@ -98,7 +98,7 @@ local function Debugger_get_call_stack(inilevel)
     return stack,vars
 end
 
-local serializer
+local serializer = require"imgui.libs.serializer"
 local function ToStr(t)
 	return serializer("tab_name",t,";")
 end
@@ -142,10 +142,10 @@ local function xpcallerror(err)
 	print("is require?",debuginfo.func == require)
 	print("is dofile?",debuginfo.func == dofile)
 	print("is loadfile?",debuginfo.func == loadfile)
-	local debuginfo2 = debug.getinfo(1,"Slf")
-	require"anima.utils"
-	prtable("debuginfo",debuginfo)
-	prtable("debuginfo2",debuginfo2)
+	-- local debuginfo2 = debug.getinfo(1,"Slf")
+	-- require"anima.utils"
+	-- prtable("debuginfo",debuginfo)
+	-- prtable("debuginfo2",debuginfo2)
 	local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
 	print("is_comp_err?", is_comp_err)
 	-- if there is a compile error add it to stack and vars
@@ -177,7 +177,6 @@ end
 
 --runs from f in loadfile
 if not arg then
-	serializer = require"serializer"
 	print"returnning function"
 
 	return function(script, K)
@@ -204,10 +203,7 @@ if not arg then
 	end
 else
 	--runs in another process
-	local currpath = debug.getinfo(1,'S').source
-	currpath = currpath:match("@(.+)[\\/]([^\\/]+)")
-	package.path = currpath.."/?.lua;"..package.path
-	serializer = require"serializer"
+
 	assert(#arg==1, "no script given to runner.lua")
 	local script = arg[#arg]
 	assert(not script:match"runner.lua","dont execute runner in other process")

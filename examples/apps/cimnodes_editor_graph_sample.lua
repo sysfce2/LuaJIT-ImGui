@@ -5,6 +5,7 @@ local win = igwin:GLFW(800,600, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
 local serializer = require"imgui.libs.serializer"
+local open_here = require"imgui.libs.path".file_open_here()
 ------------------------------------
 local NodeId= {}
 NodeId.__index = NodeId
@@ -484,13 +485,13 @@ local function Editor(name, nodetypes)
     end
     function E:save()
         local str = self:save_str()
-        local file,err = io.open(self.name.."_saved","w")
+        local file,err = open_here(self.name.."_saved","w")
         if not file then print(err);error"opening file" end
         file:write(str)
         file:close()
     end
     function E:load()
-        local file,err = io.open(self.name.."_saved","r")
+        local file,err = open_here(self.name.."_saved","r")
         if file then
             local str = file:read"*a"
             file:close()

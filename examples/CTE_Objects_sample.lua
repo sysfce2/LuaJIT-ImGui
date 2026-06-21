@@ -10,11 +10,11 @@ local editor = ig.TextEditor()
 
 editor:SetLanguage(ig.Language_Cpp())
 
-
+local open_here = require"imgui.libs.path".file_open_here()
 local fileN = [[../cimCTE/cimCTE.cpp]]
 --local fileN = [[C:\LuaGL\gitsources\anima\LuaJIT-ImGui\cimCTE\ImGuiColorTextEdit\TextEditor.cpp]]
 -- local fileN = [[CTE_sample.lua]]
-local file,err = io.open(fileN,"r")
+local file,err = open_here(fileN,"r")
 assert(file,err)
 local strtext = file:read"*a"
 file:close()

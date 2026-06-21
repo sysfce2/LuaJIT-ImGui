@@ -6,7 +6,7 @@ local ffi = require "ffi"
 -- https://github.com/sonoro1234/luafilesystem
 local lfs = require"lfs_ffi"
 
-local pathut = require"path"
+local pathut = require"imgui.libs.path"
 
 function loader(ig)
     -----------------------YesNo dialog ---------------
@@ -57,7 +57,7 @@ function gui.FileBrowser(filename_p, args, funcOK)
     local function funcdir(path, patt)
         for file in lfs.dir(path) do
             if file ~= "."  then --and file ~= ".." then
-                    local f = pathut.chain(path,file)
+                    local f = pathut.chain(path, file)
                     local attr = lfs.attributes (f)
                     assert (type(attr) == "table")
                     if attr.mode == "directory" then
@@ -67,9 +67,9 @@ function gui.FileBrowser(filename_p, args, funcOK)
                     end
             end
         end
-		-- needed in linux
-		table.sort(curr_dir_dirs, function(a,b) return a.name < b.name end)
-		table.sort(curr_dir_files, function(a,b) return a.name < b.name end)
+        -- needed in linux
+        table.sort(curr_dir_dirs, function(a,b) return a.name < b.name end)
+        table.sort(curr_dir_files, function(a,b) return a.name < b.name end)
     end
     
     local yesnoD = gui.YesNo("overwrite?")
@@ -120,10 +120,10 @@ function gui.FileBrowser(filename_p, args, funcOK)
             end
             ig.EndChild()
             
-			if not args.choose_dir then
-				ig.InputText("file",save_file_name,256)
-				if ig.InputText("pattern",pattern_ed,32,ig.lib.ImGuiInputTextFlags_EnterReturnsTrue) then curr_dir_done = false end
-			end
+            if not args.choose_dir then
+                ig.InputText("file",save_file_name,256)
+                if ig.InputText("pattern",pattern_ed,32,ig.lib.ImGuiInputTextFlags_EnterReturnsTrue) then curr_dir_done = false end
+            end
             local doit = false
             
             if ig.Button("OK") then
@@ -142,8 +142,8 @@ function gui.FileBrowser(filename_p, args, funcOK)
                     else
                         doit = true
                     end
-				elseif args.choose_dir then
-					doit = true
+                elseif args.choose_dir then
+                    doit = true
                 else
                     ig.CloseCurrentPopup(); 
                 end

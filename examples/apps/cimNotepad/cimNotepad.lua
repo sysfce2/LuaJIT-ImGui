@@ -1,18 +1,19 @@
------------------------------------hack for being able to require examples/libs/------
+---[[-----------------------------------hack for being able to require in cimNotepad dir------
 local sep = package.config:sub(1,1)
 local currpath = debug.getinfo(1,'S').source
 currpath = currpath:match("@(.+)[\\/]([^\\/]+)")
 print("cimNotepad scriptpath:",currpath)
-package.path = currpath..sep.."libs"..sep.."?.lua;"..package.path
+package.path = currpath..sep.."?.lua;"..package.path
 print(package.path)
 -------------------------------------------------------------------------------
+--]]
 local igwin = require"imgui.window"
 local win = igwin:SDL(1000,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 --local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false})
 
 local ig = win.ig
 local CTE = require"CTEwindow"(win.ig)
-local gui = require"filebrowser"(win.ig)
+local gui = require"imgui.libs.filebrowser"(win.ig)
 local ffi = require"ffi"
 
 local Log = win.ig.Log() -- app Log
@@ -125,8 +126,8 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 -- addEditor(gui.pathut.abspath("examples/loop.lua"),5)
 
 --add relative to this script path
-print("load:",gui.pathut.chain(currpath,"libs/loop.lua"))
-addEditor(gui.pathut.chain(currpath,"libs/loop.lua"),5)
+print("load:",gui.pathut.chain(currpath,"loop.lua"))
+addEditor(gui.pathut.chain(currpath,"loop.lua"),5)
 
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),77)
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),29)
