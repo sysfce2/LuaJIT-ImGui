@@ -4,7 +4,7 @@ local win = igwin:SDL3(800,400, "compute graph",{vsync=true})
 --local win = igwin:GLFW(800,400, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
-local serializer = require"libs.serializer"
+local serializer = require"imgui.libs.serializer"
 
 local function idtokey(v)
     return tonumber(ffi.cast("uintptr_t",v))

@@ -142,11 +142,16 @@ local function xpcallerror(err)
 	print("is require?",debuginfo.func == require)
 	print("is dofile?",debuginfo.func == dofile)
 	print("is loadfile?",debuginfo.func == loadfile)
+	local debuginfo2 = debug.getinfo(1,"Slf")
+	require"anima.utils"
+	prtable("debuginfo",debuginfo)
+	prtable("debuginfo2",debuginfo2)
 	local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
 	print("is_comp_err?", is_comp_err)
 	-- if there is a compile error add it to stack and vars
 	local info = compile_error(err,is_comp_err)
-	if (info) then
+	-- dont
+	if (false and info) then
 		print("is compile error===========================")
 		print("comp err source: ",info.source.."\n")
 		print("comp err line: ",info.currentline,"\n")

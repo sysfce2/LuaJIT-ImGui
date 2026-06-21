@@ -4,7 +4,10 @@ local igwin = require"imgui.window"
 local win = igwin:GLFW(800,600, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
-local serializer = require"libs.serializer"
+local serializer = require"imgui.libs.serializer"
+local pathut = require"imgui.libs.path"
+local this_script_path = pathut.this_script_path()
+print("this_script_path",this_script_path)
 
 local function DFS(G,v, editor)
     local is_root =  editor.nodes[v] and editor.nodes[v].is_root
@@ -416,13 +419,13 @@ local function Editor(name, nodetypes)
     end
     function E:save()
         local str = self:save_str()
-        local file,err = io.open(self.name.."_saved","w")
+        local file,err = io.open(pathut.chain(this_script_path,self.name.."_saved"),"w")
         if not file then print(err);error"opening file" end
         file:write(str)
         file:close()
     end
     function E:load()
-        local file,err = io.open(self.name.."_saved","r")
+        local file,err = io.open(pathut.chain(this_script_path,self.name.."_saved"),"r")
         if file then
             local str = file:read"*a"
             file:close()

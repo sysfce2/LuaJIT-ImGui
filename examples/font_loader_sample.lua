@@ -107,7 +107,7 @@ local function GetVisibleCP(font)
 end
 
 
-local gui = require"libs.filebrowser"(win.ig)
+local gui = require"imgui.libs.filebrowser"(win.ig)
 
 local ffi = require"ffi"
 local fontsize = ffi.new("float[1]",13)

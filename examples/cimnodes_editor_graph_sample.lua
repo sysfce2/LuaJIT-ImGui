@@ -4,7 +4,7 @@ local igwin = require"imgui.window"
 local win = igwin:GLFW(800,600, "compute graph",{vsync=false})
 local ig = win.ig
 local ffi = require"ffi"
-local serializer = require"libs.serializer"
+local serializer = require"imgui.libs.serializer"
 ------------------------------------
 local NodeId= {}
 NodeId.__index = NodeId
