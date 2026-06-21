@@ -55,13 +55,11 @@ end
 
 local function Debugger_get_call_stack(inilevel)
     local deph = math.huge
-    --print("staklevel",deph)
     local endlevel = inilevel + deph
 	local stack = {}
 	local vars = {}
 	local lookup_table = {}
 	for level = inilevel or 1,endlevel do
-		--print("call_stact level:",level)
 		local stlevel = level - inilevel + 1
 		local stinfo = debug.getinfo(level,"Snlf")
 		if not stinfo then --print("call_stact level: returns");
@@ -74,7 +72,7 @@ local function Debugger_get_call_stack(inilevel)
 		-- print("stinfo end")
 		
 		stack[stlevel] = stinfo
-		--locals
+		--  get locals an upvalues
 		vars[stlevel] = {locals= {},upvalues= {}}
 		local i = 1
 		while true do
@@ -93,13 +91,14 @@ local function Debugger_get_call_stack(inilevel)
 			vars[stlevel].upvalues[name] = debugger_copy(value,lookup_table)
 			i = i + 1
 		end
+		--print("stinfo.func", stinfo.func)
 		-- dont force lanes to send function
 		--stinfo.func = nil
 	end
     return stack,vars
 end
 
-local serializer = require"libs.serializer"
+local serializer
 local function ToStr(t)
 	return serializer("tab_name",t,";")
 end
@@ -109,21 +108,15 @@ local function xpcallerror(err)
 	print("xpcallerror1: "..tostring(err).."\n")
 	print(debug.traceback())
 	
-	--detect recursive error
-	print("\ndebug.getinfo:\n")
+	----detect recursive error
 	for i=2,math.huge do
-		--print("i is",i)
 		local debuginfo = debug.getinfo(i,"Snlf")
 		if not debuginfo then break end
-		--print("debuginfo",i,ToStr(debuginfo).."\n")
 		if debuginfo.func == xpcallerror then
 			print("========recursive error\n")
 			return
 		end
 	end
-
-	print("xpcallerror2:",tostring(err)) 
-	--print("xpcallerror:"..tostring(err).."\n")
 	
 	-- function to get compiler errors in required files
 	local function compile_error(err,iscompileerr)
@@ -143,13 +136,14 @@ local function xpcallerror(err)
 	end
 	
 	local debuginfo = debug.getinfo(2,"Slf")
-	print("getting call stack...")
+	--print("getting call stack...")
 	local stack,vars = Debugger_get_call_stack(3)
-	print("done getting call stack...")
+	--print("done getting call stack...")
 	print("is require?",debuginfo.func == require)
 	print("is dofile?",debuginfo.func == dofile)
 	print("is loadfile?",debuginfo.func == loadfile)
 	local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
+	print("is_comp_err?", is_comp_err)
 	-- if there is a compile error add it to stack and vars
 	local info = compile_error(err,is_comp_err)
 	if (info) then
@@ -167,8 +161,8 @@ local function xpcallerror(err)
 		vars = vars2
 	end
 	
-	print("---stack")--ToStr(stinfo))
-	print(ToStr(stack))
+	print("---stack")
+	print("stackXXXX",ToStr(stack)) --here we loose stinfo.func
 	--too big but could be used in debugging
 	--print("---vars")
 	--print(ToStr(vars))
@@ -178,6 +172,7 @@ end
 
 --runs from f in loadfile
 if not arg then
+	serializer = require"serializer"
 	print"returnning function"
 
 	return function(script, K)
@@ -189,7 +184,11 @@ if not arg then
 				args[i] = tostring(select(i,...))
 			end
 			local str = table.concat(args,"\t")
-			K:send("clave",str)
+			if str:match"^stackXXXX" then
+				K:send("stack", str)
+			else
+				K:send("clave",str)
+			end
 		end
 		print("going dofile",script)
 		--dofile(script)
@@ -200,8 +199,13 @@ if not arg then
 	end
 else
 	--runs in another process
+	local currpath = debug.getinfo(1,'S').source
+	currpath = currpath:match("@(.+)[\\/]([^\\/]+)")
+	package.path = currpath.."/?.lua;"..package.path
+	serializer = require"serializer"
 	assert(#arg==1, "no script given to runner.lua")
 	local script = arg[#arg]
+	assert(not script:match"runner.lua","dont execute runner in other process")
 	print("going dofile",script)
 	--dofile(script)
 	local ok,err = xpcall(function() return dofile(script) end, xpcallerror)

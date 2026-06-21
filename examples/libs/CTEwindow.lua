@@ -8,6 +8,11 @@ local ffi = require"ffi"
 local Execute, ExecutePull = nil, function() end 
 if hasThread then
 
+--get this path for calling runner
+local currpath = debug.getinfo(1,'S').source
+currpath = currpath:match("@(.+)[\\/]([^\\/]+)")
+print("CTEwindow scriptpath:",currpath)
+
 local Kmaker = require"lj-async.keeper"
 local K = Kmaker.MakeKeeper()
 
@@ -19,6 +24,10 @@ local os_execute_async = function(executable, cmd, inprocess, K, ...)
 	return function(ud)
 		local ffi = require"ffi"
 		
+		print("thread curpath",currpath)
+		package.path = currpath.."/?.lua;"..package.path
+		print("thread package path",package.path)
+		
 		K:send("clave","going to execute")
 		K:send("clave","inprocess: "..tostring(inprocess))
 		K:send("clave",nil)
@@ -27,7 +36,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, ...)
 
 		if inprocess then
 		---[[--------loadstring bad for same process sdl or glfw
-		local f,err = loadfile("./libs/runner.lua")--cmd)
+		local f,err = loadfile(currpath.."/runner.lua")--cmd)
 		if f then 
 			f()(cmd, K) 
 		else 
@@ -45,7 +54,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, ...)
 		--pero se me queda pegado en exe:read("*l") hasta que el programa acaba y viene a ser como execute
 		--pero leo stdout
 		---[=[
-		local pcomand = executable.." ".." ./libs/runner.lua "..cmd
+		local pcomand = executable.." ".." "..currpath.."/runner.lua "..cmd
 		if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
 		K:send("clave","pcomand is:"..pcomand)
 		local exe,err = io.popen(pcomand, "r")
@@ -60,6 +69,8 @@ local os_execute_async = function(executable, cmd, inprocess, K, ...)
 				local line = exe:read("*l")
 				if line then
 					if line == "" then
+					elseif line:match"^stackXXXX" then
+					K:send("stack", line)
 					else K:send("clave",line) end
 				else
 					break
@@ -78,15 +89,27 @@ end
 
 Execute = function(self, exe, cmd, inprocess)
 	self.Log:Clear()
+	self.setStack({}) -- clear Stack
 	local thread = Thread(os_execute_async, nil,exe, cmd, inprocess, K)
 	return thread
 end
 
 
 ExecutePull = function(self)
-	local key,value = K:receive("clave")
+	local key,value = K:receive("stack","clave")
 	if key then
 		self.Log:Add("-- keeper receives %s %s: %s\n", self.shrt_name, key,value)
+		if key == "stack" then
+			value = value:gsub("stackXXXX", "")
+			value = value..";return tab_name;"
+			local f,err = loadstring(value)
+			assert(f,err)
+			--setfenv(f,setmetatable({ig=ig},{ __index = _G}))
+			local Stack = f()
+			self.setStack(Stack)
+			-- require"anima.utils"
+			-- prtable("=====================Stack",Stack)
+		end
 	end
 	if self.runningThread then
 			local ok, err = self.runningThread:join(0.01, true) --true for getting number
@@ -438,6 +461,10 @@ local function renderMenuBar(self)
 				if (ig.MenuItem("Show")) then
 					showhelp = true
 				end
+				if (ig.MenuItem("goto29")) then
+					editor:SetCursor(ig.DocPos(29-1,0)[0])
+					editor:ScrollToLine(29-1, ig.lib.alignTop)
+				end
 				if (ig.MenuItem("iterate")) then
 					--ig.lib.IterateIdentifiers(editor,it_cb)
 					editor:IterateIdentifiers(it_cb)
@@ -458,40 +485,43 @@ local function Render(self)
 	--------------
 	renderMenuBar(self)
 	renderStatusBar(self)
-	--ig.BeginChild(self.ID)--, nil, ig.lib.ImGuiWindowFlags_HorizontalScrollbar + ig.lib.ImGuiWindowFlags_MenuBar);
-		--ig.SetWindowSize(ig.ImVec2(800, 600), ig.lib.ImGuiCond_FirstUseEver);
-		
-		--ig.PushFont(nil, self.window_scale[0] * ig.GetStyle().FontSizeBase)
-		editor:Render("texteditor"..self.ID)
-		--ig.lib.TextEditor_ImGuiDebugPanel(editor,"deb##"..self.ID)
-		if self.render_diff then
-			RenderDiff(self)
-		end
-		
-		-- render notifications
-		local style = ig.GetStyle()
-		local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
-		local mainWindowSize = ig.GetMainViewport().Size;
-		local mainWindowPos = ig.GetMainViewport().Pos;
-		local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
 
-		self.notifications:Render(ig.ImVec2(
-		mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
-		mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
-		
-		if showhelp then
-			ig.SetNextWindowSize(ig.ImVec2(500,200));
-			ig.OpenPopup("Help##p")
-			if ig.BeginPopupModal("Help##p") then 
-				ig.TextWrapped(help_txt)
-				if ig.Button("OK") then
-					ig.CloseCurrentPopup()
-					showhelp = false
-				end
-				ig.EndPopup()
+	editor:Render("texteditor"..self.ID)
+	-- just opened with scrolling
+	if self.line then
+		editor:SetCursor(ig.DocPos(self.line-1,0)[0])
+		editor:ScrollToLine(self.line-1, ig.lib.alignTop)
+		editor:SetFocus()
+		self.line = nil
+	end
+
+	if self.render_diff then
+		RenderDiff(self)
+	end
+	
+	-- render notifications
+	local style = ig.GetStyle()
+	local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
+	local mainWindowSize = ig.GetMainViewport().Size;
+	local mainWindowPos = ig.GetMainViewport().Pos;
+	local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
+
+	self.notifications:Render(ig.ImVec2(
+	mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
+	mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
+	
+	if showhelp then
+		ig.SetNextWindowSize(ig.ImVec2(500,200));
+		ig.OpenPopup("Help##p")
+		if ig.BeginPopupModal("Help##p") then 
+			ig.TextWrapped(help_txt)
+			if ig.Button("OK") then
+				ig.CloseCurrentPopup()
+				showhelp = false
 			end
+			ig.EndPopup()
 		end
-		--ig.PopFont()
+	end
 end
 local function Save(self,fname)
 	local editor = self.editor
@@ -511,22 +541,26 @@ local function Save(self,fname)
 		end
 	end
 end
-local function CTEwindow(file_name, Log)
+local function CTEwindow(file_name, args)
 	local strtext = ""
 	local ext shrt_name = "" , ""
-	if file_name then
+	if not args.is_new then
 		local file,err = io.open(file_name,"r")
 		assert(file,err)
 		strtext = file:read"*a"
 		file:close()
-		ext = file_name:match("[^%.]+$")
-		shrt_name = file_name:match("[^/\\]+%."..ext.."$")
-		shrt_name = shrt_name.."."..ext
 	end
+
+	ext = file_name:match("[^%.]+$")
+	shrt_name = file_name:match("[^/\\]+%."..ext.."$")
+	shrt_name = shrt_name.."."..ext
+
 
 	local W = {file_name = file_name or "", shrt_name = shrt_name or ""}
 	local editor = ig.TextEditor()
-	W.Log = Log
+	W.setStack = args.setStack
+	W.Log = args.Log
+	W.line = args.line -- for scrolling a just opened doc
 	W.editor = editor
 	W.diff = ig.TextDiff()
 	W.trieAutoComplete = ig.TrieAutoComplete()
@@ -536,6 +570,7 @@ local function CTEwindow(file_name, Log)
 	W.render_diff = false
 	W.originalText = strtext
 	editor:SetText( strtext)
+
 	--editor:SetChangeCallback(function() print"change" end,0)
 	W.lang_combo = ig.LuaCombo("Lang",langNames,
 				function(name,ind)
