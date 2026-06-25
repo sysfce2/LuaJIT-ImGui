@@ -5,8 +5,7 @@ print = function(...)
 	io.stdout:flush()
 end
 
-
-
+--[[
 print"=======================================I am runner"
 local argva = {...}
 
@@ -22,82 +21,14 @@ for k,v in pairs(arg) do
 	print(k,v)
 end
 end
-
-print("from runner una linea\notra linea")
-
-local function debugger_copy(object,lookup_table)
-
-	local basicCopy = function(ob)
-		return tostring(ob)
-	end
-    local function _copy(object)
-			--print("debugger",ToStr(object))
-        if type(object) ~= "table" then
-            return basicCopy(object)
-        elseif lookup_table[object] then
-            return lookup_table[object]
-        end
-        local new_table = {}
-        lookup_table[object] = new_table
-        for index, value in pairs(object) do
-            new_table[tostring(index)] = _copy(value)
-        end
-		local mt = getmetatable(object)
-		if mt then
-			new_table.METATABLE = _copy(mt)
-			--setmetatable(new_table, _copy(mt))
-		end
-        return new_table
-    end
-    return _copy(object)
-end
-
-
-local function Debugger_get_call_stack(inilevel)
-    local deph = math.huge
-    local endlevel = inilevel + deph
-	local stack = {}
-	local vars = {}
-	local lookup_table = {}
-	for level = inilevel or 1,endlevel do
-		local stlevel = level - inilevel + 1
-		local stinfo = debug.getinfo(level,"Snlf")
-		if not stinfo then --print("call_stact level: returns");
-		return stack,vars end
-		
-		-- print("stinfo is:",stinfo)--ToStr(stinfo))
-		-- for k,v in pairs(stinfo) do
-			-- print("stinfo:",k,v)
-		-- end
-		-- print("stinfo end")
-		
-		stack[stlevel] = stinfo
-		--  get locals an upvalues
-		vars[stlevel] = {locals= {},upvalues= {}}
-		local i = 1
-		while true do
-			local name,value = debug.getlocal(level,i)
-			if not name then break end
-			if string.sub(name, 1, 1) ~= '(' then
-				vars[stlevel].locals[name] = debugger_copy(value,lookup_table)
-			end
-			i = i + 1
-		end
-		local func = stinfo.func
-		local i = 1
-		while func do
-			local name,value = debug.getupvalue(func,i)
-			if not name then break end
-			vars[stlevel].upvalues[name] = debugger_copy(value,lookup_table)
-			i = i + 1
-		end
-		--print("stinfo.func", stinfo.func)
-		-- dont force lanes to send function
-		--stinfo.func = nil
-	end
-    return stack,vars
-end
-
+--]]
+-----------------------------------------------
+local inprocess
+local pathut = require"imgui.libs.path"
+local file_path = pathut.file_path()
+print("file_path",file_path)
+local Debugger = dofile(pathut.chain(file_path,"debugger.lua"))
+print("Debugger",Debugger)
 local serializer = require"imgui.libs.serializer"
 local function ToStr(t)
 	return serializer("tab_name",t,";")
@@ -106,7 +37,7 @@ end
 local function xpcallerror(err)
 	print"===========xpcallerror=============="
 	print("xpcallerror1: "..tostring(err).."\n")
-	print(debug.traceback())
+	--print(debug.traceback())
 	
 	----detect recursive error
 	for i=2,math.huge do
@@ -137,7 +68,7 @@ local function xpcallerror(err)
 	
 	local debuginfo = debug.getinfo(2,"Slf")
 	--print("getting call stack...")
-	local stack,vars = Debugger_get_call_stack(3)
+	local stack,vars = Debugger:get_call_stack(3) --Debugger_get_call_stack(3)
 	--print("done getting call stack...")
 	print("is require?",debuginfo.func == require)
 	print("is dofile?",debuginfo.func == dofile)
@@ -149,7 +80,7 @@ local function xpcallerror(err)
 	local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
 	print("is_comp_err?", is_comp_err)
 	-- if there is a compile error add it to stack and vars
-	local info = compile_error(err,is_comp_err)
+	local info = compile_error(err, is_comp_err)
 	-- dont
 	if (false and info) then
 		print("is compile error===========================")
@@ -166,23 +97,45 @@ local function xpcallerror(err)
 		vars = vars2
 	end
 	
-	print("---stack")
-	print("stackXXXX",ToStr(stack)) --here we loose stinfo.func
-	--too big but could be used in debugging
-	--print("---vars")
-	--print(ToStr(vars))
-	
 	print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
+	print(debug.traceback(2))
+	--print("---stack")
+	print("stackXXXX",ToStr(stack)) --here we loose stinfo.func
+		--too big but could be used in debugging
+		--print("---vars")
+		--print(ToStr(vars))
+	print("======= error:",err)
+
+end
+
+local function load_script(script)
+	--return function() dofile(script) end
+	return function()
+		local fs, err = loadfile(script)
+		if not fs then
+			--print(debug.traceback())
+			print("======= compile error:",err) 
+			--send stack
+			local info = {}
+			info.source = "@"..script
+			info.currentline = err:match(":(%d*):") or -1
+			print("stackXXXX",ToStr({info}))
+		else
+			return fs()
+		end
+		return
+	end
 end
 
 --runs from f in loadfile
 if not arg then
+--if true then
 	print"returnning function"
-
-	return function(script, K)
+	inprocess = true
+	return function(script, K, debuggerlinda, bp)
 		local old_print2 = print
 		print = function(...)
-			old_print2(...)
+			--old_print2(...)
 			local args = {}
 			for i=1,select("#",...) do
 				args[i] = tostring(select(i,...))
@@ -194,23 +147,61 @@ if not arg then
 				K:send("clave",str)
 			end
 		end
-		print("going dofile",script)
-		--dofile(script)
-		local ok,err = xpcall(function() return dofile(script) end, xpcallerror)
+		--local bp = {breakpoints = {[10] = {["@"..script] = true}}}
+		Debugger:init(bp, K, debuggerlinda)
+		--print("going dofile",script)
+		local ok,err = xpcall(load_script(script), xpcallerror)
 		print("xpcall",ok,err)
-		print"after dofile"
 		print"runer end======================================="
+		return ok
 	end
 else
 	--runs in another process
+	inprocess = false
+	local deblinda = {}
+	function deblinda:init()
+		self.file,err = io.open(pathut.chain(file_path,"debuggerlinda"),"r")
+		self.received = {}
+		assert(self.file, err)
+	end
+	function deblinda:receive(...)
+		while true do
+			local line = self.file:read"*l"
+			if line then
+				--print("receive",line)
+				local k,v = line:match("key(.+)value(.+)")
+				self.received[k] = self.received[k] or {}
+				table.insert(self.received[k],v)
+			else
+				break
+			end
+		end
+		
+		for i,kr in ipairs{...} do
+			if self.received[kr] and #self.received[kr] > 0 then
+				return kr,table.remove(self.received[kr],1)
+			end
+		end
+	end
+	
+	
+	local Sender = {}
+	function Sender:send(key,value)
+		print(key.."XXXX"..ToStr(value))
+	end
 
-	assert(#arg==1, "no script given to runner.lua")
-	local script = arg[#arg]
+	assert(arg[1], "no script given to runner.lua")
+	local script = arg[1]
+
+	local bp = dofile(pathut.chain(file_path,"breakpoints"))
+	
 	assert(not script:match"runner.lua","dont execute runner in other process")
 	print("going dofile",script)
-	--dofile(script)
-	local ok,err = xpcall(function() return dofile(script) end, xpcallerror)
+	deblinda:init()
+	Debugger:init(bp, Sender, deblinda)
+	local ok,err = xpcall(load_script(script), xpcallerror)
 	print("xpcall",ok,err)
-	print"after dofile"
 	print"runer end======================================="
+	print("eretXXXX"..tostring(ok))
+	return ok
 end

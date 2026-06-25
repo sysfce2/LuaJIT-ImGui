@@ -1,14 +1,25 @@
 --- debugger module
 -- @warning need to copy not to make lanes transfer functions
 local Debugger = {}
+local send_debuginfo = function() end
+local serializer = require"imgui.libs.serializer"
+local function ToStr(t)
+	return serializer("tab_name",t,";")
+end
+local function cleanStack(stack)
+	for i,v in ipairs(stack) do
+		for k,val in pairs(v) do
+			if k=="func" then
+				v[k] = tostring(val)
+			end
+		end
+	end
+	return stack
+end
 local function debugger_copy(object,lookup_table)
 
 	local basicCopy = function(ob)
-		--if ob then 
-			return tostring(ob)
-		--else
-		--	return ob
-		--end
+		return tostring(ob)
 	end
     local function _copy(object)
 			--print("debugger",ToStr(object))
@@ -46,7 +57,7 @@ function Debugger:get_call_stack(inilevel)
 		local stlevel = level - inilevel + 1
 		local stinfo = debug.getinfo(level,"Snlf")
 		if not stinfo then return stack,vars end
-		--print(ToStr(stinfo))
+
 		stack[stlevel] = stinfo
 		--locals
 		vars[stlevel] = {locals= {},upvalues= {}}
@@ -68,7 +79,7 @@ function Debugger:get_call_stack(inilevel)
 			i = i + 1
 		end
 		-- dont force lanes to send function
-		stinfo.func = nil
+		--stinfo.func = nil
 	end
     return stack,vars
 end
@@ -81,7 +92,7 @@ local function is_stacklevel_lower(level)
 	return not debug.getinfo(level,"l")
 end
 
-local pathsc = require"path"
+local pathsc = require"imgui.libs.path"
 local function absolutePath(path)
 	return "@"..pathsc.abspath(path:sub(2))
 end
@@ -103,30 +114,34 @@ function Debugger.hook_call_ret(event)
 	end
 end
 local cancelcount = 0
+local debuggerlinda
 function Debugger.debug_hook (event, line)
 	--print(event, line)
+	--io.write(event,line,tostring(debuggerlinda),"\n")
+
 	cancelcount = cancelcount + 1
-	if cancelcount > 10000 then
+	if cancelcount > 10 then
 		cancelcount = 0
-		if cancel_test() then
-			error(lanes.cancel_error)
-		end
-		if debuggerlinda:receive(0,"break") then
+		-- if cancel_test() then
+			-- error(lanes.cancel_error)
+		-- end
+		if debuggerlinda:receive("break") then
 			Debugger.step_into = true
 			Debugger.step_over = false
 		end
 	end
+
 	if Debugger.breakpoints[line] or Debugger.step_into or Debugger.step_over then
 		local thread = coroutine.running() or 0
 		local debuginfo = debug.getinfo(2,"S")
 		local s = absolutePath(debuginfo.source)
+
 		--local s = debuginfo.source
 		--print(s,path.abspath(s))
 		--debug_print("trace",event, line,s,Debugger.step_over,Debugger.step_into)
 		if (Debugger.step_over and Debugger.laststacklevel[thread] and is_stacklevel_lower(Debugger.laststacklevel[thread])
 		or Debugger.step_into 
 		or (Debugger.breakpoints[line] and Debugger.breakpoints[line][s])) then
-
 			--debug_print(s , ":" , line,Debugger.step_into,Debugger.step_over , getstacklevel())
 			--print(ToStr(debuginfo))
 			--debug_print(debug.traceback("traceback",2))
@@ -135,8 +150,11 @@ function Debugger.debug_hook (event, line)
 			
 			local stack,vars = Debugger:get_call_stack(3)
 			--print("get_call_stack",ToStr(vars))
-			send_debuginfo(s,line,stack,vars,true)
-			
+			io.write("debugger going to send_debuginfo\n")
+			--send_debuginfo(s,line,stack,vars,true)
+			send_debuginfo(s,line,cleanStack(stack))
+			io.write("debugger going to loop\n")
+			io.write("debugger11",event,line,tostring(debuggerlinda),"\n")
 			while true do
 				local key,val = debuggerlinda:receive("continue","debug_exit","step_into","step_over","step_out","brpoints")
 				--debug_print("debuggerlinda",key,val)
@@ -165,13 +183,26 @@ function Debugger.debug_hook (event, line)
 							Debugger.breakpoints[val[3]][val[2]] = nil
 						end
 					end
+				elseif key==nil then
+					--sleep a while for CPU
 				end
 			end
 		end
 	end
 end
 
-function Debugger:init(bp,maxdeph)
+function Debugger:init(bp,K,Kdebuggerlinda,maxdeph)
+	io.write("debugger: debuggerlinda ", tostring(Kdebuggerlinda),"\n")
+	debuggerlinda = Kdebuggerlinda
+	--require"anima.utils"
+	send_debuginfo = function(...)
+		--io.write("going to prtable\n")
+		--local str = serializer("tab_name1",{...})
+		--io.write(str)
+		--io.write("going to send\n")
+		K:send("debugger",{...})
+		--io.write("senddebuginfo done\n")
+	end
     self.maxdeph = maxdeph
 	self.step_over = false
 	self.step_into = false
@@ -180,7 +211,7 @@ function Debugger:init(bp,maxdeph)
 	self.breakpoints = bp.breakpoints or {}
     --clean linda
 	local keys = {"continue","debug_exit","step_into","step_over","step_out","brpoints","break"}
-    for i,v in ipairs(keys) do debuggerlinda:set(v) end
+    -- TODO for i,v in ipairs(keys) do debuggerlinda:set(v) end
 	--for debugging coroutines
 	local oldcocreate = coroutine.create
 	coroutine.create = function(f)

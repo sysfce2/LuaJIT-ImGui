@@ -1,6 +1,6 @@
 local igwin = require"imgui.window"
---local win = igwin:SDL(800,600, "ColorTextEditor",{vsync=true})
-local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true})
+local win = igwin:SDL(800,600, "ColorTextEditor",{vsync=true})
+--local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true})
 
 
 local ffi = require"ffi"
@@ -11,10 +11,7 @@ local editor = lib.TextEditor_TextEditor()
 
 lib.TextEditor_SetLanguage(editor,lib.Language_Cpp());
 
-local pathut = require"imgui.libs.path"
-local file_path = pathut.file_path()
-local this_script_path = pathut.this_script_path()
-print("pathssss", file_path, this_script_path)
+
 
 local open_here = require"imgui.libs.path".file_open_here()
 local fileN = [[../cimCTE/cimCTE.cpp]]
@@ -42,6 +39,7 @@ function win:draw(ig)
 				then
 					--auto textToSave = editor.GetText();
 					--/// save text....
+					error"save error"
 				end
 				if (ig.MenuItem("Quit", "Alt-F4"))
 				then

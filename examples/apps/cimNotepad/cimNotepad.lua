@@ -8,13 +8,17 @@ print(package.path)
 -------------------------------------------------------------------------------
 --]]
 local igwin = require"imgui.window"
-local win = igwin:SDL(1000,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
---local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false})
+--local win = igwin:SDL(1000,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:GLFW(1000,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 local ig = win.ig
 local CTE = require"CTEwindow"(win.ig)
 local gui = require"imgui.libs.filebrowser"(win.ig)
 local ffi = require"ffi"
+--------Thread execute
+local Exec = require"executer"
+local Execute, ExecutePull, hasThread, executable, debuggerlinda = Exec.Execute, Exec.ExecutePull, Exec.hasThread, Exec.executable, Exec.debuggerlinda
+------------------------------------------------------------------
 
 local Log = win.ig.Log() -- app Log
 --tab orderer docs
@@ -24,14 +28,15 @@ local opendocfnames = {}
 local set_tab = -1
 local curr_opendoc = 1
 local close_doc
-local Stack = {}
 
-local function setStack(stack)
-	Stack = stack
-end
+local notifications = ig.Notifications()
+local showhelp = false
+
+local Stack = {}
+local setStack
 
 local function addEditor(fullname, line, is_new)
---print"addEditor"
+--print("addEditor",fullname, line, is_new)
         if opendocfnames[fullname] then
 			if line then
 				for i,doc in ipairs(opendocs) do
@@ -42,7 +47,7 @@ local function addEditor(fullname, line, is_new)
 						doc.editor:SetFocus()
 						curr_opendoc = i
 						set_tab = i
-						return
+						return doc
 					else
 						--print(doc.file_name)
 					end
@@ -53,11 +58,28 @@ local function addEditor(fullname, line, is_new)
 		end 
         opendocfnames[fullname] = true
 		--print"open"
-        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, setStack = setStack, line = line})
+        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, setStack = setStack, line = line, notifications = notifications})
         table.insert(opendocs,doc);
 		curr_opendoc = #opendocs
         set_tab = #opendocs
         doc.shrt_name = fullname:match([[([^/\]+)$]])
+		return doc
+end
+
+setStack = function(stack)
+	for i,doc in ipairs(opendocs) do
+		doc.editor:ClearMarkers();
+	end
+	Stack = stack
+	for i,v in ipairs(stack) do
+		if v.source:match"^@" then
+			local doc = addEditor(v.source:sub(2), v.currentline)
+			if doc then
+				doc.editor:AddMarker( v.currentline-1, 0, ig.U32(128/255, 0, 32/255, 128/255), "", "Error detected on this line");
+			end
+			break
+		end
+	end
 end
 
 local function renderStack()
@@ -131,13 +153,25 @@ addEditor(gui.pathut.chain(currpath,"loop.lua"),5)
 
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),77)
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),29)
-
-
+local function getBreakPoints()
+	local bp = {}
+	for i, doc in ipairs(opendocs) do
+		for k,v in pairs(doc.breakpoints) do
+			bp[k] = bp[k] or {}
+			bp[k]["@"..doc.file_name] = true
+		end
+	end
+	return {breakpoints = bp}
+end
+local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs, notifications = notifications, getBreakPoints = getBreakPoints}
 win.ig.GetIO().IniFilename = "cimNotepad.ini"
 local done_docking
 function win:draw(ig)
     --ig.ShowDemoWindow()
     --Log:Add("another frame\n")
+		----check execute
+	ExecutePull(this)
+	
     local lib = ig.lib
     
     local viewport = ig.GetMainViewport();
@@ -245,6 +279,26 @@ function win:draw(ig)
     if confirm_close.draw(doit) then
         CloseEditor(close_doc)
     end
+	
+	if (ig.BeginMenuBar()) then
+		Exec.renderMenuExecute(this, curr_opendoc)
+			
+		if ig.BeginMenu("Help") then
+			if (ig.MenuItem("Show")) then
+				showhelp = true
+			end
+			if (ig.MenuItem("goto29")) then
+				editor:SetCursor(ig.DocPos(29-1,0)[0])
+				editor:ScrollToLine(29-1, ig.lib.alignTop)
+			end
+			if (ig.MenuItem("iterate")) then
+				--ig.lib.IterateIdentifiers(editor,it_cb)
+				editor:IterateIdentifiers(it_cb)
+			end
+			ig.EndMenu()
+		end
+		ig.EndMenuBar()
+	end
 
     ig.End() --documents
     
@@ -254,6 +308,29 @@ function win:draw(ig)
 	
 	renderStack()
     
+	-- render notifications
+	local style = ig.GetStyle()
+	local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
+	local mainWindowSize = ig.GetMainViewport().Size;
+	local mainWindowPos = ig.GetMainViewport().Pos;
+	local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
+
+	notifications:Render(ig.ImVec2(
+	mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
+	mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
+	
+	if showhelp then
+		ig.SetNextWindowSize(ig.ImVec2(500,200));
+		ig.OpenPopup("Help##p")
+		if ig.BeginPopupModal("Help##p") then 
+			ig.TextWrapped(help_txt)
+			if ig.Button("OK") then
+				ig.CloseCurrentPopup()
+				showhelp = false
+			end
+			ig.EndPopup()
+		end
+	end
 end
 
 win:start()

@@ -65,6 +65,10 @@ local function splitpath(P)
 end
 --path of main script
 function M.this_script_path()
+    if not arg then
+        print("path.main_script_path failing with no arg")
+        return nil
+    end
     return splitpath(abspath(arg[0])) --.. sep
 end
 M.main_script_path = M.this_script_path

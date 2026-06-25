@@ -1,174 +1,13 @@
-WINUSEPTHREAD=true
-local hasThread, Thread = pcall(require, "lj-async.thread")
+
 
 local ig
 local ffi = require"ffi"
 
---------Thread execute
-local Execute, ExecutePull = nil, function() end 
-if hasThread then
 
---get this path for calling runner
-local currpath = debug.getinfo(1,'S').source
-currpath = currpath:match("@(.+)[\\/]([^\\/]+)")
-print("CTEwindow scriptpath:",currpath)
-
-local Kmaker = require"lj-async.keeper"
-local K = Kmaker.MakeKeeper()
-
-local os_execute_async = function(executable, cmd, inprocess, K, ...)
-	local Thread = require"lj-async.thread"
-	local Kmaker = require"lj-async.keeper"
-	K = Kmaker.KeeperCast(K)
-	local args = {...}
-	return function(ud)
-		local ffi = require"ffi"
-		
-		print("thread curpath",currpath)
-		package.path = currpath.."/?.lua;"..package.path
-		print("thread package path",package.path)
-		
-		K:send("clave","going to execute")
-		K:send("clave","inprocess: "..tostring(inprocess))
-		K:send("clave",nil)
-		K:send("clave","una linea\notra linea\n")
-		K:send("clave","inprocess end")
-
-		if inprocess then
-		---[[--------loadstring bad for same process sdl or glfw
-		local f,err = loadfile(currpath.."/runner.lua")--cmd)
-		if f then 
-			f()(cmd, K) 
-		else 
-			K:send("clave","loadfile error:"..tostring(err)) 
-		end
-		--]]
-		else
-		
-		---for another process we have:
-		------- 1 execute
-		-- but needs ipc 
-		--local ret = os.execute(executable.." ".." ./libs/runner.lua "..cmd)
-		
-		--------2 popen
-		--pero se me queda pegado en exe:read("*l") hasta que el programa acaba y viene a ser como execute
-		--pero leo stdout
-		---[=[
-		local pcomand = executable.." ".." "..currpath.."/runner.lua "..cmd
-		if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
-		K:send("clave","pcomand is:"..pcomand)
-		local exe,err = io.popen(pcomand, "r")
-		if not exe then
-			K:send("clave","Could not popen. Error: "..tostring(err))
-		else
-			K:send("clave","exe opened. Error: "..tostring(err))
-			exe:setvbuf("no")
-			K:send("clave","going to lopp............")
-			repeat
-				exe:flush()
-				local line = exe:read("*l")
-				if line then
-					if line == "" then
-					elseif line:match"^stackXXXX" then
-					K:send("stack", line)
-					else K:send("clave",line) end
-				else
-					break
-				end
-			until false
-			exe:close()
-		end
-		ret = err 
-		end
-		--]=]
-		
-		K:send("clave","............finished ret: "..tostring(ret))
-		if ret then return Thread._return(1) else return Thread._return(0) end
-	end
-end
-
-Execute = function(self, exe, cmd, inprocess)
-	self.Log:Clear()
-	self.setStack({}) -- clear Stack
-	local thread = Thread(os_execute_async, nil,exe, cmd, inprocess, K)
-	return thread
-end
-
-
-ExecutePull = function(self)
-	local key,value = K:receive("stack","clave")
-	if key then
-		self.Log:Add("-- keeper receives %s %s: %s\n", self.shrt_name, key,value)
-		if key == "stack" then
-			value = value:gsub("stackXXXX", "")
-			value = value..";return tab_name;"
-			local f,err = loadstring(value)
-			assert(f,err)
-			--setfenv(f,setmetatable({ig=ig},{ __index = _G}))
-			local Stack = f()
-			self.setStack(Stack)
-			-- require"anima.utils"
-			-- prtable("=====================Stack",Stack)
-		end
-	end
-	if self.runningThread then
-			local ok, err = self.runningThread:join(0.01, true) --true for getting number
-			if ok then
-				self.Log:Add("-- Joined %s %d\n", self.shrt_name, err)
-				if err == 1 then
-					self.notifications:Add(ig.lib.info, "Execute finished",10000);
-				else
-					self.notifications:Add(ig.lib.error, "Execute error",10000);
-				end
-				self.runningThread = nil
-			elseif not err then
-				--print("  Timed out")
-			else
-				print("  Error:")
-				print(err)
-			end
-	end
-end
-
-end -- hasThread
-
----------get LuaJIT path
-local function get_executable(arg)
-	local i=0
-	local v
-	while true do 
-		v = arg[i]
-		if not v then
-			i = i + 1 --was the last (inverse order)
-			break
-		end
-		i = i - 1
-	end
-	return arg[i]
-end
-
-local executable = get_executable(arg)
-
-local function renderMenuExecute(self)
-	if (hasThread and executable and not self.runningThread and ig.BeginMenu("Execute"))  then 
-		if (ig.MenuItem("Execute in this process"))  then 
-			local thread = Execute(self, executable, self.file_name, true)
-			self.Log:Add("thread is "..tostring(thread).."\n")
-			self.runningThread = thread
-		end 
-		if (ig.MenuItem("Execute in other process"))  then 
-			local thread = Execute(self, executable, self.file_name, false)
-			self.Log:Add("thread is "..tostring(thread).."\n")
-			self.runningThread = thread
-		end 
-		ig.EndMenu();
-	end 
-
-end
 
 local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl","Markdown"}
 local function toint(x) return ffi.new("int",x) end
-local showhelp = false
+
 local help_txt = 
 [[multicursor (ctrl + click to add a new one)
 ctrl + d for selecting next match
@@ -455,22 +294,7 @@ local function renderMenuBar(self)
 				ig.EndMenu();
 			end
 			
-			renderMenuExecute(self)
 			
-			if ig.BeginMenu("Help") then
-				if (ig.MenuItem("Show")) then
-					showhelp = true
-				end
-				if (ig.MenuItem("goto29")) then
-					editor:SetCursor(ig.DocPos(29-1,0)[0])
-					editor:ScrollToLine(29-1, ig.lib.alignTop)
-				end
-				if (ig.MenuItem("iterate")) then
-					--ig.lib.IterateIdentifiers(editor,it_cb)
-					editor:IterateIdentifiers(it_cb)
-				end
-				ig.EndMenu()
-			end
 			
 			
 			ig.EndMenuBar();
@@ -479,14 +303,16 @@ end
 
 local function Render(self)
 	local editor = self.editor
-	----check execute
-	ExecutePull(self)
 	
 	--------------
 	renderMenuBar(self)
 	renderStatusBar(self)
 
 	editor:Render("texteditor"..self.ID)
+	-- if ig.IsItemClicked() and ig.IsMouseDoubleClicked(0) then 
+		-- local docpos = editor:GetDocPosAtMousePos(ig.GetMousePos())
+		-- self.breakpoints[tonumber(docpos.line + 1)] = true
+	-- end
 	-- just opened with scrolling
 	if self.line then
 		editor:SetCursor(ig.DocPos(self.line-1,0)[0])
@@ -499,29 +325,7 @@ local function Render(self)
 		RenderDiff(self)
 	end
 	
-	-- render notifications
-	local style = ig.GetStyle()
-	local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
-	local mainWindowSize = ig.GetMainViewport().Size;
-	local mainWindowPos = ig.GetMainViewport().Pos;
-	local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
-
-	self.notifications:Render(ig.ImVec2(
-	mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
-	mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
 	
-	if showhelp then
-		ig.SetNextWindowSize(ig.ImVec2(500,200));
-		ig.OpenPopup("Help##p")
-		if ig.BeginPopupModal("Help##p") then 
-			ig.TextWrapped(help_txt)
-			if ig.Button("OK") then
-				ig.CloseCurrentPopup()
-				showhelp = false
-			end
-			ig.EndPopup()
-		end
-	end
 end
 local function Save(self,fname)
 	local editor = self.editor
@@ -562,11 +366,63 @@ local function CTEwindow(file_name, args)
 	W.Log = args.Log
 	W.line = args.line -- for scrolling a just opened doc
 	W.editor = editor
+	editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
+	W.breakpoints = {}
+--[[	
+	editor:SetLineDecorator(41.0, function(decorator)
+		if W.breakpoints[tonumber(decorator.line+1)] then
+			local size = decorator.height - 1.0;
+
+			local pos = ig.GetCursorScreenPos();
+			local drawlist = ig.GetWindowDrawList();
+
+			drawlist:AddCircleFilled(
+			ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
+			(size - 6.0) * 0.5,
+			ig.U32(128/255, 0, 0, 255/255));
+
+			ig.InvisibleButton("Invisible", ig.ImVec2(size, size))
+			if ig.IsItemHovered() and ig.IsMouseDoubleClicked(0) then 
+				W.breakpoints[tonumber(decorator.line+1)] = nil
+			end
+		end
+	end)
+	--]]
+	---[[
+	editor:SetLineDecorator(41.0, function(decorator) 
+	local size = decorator.height - 1.0;
+	local pos = ig.GetCursorScreenPos();
+	local drawlist = ig.GetWindowDrawList();
+
+	ig.InvisibleButton("Invisible", ig.ImVec2(size, size))
+
+	if W.breakpoints[tonumber(decorator.line+1)] then
+		drawlist:AddCircleFilled(
+		ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
+		(size - 6.0) * 0.5,
+		ig.U32(128/255, 0, 0, 255/255));
+
+	elseif ig.IsItemHovered() then
+		drawlist:AddCircle(
+		ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
+		(size - 6.0) * 0.5,
+		ig.U32(128/255, 0, 0, 255/255));
+	end
+
+	if ig.IsItemHovered() and ig.IsMouseClicked(0) then 
+		if W.breakpoints[tonumber(decorator.line+1)] then
+			W.breakpoints[tonumber(decorator.line+1)] = nil
+		else
+			W.breakpoints[tonumber(decorator.line+1)] = true
+		end
+	end
+
+end)
+--]]
 	W.diff = ig.TextDiff()
 	W.trieAutoComplete = ig.TrieAutoComplete()
 	W.demoTrieAutoComplete = ffi.new("bool[?]",1,false);
 	W.showLineMarkers = ffi.new("bool[?]",1,false);
-	W.notifications = ig.Notifications()
 	W.render_diff = false
 	W.originalText = strtext
 	editor:SetText( strtext)
@@ -592,7 +448,7 @@ local function CTEwindow(file_name, args)
 		W.lang_combo:set_index(1)
 		print"unknown language"
 	end
-	-----------------------------
+	---------------- custom Palette
 	--[[
 	local Colors={
       [1]={
@@ -709,8 +565,10 @@ local function CTEwindow(file_name, args)
 	--------------------------------
 	W.window_scale = ffi.new("float[?]",1,1)
 	W.Render = Render
+	W.notifications = args.notifications
 	W.ID = "CTE##"..tostring(W)
 	W.Save = Save
+	W.ig = ig
 	return W
 end
 
