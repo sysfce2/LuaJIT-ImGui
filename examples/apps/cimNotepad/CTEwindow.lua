@@ -331,7 +331,7 @@ local function Save(self,fname)
 	local editor = self.editor
 	
 	if fname then
-		print("saving",fname)
+		--print("saving",fname)
 		local file,err = io.open(fname,"w")
 		assert(file,err)
 		
@@ -340,7 +340,7 @@ local function Save(self,fname)
 		file:write(str)
 		file:close()
 		if fname == self.file_name then
-			print"fname == self.file_name"
+			--print"fname == self.file_name"
 			editor:SetText(str)
 		end
 	end
@@ -362,34 +362,14 @@ local function CTEwindow(file_name, args)
 
 	local W = {file_name = file_name or "", shrt_name = shrt_name or ""}
 	local editor = ig.TextEditor()
-	W.setStack = args.setStack
+	--W.setStack = args.setStack
 	W.Log = args.Log
 	W.line = args.line -- for scrolling a just opened doc
 	W.editor = editor
-	editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
+	--editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
 	W.breakpoints = {}
---[[	
-	editor:SetLineDecorator(41.0, function(decorator)
-		if W.breakpoints[tonumber(decorator.line+1)] then
-			local size = decorator.height - 1.0;
 
-			local pos = ig.GetCursorScreenPos();
-			local drawlist = ig.GetWindowDrawList();
-
-			drawlist:AddCircleFilled(
-			ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
-			(size - 6.0) * 0.5,
-			ig.U32(128/255, 0, 0, 255/255));
-
-			ig.InvisibleButton("Invisible", ig.ImVec2(size, size))
-			if ig.IsItemHovered() and ig.IsMouseDoubleClicked(0) then 
-				W.breakpoints[tonumber(decorator.line+1)] = nil
-			end
-		end
-	end)
-	--]]
-	---[[
-	editor:SetLineDecorator(41.0, function(decorator) 
+	editor:SetLineDecorator(10.0, function(decorator) 
 	local size = decorator.height - 1.0;
 	local pos = ig.GetCursorScreenPos();
 	local drawlist = ig.GetWindowDrawList();
@@ -418,7 +398,7 @@ local function CTEwindow(file_name, args)
 	end
 
 end)
---]]
+
 	W.diff = ig.TextDiff()
 	W.trieAutoComplete = ig.TrieAutoComplete()
 	W.demoTrieAutoComplete = ffi.new("bool[?]",1,false);

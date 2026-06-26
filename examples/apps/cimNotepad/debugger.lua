@@ -2,6 +2,7 @@
 -- @warning need to copy not to make lanes transfer functions
 local Debugger = {}
 local send_debuginfo = function() end
+local print_if_verbose = function() end
 local serializer = require"imgui.libs.serializer"
 local function ToStr(t)
 	return serializer("tab_name",t,";")
@@ -16,6 +17,7 @@ local function cleanStack(stack)
 	end
 	return stack
 end
+Debugger.cleanStack = cleanStack
 local function debugger_copy(object,lookup_table)
 
 	local basicCopy = function(ob)
@@ -48,7 +50,7 @@ end
 
 function Debugger:get_call_stack(inilevel)
     local deph = self.maxdeph or math.huge
-    print("staklevel",deph)
+    --print("staklevel",deph)
     local endlevel = inilevel + deph
 	local stack = {}
 	local vars = {}
@@ -117,7 +119,7 @@ local cancelcount = 0
 local debuggerlinda
 function Debugger.debug_hook (event, line)
 	--print(event, line)
-	--io.write(event,line,tostring(debuggerlinda),"\n")
+	--print_if_verbose(event,line,tostring(debuggerlinda),"\n")
 
 	cancelcount = cancelcount + 1
 	if cancelcount > 10 then
@@ -150,11 +152,13 @@ function Debugger.debug_hook (event, line)
 			
 			local stack,vars = Debugger:get_call_stack(3)
 			--print("get_call_stack",ToStr(vars))
-			io.write("debugger going to send_debuginfo\n")
+			print_if_verbose("debugger going to send_debuginfo\n")
 			--send_debuginfo(s,line,stack,vars,true)
-			send_debuginfo(s,line,cleanStack(stack))
-			io.write("debugger going to loop\n")
-			io.write("debugger11",event,line,tostring(debuggerlinda),"\n")
+			--require"anima.utils"
+			--prtable("vars",vars)
+			send_debuginfo(s,line, cleanStack(stack), "debugging this line", serializer("tab_name",vars,";").."return tab_name;")
+			print_if_verbose("debugger going to loop\n")
+			print_if_verbose("debugger11",event,line,tostring(debuggerlinda),"\n")
 			while true do
 				local key,val = debuggerlinda:receive("continue","debug_exit","step_into","step_over","step_out","brpoints")
 				--debug_print("debuggerlinda",key,val)
@@ -191,18 +195,25 @@ function Debugger.debug_hook (event, line)
 	end
 end
 
-function Debugger:init(bp,K,Kdebuggerlinda,maxdeph)
-	io.write("debugger: debuggerlinda ", tostring(Kdebuggerlinda),"\n")
+function Debugger:init(bp,K,Kdebuggerlinda,verbose, maxdeph)
+	print_if_verbose("debugger: debuggerlinda soy yo", tostring(Kdebuggerlinda),"\n")
 	debuggerlinda = Kdebuggerlinda
+	
+	if verbose then
+		print_if_verbose = function(...)
+			return io.write(...)
+		end
+	end
 	--require"anima.utils"
 	send_debuginfo = function(...)
-		--io.write("going to prtable\n")
+		--print_if_verbose("going to prtable\n")
 		--local str = serializer("tab_name1",{...})
-		--io.write(str)
-		--io.write("going to send\n")
+		--print_if_verbose(str)
+		--print_if_verbose("going to send\n")
 		K:send("debugger",{...})
-		--io.write("senddebuginfo done\n")
+		--print_if_verbose("senddebuginfo done\n")
 	end
+	self.send_debuginfo = send_debuginfo
     self.maxdeph = maxdeph
 	self.step_over = false
 	self.step_into = false
@@ -212,6 +223,11 @@ function Debugger:init(bp,K,Kdebuggerlinda,maxdeph)
     --clean linda
 	local keys = {"continue","debug_exit","step_into","step_over","step_out","brpoints","break"}
     -- TODO for i,v in ipairs(keys) do debuggerlinda:set(v) end
+	-- meanwhile:
+	while true do
+		local key, value = debuggerlinda:receive(unpack(keys))
+		if not key then break end
+	end
 	--for debugging coroutines
 	local oldcocreate = coroutine.create
 	coroutine.create = function(f)

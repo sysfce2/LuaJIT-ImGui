@@ -18,7 +18,7 @@ end
 
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
-local this_script_path = pathut.this_script_path()
+--local this_script_path = pathut.this_script_path()
 print("pathssss", file_path, this_script_path)
 
 local function run()
@@ -27,7 +27,7 @@ local function run()
 
 		print("hello",i)
 		i = i + 1
-		Sleep(1)
+		--Sleep(1)
 		--error"debug"
 	end
 end

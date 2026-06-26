@@ -29,7 +29,7 @@ local debuggerlinda = Kmaker.MakeKeeper()
 ---------for out process
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
-print("executer file_path:",file_path)
+--print("executer file_path:",file_path)
 local deblindaS = {}
 function deblindaS:init()
 	self.file,err = io.open(pathut.chain(file_path,"debuggerlinda"),"w")
@@ -56,9 +56,9 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 	return function(ud)
 		local ffi = require"ffi"
 		
-		print("thread curpath",file_path)
-		package.path = file_path.."/?.lua;"..package.path
-		print("thread package path",package.path)
+		--print("thread curpath",file_path)
+		--package.path = file_path.."/?.lua;"..package.path
+		--print("thread package path",package.path)
 		
 		-- K:send("clave","going to execute")
 		-- K:send("clave","inprocess: "..tostring(inprocess))
@@ -70,7 +70,6 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 		if inprocess then
 		---[[--------loadstring bad for same process sdl or glfw
 		local f,err = loadfile(file_path.."/runner.lua")--cmd)
-		print"-------runner loaded"
 		if f then 
 			ret = f()(cmd, K, debuggerlinda, breakpoints) 
 		else 
@@ -96,21 +95,21 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 		f:close()
 		local pcomand = executable.." ".." "..file_path.."/runner.lua "..cmd
 		if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
-		K:send("clave","pcomand is:"..pcomand)
+		--K:send("clave","pcomand is:"..pcomand)
 		local exe,err = io.popen(pcomand, "r")
 		if not exe then
 			K:send("clave","Could not popen. Error: "..tostring(err))
 		else
-			K:send("clave","exe opened. Error: "..tostring(err))
+			--K:send("clave","exe opened. Error: "..tostring(err))
 			exe:setvbuf("no")
-			K:send("clave","going to lopp............")
+			--K:send("clave","going to lopp............")
 			repeat
 				exe:flush()
 				local line = exe:read("*l")
 				if line then
 					if line == "" then
-					elseif line:match"^stackXXXX" then
-						K:send("stack", line)
+					-- elseif line:match"^stackXXXX" then
+						-- K:send("stack", line)
 					elseif line:match"^debuggerXXXX" then
 						local value = line:match("debuggerXXXX(.+)")
 						value = value..";return tab_name;"
@@ -120,7 +119,6 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 						K:send("debugger", value)
 					elseif line:match"^eretXXXX" then
 						ret = line:match("^eretXXXX(.+)")
-						ret = ret=="true" and true or false
 					else K:send("clave",line) end
 				else
 					break
@@ -132,38 +130,32 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 		end
 		--]=]
 		
-		K:send("clave","............finished ret: "..tostring(ret))
-		K:send("clave",ret)
-		if ret then return Thread._return(1) else return Thread._return(0) end
+		--K:send("clave","............finished ret: "..tostring(ret))
+		--K:send("clave",ret)
+		--if ret then return Thread._return(1) else return Thread._return(0) end
+		if ret then return Thread._return(tonumber(ret)) end
 	end
 end
 
 Execute = function(self, cmd, inprocess, breakpoints)
 	self.Log:Clear()
 	self.setStack({}) -- clear Stack
-	print("Execute",executable, cmd, inprocess)
+	--print("Execute",executable, cmd, inprocess)
 	local thread = Thread(os_execute_async, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints)
 	return thread
 end
 
 
 ExecutePull = function(self)
-	local key,value = K:receive("stack","clave","debugger")
+	local key,value = K:receive("debugger","clave") --,"stack"
 	if key then
-		self.Log:Add(string.format("-- %s: %s\n", key,value))
-		if key == "stack" then
-			value = value:gsub("stackXXXX", "")
-			value = value..";return tab_name;"
-			local f,err = loadstring(value)
-			assert(f,err)
-			--setfenv(f,setmetatable({ig=ig},{ __index = _G}))
-			local Stack = f()
-			self.setStack(Stack)
-			-- require"anima.utils"
-			-- prtable("=====================Stack",Stack)
-		elseif key == "debugger" then
+		if key == "debugger" then
 			local Stack = value[3]
-			self.setStack(Stack)
+			local err = value[4]
+			local vars = value[5]
+			self.setStack(Stack, err, vars)
+		else
+			self.Log:Add(string.format("-- %s: %s\n", key,value))
 		end
 	end
 	if self.runningThread then
@@ -173,7 +165,9 @@ ExecutePull = function(self)
 				if err == 1 then
 					self.setStack({}) -- clear Stack
 					self.notifications:Add(self.ig.lib.info, "Execute finished",10000);
-				else
+				elseif err==2 then
+					self.notifications:Add(self.ig.lib.error, "Compile error",10000);
+				elseif err==3 then
 					self.notifications:Add(self.ig.lib.error, "Execute error",10000);
 				end
 				self.runningThread = nil
@@ -193,7 +187,6 @@ local function renderMenuExecute(self, curdoc)
 			if (ig.MenuItem("Execute in this process",nil,nil,not self.runningThread))  then 
 				deblinda = debuggerlinda
 				local thread = Execute(self, self.file_name, true, self.getBreakPoints())
-				self.Log:Add("thread is "..tostring(thread).."\n")
 				self.runningThread = thread
 			end 
 			if (ig.MenuItem("Execute in other process", nil, nil, not self.runningThread))  then 
@@ -201,11 +194,10 @@ local function renderMenuExecute(self, curdoc)
 				deblindaS:init()
 				deblinda = deblindaS
 				local thread = Execute(self, self.file_name, false, self.getBreakPoints())
-				self.Log:Add("thread is "..tostring(thread).."\n")
 				self.runningThread = thread
 			end
 			ig.Separator()
-			if (ig.MenuItem("continue", nil, nil, self.runningThread and true or false))  then 
+			if (ig.MenuItem("continue", "F9", nil, self.runningThread and true or false))  then 
 				deblinda:send("continue",true)
 			end 
 			if (ig.MenuItem("break", nil, nil, self.runningThread and true or false))  then 
@@ -214,18 +206,29 @@ local function renderMenuExecute(self, curdoc)
 			if (ig.MenuItem("debug_exit", nil, nil, self.runningThread and true or false))  then 
 				deblinda:send("debug_exit",true)
 			end 
-			if (ig.MenuItem("step_into", nil, nil, self.runningThread and true or false))  then 
+			if (ig.MenuItem("step_into", "F10", nil, self.runningThread and true or false))  then 
 				deblinda:send("step_into",true)
 			end
-			if (ig.MenuItem("step_over", nil, nil, self.runningThread and true or false))  then 
+			if (ig.MenuItem("step_over", "Shift-F10", nil, self.runningThread and true or false))  then 
 				deblinda:send("step_over",true)
 			end
-			if (ig.MenuItem("step_out", nil, nil, self.runningThread and true or false))  then 
+			if (ig.MenuItem("step_out", "Ctrl-F10", nil, self.runningThread and true or false))  then 
 				deblinda:send("step_out",true)
 			end
 		ig.EndMenu();
 	end 
-
+	if ig.Shortcut(ig.lib.ImGuiKey_F9) then
+		deblinda:send("continue",true)
+	end
+	if ig.Shortcut(ig.lib.ImGuiKey_F10) then
+		deblinda:send("step_into",true)
+	end
+	if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_F10)) then
+		deblinda:send("step_out",true)
+	end
+	if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Shift, ig.lib.ImGuiKey_F10)) then
+		deblinda:send("step_over",true)
+	end
 end
 
 return {Execute = Execute, ExecutePull = ExecutePull, debuggerlinda = debuggerlinda, executable = executable, hasThread = hasThread, renderMenuExecute = renderMenuExecute}

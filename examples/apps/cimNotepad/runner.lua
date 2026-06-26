@@ -26,85 +26,43 @@ end
 local inprocess
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
-print("file_path",file_path)
+--print("file_path",file_path)
 local Debugger = dofile(pathut.chain(file_path,"debugger.lua"))
-print("Debugger",Debugger)
+--print("Debugger",Debugger)
 local serializer = require"imgui.libs.serializer"
 local function ToStr(t)
 	return serializer("tab_name",t,";")
 end
 
 local function xpcallerror(err)
-	print"===========xpcallerror=============="
-	print("xpcallerror1: "..tostring(err).."\n")
-	--print(debug.traceback())
-	
+	-- print"===========xpcallerror=============="
+	-- print("xpcallerror1: "..tostring(err).."\n")
 	----detect recursive error
 	for i=2,math.huge do
 		local debuginfo = debug.getinfo(i,"Snlf")
 		if not debuginfo then break end
 		if debuginfo.func == xpcallerror then
-			print("========recursive error\n")
+			print("========recursive error",err)
+			print(debug.traceback())
 			return
 		end
 	end
 	
-	-- function to get compiler errors in required files
-	local function compile_error(err,iscompileerr)
-		local info = {}
-		--catch error from require
-		local err2 = err:match("from file%s+'.-':.-([%w%p]*:%d+:)")
-		--catch error from loadfile
-		if not err2 then
-			err2 = err:match("loadfile error:([%w%p]*:%d+:)")
-		end
-		if not err2 and iscompileerr then err2 = err end
-		if err2 then
-			info.source = "@"..err2:match(":-(.-):%d*:")
-			info.currentline = err2:match(":(%d*):") or -1
-			return info
-		end
-	end
-	
 	local debuginfo = debug.getinfo(2,"Slf")
-	--print("getting call stack...")
 	local stack,vars = Debugger:get_call_stack(3) --Debugger_get_call_stack(3)
-	--print("done getting call stack...")
-	print("is require?",debuginfo.func == require)
-	print("is dofile?",debuginfo.func == dofile)
-	print("is loadfile?",debuginfo.func == loadfile)
-	-- local debuginfo2 = debug.getinfo(1,"Slf")
-	-- require"anima.utils"
-	-- prtable("debuginfo",debuginfo)
-	-- prtable("debuginfo2",debuginfo2)
-	local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
-	print("is_comp_err?", is_comp_err)
+	-- print("is require?",debuginfo.func == require)
+	-- print("is dofile?",debuginfo.func == dofile)
+	-- print("is loadfile?",debuginfo.func == loadfile)
+
+	-- local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
+	-- print("is_comp_err?", is_comp_err)
 	-- if there is a compile error add it to stack and vars
-	local info = compile_error(err, is_comp_err)
-	-- dont
-	if (false and info) then
-		print("is compile error===========================")
-		print("comp err source: ",info.source.."\n")
-		print("comp err line: ",info.currentline,"\n")
-		local stack_tbl2,vars2 = {},{}
-		stack_tbl2[1] = info
-		vars2[1] = {}
-		for i,v in ipairs(stack) do
-			stack_tbl2[i+1] = stack[i]
-			vars2[i+1] = vars[i]
-		end
-		stack = stack_tbl2
-		vars = vars2
-	end
-	
-	print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
+	-- require"anima.utils"
+	-- prtable("vars",vars)
+	Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
+	--print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
 	print(debug.traceback(2))
-	--print("---stack")
-	print("stackXXXX",ToStr(stack)) --here we loose stinfo.func
-		--too big but could be used in debugging
-		--print("---vars")
-		--print(ToStr(vars))
-	print("======= error:",err)
+	--print("======= error:",err)
 
 end
 
@@ -114,12 +72,14 @@ local function load_script(script)
 		local fs, err = loadfile(script)
 		if not fs then
 			--print(debug.traceback())
-			print("======= compile error:",err) 
+			--print("======= compile error:",err) 
 			--send stack
 			local info = {}
 			info.source = "@"..script
 			info.currentline = err:match(":(%d*):") or -1
-			print("stackXXXX",ToStr({info}))
+			--print("stackXXXX",ToStr({info}))
+			Debugger.send_debuginfo(info.source, info.currentline,{info}, err,serializer("tab_name",{},";").."return tab_name;")
+			return false
 		else
 			return fs()
 		end
@@ -130,7 +90,7 @@ end
 --runs from f in loadfile
 if not arg then
 --if true then
-	print"returnning function"
+	--print"returnning function"
 	inprocess = true
 	return function(script, K, debuggerlinda, bp)
 		local old_print2 = print
@@ -141,19 +101,25 @@ if not arg then
 				args[i] = tostring(select(i,...))
 			end
 			local str = table.concat(args,"\t")
-			if str:match"^stackXXXX" then
-				K:send("stack", str)
-			else
-				K:send("clave",str)
-			end
+			K:send("clave",str)
 		end
 		--local bp = {breakpoints = {[10] = {["@"..script] = true}}}
 		Debugger:init(bp, K, debuggerlinda)
 		--print("going dofile",script)
 		local ok,err = xpcall(load_script(script), xpcallerror)
-		print("xpcall",ok,err)
-		print"runer end======================================="
-		return ok
+		--io.write("xpcall ",tostring(ok)," ",tostring(err),"\n")
+		
+		-- true false is compile error -> nilorfalse
+		-- true nil is run success -> true
+		-- false nil is run error -> nilorfalse
+
+		if ok then
+			if err==nil then return 1 end
+			return 2
+		else
+			return 3
+		end
+
 	end
 else
 	--runs in another process
@@ -196,12 +162,19 @@ else
 	local bp = dofile(pathut.chain(file_path,"breakpoints"))
 	
 	assert(not script:match"runner.lua","dont execute runner in other process")
-	print("going dofile",script)
+	--print("going dofile",script)
 	deblinda:init()
 	Debugger:init(bp, Sender, deblinda)
 	local ok,err = xpcall(load_script(script), xpcallerror)
-	print("xpcall",ok,err)
-	print"runer end======================================="
-	print("eretXXXX"..tostring(ok))
-	return ok
+	--print("xpcall",ok,err)
+	--print"runer end======================================="
+	local eret
+	if ok then
+		if err==nil then eret = 1
+		else eret = 2 end
+	else
+		eret = 3
+	end
+	--sending to popen
+	print("eretXXXX"..tostring(eret))
 end
