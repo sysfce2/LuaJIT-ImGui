@@ -368,7 +368,7 @@ local function CTEwindow(file_name, args)
 	W.editor = editor
 	--editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
 	W.breakpoints = {}
-
+	W.send_breakpoint = args.send_breakpoint
 	editor:SetLineDecorator(10.0, function(decorator) 
 	local size = decorator.height - 1.0;
 	local pos = ig.GetCursorScreenPos();
@@ -392,8 +392,10 @@ local function CTEwindow(file_name, args)
 	if ig.IsItemHovered() and ig.IsMouseClicked(0) then 
 		if W.breakpoints[tonumber(decorator.line+1)] then
 			W.breakpoints[tonumber(decorator.line+1)] = nil
+			W.send_breakpoint({"delete", "@"..W.file_name, tonumber(decorator.line+1)})
 		else
 			W.breakpoints[tonumber(decorator.line+1)] = true
+			W.send_breakpoint({"add", "@"..W.file_name, tonumber(decorator.line+1)})
 		end
 	end
 

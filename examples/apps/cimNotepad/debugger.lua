@@ -117,6 +117,25 @@ function Debugger.hook_call_ret(event)
 end
 local cancelcount = 0
 local debuggerlinda
+local has_lptime, lp_time = pcall(require, "luapower.time")
+--has_lptime = false
+--print("has_lptime, lp_time", has_lptime, lp_time)
+-------make cheap solution
+local ffi = require"ffi"
+local Sleep
+if not has_lptime then
+	if ffi.os == "Windows" then
+		ffi.cdef[[void deb_Sleep(uint32_t) asm("Sleep");]]
+		Sleep = function(ti)
+			ffi.C.Sleep(ti*1000)
+		end
+	else
+		ffi.cdef[[unsigned int deb_sleep(unsigned int) asm("sleep");]]
+		Sleep = function(ti)
+			ffi.C.sleep(ti)
+		end
+	end
+end
 function Debugger.debug_hook (event, line)
 	--print(event, line)
 	--print_if_verbose(event,line,tostring(debuggerlinda),"\n")
@@ -161,7 +180,7 @@ function Debugger.debug_hook (event, line)
 			print_if_verbose("debugger11",event,line,tostring(debuggerlinda),"\n")
 			while true do
 				local key,val = debuggerlinda:receive("continue","debug_exit","step_into","step_over","step_out","brpoints")
-				--debug_print("debuggerlinda",key,val)
+				--if key then print("debuggerlinda",key,val) end
 				if key == "debug_exit" then
 					debug.sethook()
 					break
@@ -179,6 +198,7 @@ function Debugger.debug_hook (event, line)
 					Debugger.step_over = true
 					break
 				elseif key == "brpoints" then
+					--print(val[1],val[2],val[3])
 					if val[1] == "add" then
 						Debugger.breakpoints[val[3]] = Debugger.breakpoints[val[3]] or {}
 						Debugger.breakpoints[val[3]][val[2]] = true
@@ -189,6 +209,11 @@ function Debugger.debug_hook (event, line)
 					end
 				elseif key==nil then
 					--sleep a while for CPU
+					if has_lptime then
+						lp_time.sleep(0.01)
+					else
+						Sleep(0.01)
+					end
 				end
 			end
 		end

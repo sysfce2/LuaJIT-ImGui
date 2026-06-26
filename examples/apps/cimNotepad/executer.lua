@@ -29,6 +29,7 @@ local debuggerlinda = Kmaker.MakeKeeper()
 ---------for out process
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
+local serializer = require"imgui.libs.serializer"
 --print("executer file_path:",file_path)
 local deblindaS = {}
 function deblindaS:init()
@@ -40,7 +41,11 @@ function deblindaS:close()
 		self.file:close()
 	end
 end
+
 function deblindaS:send(key, value)
+	if type(value)=="table" then
+		value = "TABLE"..serializer("ttt",value,";").."return ttt;"
+	end
 	self.file:write("key"..tostring(key).."value"..tostring(value).."\n")
 	self.file:flush()
 end
@@ -180,6 +185,15 @@ ExecutePull = function(self)
 	end
 end
 
+--require"anima.utils"
+local function send_breakpoint(bp)
+	--print("deblinda",deblinda)
+	--prtable(bp)
+	if deblinda then
+		deblinda:send("brpoints",bp)
+	end
+end
+
 local function renderMenuExecute(self, curdoc)
 	self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
 	local ig = self.ig
@@ -231,4 +245,4 @@ local function renderMenuExecute(self, curdoc)
 	end
 end
 
-return {Execute = Execute, ExecutePull = ExecutePull, debuggerlinda = debuggerlinda, executable = executable, hasThread = hasThread, renderMenuExecute = renderMenuExecute}
+return {Execute = Execute, ExecutePull = ExecutePull, send_breakpoint = send_breakpoint, executable = executable, hasThread = hasThread, renderMenuExecute = renderMenuExecute}

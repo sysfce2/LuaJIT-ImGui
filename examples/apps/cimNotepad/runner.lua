@@ -62,7 +62,7 @@ local function xpcallerror(err)
 	Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
 	--print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
 	print(debug.traceback(2))
-	--print("======= error:",err)
+	print("======= error:",err)
 
 end
 
@@ -136,6 +136,10 @@ else
 			if line then
 				--print("receive",line)
 				local k,v = line:match("key(.+)value(.+)")
+				local TABLE = v:match("^TABLE(.+)")
+				if TABLE then
+					v = loadstring(TABLE)()
+				end
 				self.received[k] = self.received[k] or {}
 				table.insert(self.received[k],v)
 			else

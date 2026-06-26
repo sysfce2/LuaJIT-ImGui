@@ -35,7 +35,7 @@ local ffi = require"ffi"
 --------Thread execute
 --local Exec = require"executer"
 local Exec = dofile(pathut.chain(currpath,"executer.lua"))
-local Execute, ExecutePull, hasThread, executable, debuggerlinda = Exec.Execute, Exec.ExecutePull, Exec.hasThread, Exec.executable, Exec.debuggerlinda
+local Execute, ExecutePull, hasThread, executable, send_breakpoint = Exec.Execute, Exec.ExecutePull, Exec.hasThread, Exec.executable, Exec.send_breakpoint
 ------------------------------------------------------------------
 
 local Log = win.ig.Log() -- app Log
@@ -78,7 +78,7 @@ local function addEditor(fullname, line, is_new)
 		end 
         opendocfnames[fullname] = true
 		--print"open"
-        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, line = line, notifications = notifications})
+        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, line = line, notifications = notifications, send_breakpoint = send_breakpoint})
         table.insert(opendocs,doc);
 		curr_opendoc = #opendocs
         set_tab = #opendocs
