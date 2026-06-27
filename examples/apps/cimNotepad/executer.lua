@@ -113,15 +113,9 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 				local line = exe:read("*l")
 				if line then
 					if line == "" then
-					-- elseif line:match"^stackXXXX" then
-						-- K:send("stack", line)
 					elseif line:match"^debuggerXXXX" then
 						local value = line:match("debuggerXXXX(.+)")
-						value = value..";return tab_name;"
-						local f,err = loadstring(value)
-						assert(f,err)
-						value = f()
-						K:send("debugger", value)
+						K:send("debuggerXXXX", value)
 					elseif line:match"^eretXXXX" then
 						ret = line:match("^eretXXXX(.+)")
 					else K:send("clave",line) end
@@ -134,10 +128,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
 		--ret = err 
 		end
 		--]=]
-		
-		--K:send("clave","............finished ret: "..tostring(ret))
-		--K:send("clave",ret)
-		--if ret then return Thread._return(1) else return Thread._return(0) end
+
 		if ret then return Thread._return(tonumber(ret)) end
 	end
 end
@@ -152,12 +143,26 @@ end
 
 
 ExecutePull = function(self)
-	local key,value = K:receive("debugger","clave") --,"stack"
+	local key,value = K:receive("debuggerXXXX","debugger","clave") --,"stack"
 	if key then
-		if key == "debugger" then
+		if key == "debuggerXXXX" then
+			local f,err = loadstring(value)
+			assert(f,err)
+			value = f()
 			local Stack = value[3]
 			local err = value[4]
 			local vars = value[5]
+			local f,err = loadstring(vars)
+			assert(f,err)
+			vars = f()
+			self.setStack(Stack, err, vars)
+		elseif key == "debugger" then
+			local Stack = value[3]
+			local err = value[4]
+			local vars = value[5]
+			local f,err = loadstring(vars)
+			assert(f,err)
+			vars = f()
 			self.setStack(Stack, err, vars)
 		else
 			self.Log:Add(string.format("-- %s: %s\n", key,value))

@@ -26,13 +26,8 @@ end
 local inprocess
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
---print("file_path",file_path)
 local Debugger = dofile(pathut.chain(file_path,"debugger.lua"))
---print("Debugger",Debugger)
 local serializer = require"imgui.libs.serializer"
-local function ToStr(t)
-	return serializer("tab_name",t,";")
-end
 
 local function xpcallerror(err)
 	-- print"===========xpcallerror=============="
@@ -50,16 +45,9 @@ local function xpcallerror(err)
 	
 	local debuginfo = debug.getinfo(2,"Slf")
 	local stack,vars = Debugger:get_call_stack(3) --Debugger_get_call_stack(3)
-	-- print("is require?",debuginfo.func == require)
-	-- print("is dofile?",debuginfo.func == dofile)
-	-- print("is loadfile?",debuginfo.func == loadfile)
-
-	-- local is_comp_err = debuginfo.func == require or debuginfo.func == dofile or debuginfo.func == loadfile
-	-- print("is_comp_err?", is_comp_err)
-	-- if there is a compile error add it to stack and vars
-	-- require"anima.utils"
-	-- prtable("vars",vars)
+	--vars can have cycles so serialize for Keeper
 	Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
+	--Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
 	--print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
 	print(debug.traceback(2))
 	print("======= error:",err)
@@ -71,14 +59,12 @@ local function load_script(script)
 	return function()
 		local fs, err = loadfile(script)
 		if not fs then
-			--print(debug.traceback())
-			--print("======= compile error:",err) 
 			--send stack
 			local info = {}
 			info.source = "@"..script
 			info.currentline = err:match(":(%d*):") or -1
-			--print("stackXXXX",ToStr({info}))
 			Debugger.send_debuginfo(info.source, info.currentline,{info}, err,serializer("tab_name",{},";").."return tab_name;")
+			--Debugger.send_debuginfo(info.source, info.currentline,{info}, err, {})
 			return false
 		else
 			return fs()
@@ -157,7 +143,8 @@ else
 	
 	local Sender = {}
 	function Sender:send(key,value)
-		print(key.."XXXX"..ToStr(value))
+		value = serializer("tab_name", value, ";").."return tab_name;"
+		print(key.."XXXX"..value)
 	end
 
 	assert(arg[1], "no script given to runner.lua")

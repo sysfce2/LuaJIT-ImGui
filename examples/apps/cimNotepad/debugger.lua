@@ -4,9 +4,7 @@ local Debugger = {}
 local send_debuginfo = function() end
 local print_if_verbose = function() end
 local serializer = require"imgui.libs.serializer"
-local function ToStr(t)
-	return serializer("tab_name",t,";")
-end
+
 local function cleanStack(stack)
 	for i,v in ipairs(stack) do
 		for k,val in pairs(v) do
@@ -18,10 +16,16 @@ local function cleanStack(stack)
 	return stack
 end
 Debugger.cleanStack = cleanStack
+--all goes to string without \r\n except tables
 local function debugger_copy(object,lookup_table)
 
 	local basicCopy = function(ob)
-		return tostring(ob)
+		if type(ob)=="string" then
+			ob = ob:gsub("[\n\r]","") --in case it goes to stdout
+			return ob
+		else
+			return tostring(ob)
+		end
 	end
     local function _copy(object)
 			--print("debugger",ToStr(object))
@@ -117,13 +121,14 @@ function Debugger.hook_call_ret(event)
 end
 local cancelcount = 0
 local debuggerlinda
+--- get Sleep
 local has_lptime, lp_time = pcall(require, "luapower.time")
 --has_lptime = false
 --print("has_lptime, lp_time", has_lptime, lp_time)
 -------make cheap solution
-local ffi = require"ffi"
 local Sleep
 if not has_lptime then
+	local ffi = require"ffi"
 	if ffi.os == "Windows" then
 		ffi.cdef[[void deb_Sleep(uint32_t) asm("Sleep");]]
 		Sleep = function(ti)
@@ -172,10 +177,10 @@ function Debugger.debug_hook (event, line)
 			local stack,vars = Debugger:get_call_stack(3)
 			--print("get_call_stack",ToStr(vars))
 			print_if_verbose("debugger going to send_debuginfo\n")
-			--send_debuginfo(s,line,stack,vars,true)
-			--require"anima.utils"
-			--prtable("vars",vars)
+			
+			-- serializer to avoid cycles in table
 			send_debuginfo(s,line, cleanStack(stack), "debugging this line", serializer("tab_name",vars,";").."return tab_name;")
+			--send_debuginfo(s,line, cleanStack(stack), "debugging this line", vars)
 			print_if_verbose("debugger going to loop\n")
 			print_if_verbose("debugger11",event,line,tostring(debuggerlinda),"\n")
 			while true do
