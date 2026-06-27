@@ -16,14 +16,14 @@ local currpath = pathut.file_path()
 -------singleton app
 local sing,err =io.open(pathut.chain(currpath,"singleton.log"),"r")
 if sing then
-	print"there is singleton open, on error delete singleton.log"
-	sing:close()
-	return
+    print"there is singleton open, on error delete singleton.log"
+    sing:close()
+    return
 else
-	--create singleton.log
-	sing,err =io.open(pathut.chain(currpath,"singleton.log"),"w")
-	assert(sing, err)
-	sing:close()
+    --create singleton.log
+    sing,err =io.open(pathut.chain(currpath,"singleton.log"),"w")
+    assert(sing, err)
+    sing:close()
 end
 ----------------------------
 local ig = win.ig
@@ -56,142 +56,142 @@ local setStack
 local function addEditor(fullname, line, is_new)
 --print("---addEditor",fullname, line, is_new)
         if opendocfnames[fullname] then
-			if line then
-				for i,doc in ipairs(opendocs) do
-					if doc.file_name == fullname then 
-						doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
-						doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
-						doc.editor:SetFocus()
-						curr_opendoc = i
-						set_tab = i
-						return doc
-					end
-				end
-				print("Error not found",fullname)
-			end
-			return -- to avoid reopening
-		end 
+            if line then
+                for i,doc in ipairs(opendocs) do
+                    if doc.file_name == fullname then 
+                        doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
+                        doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
+                        doc.editor:SetFocus()
+                        curr_opendoc = i
+                        set_tab = i
+                        return doc
+                    end
+                end
+                print("Error not found",fullname)
+            end
+            return -- to avoid reopening
+        end 
         
         local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, line = line, notifications = notifications, send_breakpoint = send_breakpoint})
-		opendocfnames[fullname] = doc
+        opendocfnames[fullname] = doc
         table.insert(opendocs,doc);
-		curr_opendoc = #opendocs
+        curr_opendoc = #opendocs
         set_tab = #opendocs
         doc.shrt_name = fullname:match([[([^/\]+)$]])
-		return doc
+        return doc
 end
 
 setStack = function(stack,err, vars)
 
-	Vars = vars or {}
-	for i,doc in ipairs(opendocs) do
-		doc.editor:ClearMarkers();
-	end
+    Vars = vars or {}
+    for i,doc in ipairs(opendocs) do
+        doc.editor:ClearMarkers();
+    end
 
-	Stack = stack
-	--add error marker
-	for i,v in ipairs(stack) do
-		if v.source:match"^@" then
-			StackLevel = i
-			local doc = addEditor(v.source:sub(2), v.currentline)
-			if doc then
-				doc.editor:AddMarker( v.currentline-1, 0, ig.U32(128/255, 0, 32/255, 128/255), "", err or "Error detected on this line");
-			end
-			break
-		end
-	end
+    Stack = stack
+    --add error marker
+    for i,v in ipairs(stack) do
+        if v.source:match"^@" then
+            StackLevel = i
+            local doc = addEditor(v.source:sub(2), v.currentline)
+            if doc then
+                doc.editor:AddMarker( v.currentline-1, 0, ig.U32(128/255, 0, 32/255, 128/255), "", err or "Error detected on this line");
+            end
+            break
+        end
+    end
 end
 
 local function recursiveTree(k,v, look_up, parent_str)
-	look_up = look_up or {}
-	parent_str = parent_str or ""
-	if look_up[v] then ig.TextUnformatted(tostring(k)..": recursion: "..look_up[v]) return end
-	look_up[v] = parent_str.."["..k.."]"
-	if ig.TreeNode(k) then
-		for k2,v2 in pairs(v) do
-			if type(v2)=="table" then
-				recursiveTree(k2,v2,look_up,parent_str.."["..k.."]")
-			else
-				ig.TextUnformatted(tostring(k2)..": "..tostring(v2))
-			end
-		end
-		ig.TreePop()
-	end
+    look_up = look_up or {}
+    parent_str = parent_str or ""
+    if look_up[v] then ig.TextUnformatted(tostring(k)..": recursion: "..look_up[v]) return end
+    look_up[v] = parent_str.."["..k.."]"
+    if ig.TreeNode(k) then
+        for k2,v2 in pairs(v) do
+            if type(v2)=="table" then
+                recursiveTree(k2,v2,look_up,parent_str.."["..k.."]")
+            else
+                ig.TextUnformatted(tostring(k2)..": "..tostring(v2))
+            end
+        end
+        ig.TreePop()
+    end
 end
 
 local function renderVars()
 
-	ig.TextUnformatted("StackLevel:"..tostring(StackLevel))
-	ig.Separator()
-	if Vars[StackLevel] then
-		for k,v in pairs(Vars[StackLevel]) do
-			if type(v)=="table" then
-				recursiveTree(k,v)
-			else
-				ig.TextUnformatted(tostring(k)..": "..tostring(v))
-			end
-		end
-	end
+    ig.TextUnformatted("StackLevel:"..tostring(StackLevel))
+    ig.Separator()
+    if Vars[StackLevel] then
+        for k,v in pairs(Vars[StackLevel]) do
+            if type(v)=="table" then
+                recursiveTree(k,v)
+            else
+                ig.TextUnformatted(tostring(k)..": "..tostring(v))
+            end
+        end
+    end
 
 end
 
 
 local function renderStack()
 
-	if ig.BeginTable("stack_levels", 4, ig.lib.ImGuiTableFlags_Borders 
-	--+ ig.lib.ImGuiTableFlags_RowBg 
-	--+ ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable 
-	--+ ig.lib.ImGuiTableFlags_SizingFixedFit
-	+ ig.lib.ImGuiTableFlags_SizingStretchProp 
-	) then
-		ig.TableSetupColumn("name");
+    if ig.BeginTable("stack_levels", 4, ig.lib.ImGuiTableFlags_Borders 
+    --+ ig.lib.ImGuiTableFlags_RowBg 
+    --+ ig.lib.ImGuiTableFlags_ScrollY + ig.lib.ImGuiTableFlags_Resizable 
+    --+ ig.lib.ImGuiTableFlags_SizingFixedFit
+    + ig.lib.ImGuiTableFlags_SizingStretchProp 
+    ) then
+        ig.TableSetupColumn("name");
         ig.TableSetupColumn("what");
-		ig.TableSetupColumn("namewhat");
-		ig.TableSetupColumn("source");
+        ig.TableSetupColumn("namewhat");
+        ig.TableSetupColumn("source");
         ig.TableHeadersRow();
-		for i,lev in ipairs(Stack) do
-			ig.TableNextRow()
-			ig.TableNextColumn();ig.TextUnformatted(lev.name or "")
-			ig.TableNextColumn();ig.TextUnformatted(lev.what or "")
-			ig.TableNextColumn();ig.TextUnformatted(lev.namewhat or "")
-			ig.TableNextColumn();
-			if lev.source == "=[C]" then
-				ig.TextUnformatted(lev.source..":"..tostring(lev.currentline))
-			else
-				local source = lev.source:sub(2)
-				local shrt_name = source
-				local doc = opendocfnames[source]
-				if not doc then 
-					--print("not found",source)
-					shrt_name = source
-				else
-					shrt_name = doc.shrt_name
-				end
-				if ig.Selectable(shrt_name..":"..tostring(lev.currentline),nil,ig.lib.ImGuiSelectableFlags_SpanAllColumns) then
-					StackLevel = i
-					addEditor(source, lev.currentline)
-				end
-			end
-		end
-		ig.EndTable()
-	end
+        for i,lev in ipairs(Stack) do
+            ig.TableNextRow()
+            ig.TableNextColumn();ig.TextUnformatted(lev.name or "")
+            ig.TableNextColumn();ig.TextUnformatted(lev.what or "")
+            ig.TableNextColumn();ig.TextUnformatted(lev.namewhat or "")
+            ig.TableNextColumn();
+            if lev.source == "=[C]" then
+                ig.TextUnformatted(lev.source..":"..tostring(lev.currentline))
+            else
+                local source = lev.source:sub(2)
+                local shrt_name = source
+                local doc = opendocfnames[source]
+                if not doc then 
+                    --print("not found",source)
+                    shrt_name = source
+                else
+                    shrt_name = doc.shrt_name
+                end
+                if ig.Selectable(shrt_name..":"..tostring(lev.currentline),nil,ig.lib.ImGuiSelectableFlags_SpanAllColumns) then
+                    StackLevel = i
+                    addEditor(source, lev.currentline)
+                end
+            end
+        end
+        ig.EndTable()
+    end
 
 end
 
 local function renderStackVars()
-	ig.Begin"StackVars"
-	    if (ig.BeginTabBar("##TabsStackVars", ig.lib.ImGuiTabBarFlags_None)) then
+    ig.Begin"StackVars"
+        if (ig.BeginTabBar("##TabsStackVars", ig.lib.ImGuiTabBarFlags_None)) then
             if ig.BeginTabItem("Stack") then
-				renderStack()
+                renderStack()
                 ig.EndTabItem();
             end
             if ig.BeginTabItem("Vars") then
-				renderVars()
+                renderVars()
                 ig.EndTabItem();
             end
         ig.EndTabBar();
-		end
-	ig.End()
+        end
+    ig.End()
 end
 
 local confirm_close = gui.YesNo("There are unsaved changes. Do you still want to close?")
@@ -232,23 +232,23 @@ addEditor(gui.pathut.chain(currpath,"loop.lua"))
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),77)
 --addEditor(gui.pathut.abspath("CTE_sample.lua"),29)
 local function getBreakPoints()
-	local bp = {}
-	for i, doc in ipairs(opendocs) do
-		for k,v in pairs(doc.breakpoints) do
-			bp[k] = bp[k] or {}
-			bp[k]["@"..doc.file_name] = true
-		end
-	end
-	return {breakpoints = bp}
+    local bp = {}
+    for i, doc in ipairs(opendocs) do
+        for k,v in pairs(doc.breakpoints) do
+            bp[k] = bp[k] or {}
+            bp[k]["@"..doc.file_name] = true
+        end
+    end
+    return {breakpoints = bp}
 end
 local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs, notifications = notifications, getBreakPoints = getBreakPoints}
 win.ig.GetIO().IniFilename = "cimNotepad.ini"
 local done_docking
 function win:draw(ig)
     --ig.ShowDemoWindow()
-		----check execute
-	ExecutePull(this)
-	
+        ----check execute
+    ExecutePull(this)
+    
     local lib = ig.lib
     
     local viewport = ig.GetMainViewport();
@@ -259,8 +259,8 @@ function win:draw(ig)
         local dock_id_main = ffi.new("ImGuiID[?]",1,dockspace_id[0])--dockspace_id;
         local dock_id_top = ffi.new("ImGuiID[?]",1,0);
         local dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
-		local dock_id_bottom_left = ffi.new("ImGuiID[?]",1,0);
-		local dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
+        local dock_id_bottom_left = ffi.new("ImGuiID[?]",1,0);
+        local dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
         ig.DockBuilderSplitNode(dock_id_main[0], lib.ImGuiDir_Up, 0.80, dock_id_top, dock_id_bottom);
         ig.DockBuilderSplitNode(dock_id_bottom[0], lib.ImGuiDir_Left, 0.50, dock_id_bottom_left, dock_id_bottom_right);
         ig.DockBuilderDockWindow("Documents", dock_id_top[0]);
@@ -282,8 +282,8 @@ function win:draw(ig)
     -- ig.SetNextWindowViewport(viewport.ID);
     
     local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, --ig.lib.ImGuiWindowFlags_NoResize ,
-	--ig.lib.ImGuiWindowFlags_NoMove , 
-	ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
+    --ig.lib.ImGuiWindowFlags_NoMove , 
+    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
     
     
     ig.Begin("Documents",nil, host_window_flags)
@@ -316,8 +316,8 @@ function win:draw(ig)
                 end
                 ig.EndMenu();
             end
-			ig.EndMenuBar()
-		end
+            ig.EndMenuBar()
+        end
     if openfilepopup then fb.open() end
     fb.draw()
     if savefilepopup then fbs.open() end
@@ -326,18 +326,18 @@ function win:draw(ig)
     if (ig.BeginTabBar("##Tabs", ig.lib.ImGuiTabBarFlags_None)) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
-			--if set_tab ~= -1 then print("settint_tab",i,set_tab,curr_opendoc) end
+            --if set_tab ~= -1 then print("settint_tab",i,set_tab,curr_opendoc) end
             local opentab = ig.BeginTabItem(v.shrt_name.."##"..i, opened,(i==set_tab) and ig.lib.ImGuiTabItemFlags_SetSelected or 0)
             if ig.IsItemHovered() then ig.SetTooltip(v.file_name) end
             if opentab then
-				if set_tab == -1 or set_tab == i then
-					set_tab = -1
-					curr_opendoc = i
-					v:Render()
-				end
+                if set_tab == -1 or set_tab == i then
+                    set_tab = -1
+                    curr_opendoc = i
+                    v:Render()
+                end
                 ig.EndTabItem();
             end
-			if not opened[0] then 
+            if not opened[0] then 
                 close_doc = i
                 doclosefile = true
                 break
@@ -352,58 +352,58 @@ function win:draw(ig)
     if confirm_close.draw(doit) then
         CloseEditor(close_doc)
     end
-	
-	if (ig.BeginMenuBar()) then
-		Exec.renderMenuExecute(this, curr_opendoc)
-			
-		if ig.BeginMenu("Help") then
-			if (ig.MenuItem("Show")) then
-				showhelp = true
-			end
-			if (ig.MenuItem("goto29")) then
-				editor:SetCursor(ig.DocPos(29-1,0)[0])
-				editor:ScrollToLine(29-1, ig.lib.alignTop)
-			end
-			if (ig.MenuItem("iterate")) then
-				--ig.lib.IterateIdentifiers(editor,it_cb)
-				editor:IterateIdentifiers(it_cb)
-			end
-			ig.EndMenu()
-		end
-		ig.EndMenuBar()
-	end
+    
+    if (ig.BeginMenuBar()) then
+        Exec.renderMenuExecute(this, curr_opendoc)
+            
+        if ig.BeginMenu("Help") then
+            if (ig.MenuItem("Show")) then
+                showhelp = true
+            end
+            if (ig.MenuItem("goto29")) then
+                editor:SetCursor(ig.DocPos(29-1,0)[0])
+                editor:ScrollToLine(29-1, ig.lib.alignTop)
+            end
+            if (ig.MenuItem("iterate")) then
+                --ig.lib.IterateIdentifiers(editor,it_cb)
+                editor:IterateIdentifiers(it_cb)
+            end
+            ig.EndMenu()
+        end
+        ig.EndMenuBar()
+    end
 
     ig.End() --documents
     
     ig.Begin("comments")
         Log:Draw()
     ig.End()
-	
-	renderStackVars()
     
-	-- render notifications
-	local style = ig.GetStyle()
-	local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
-	local mainWindowSize = ig.GetMainViewport().Size;
-	local mainWindowPos = ig.GetMainViewport().Pos;
-	local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
+    renderStackVars()
+    
+    -- render notifications
+    local style = ig.GetStyle()
+    local statusBarHeight = ig.GetFrameHeight() + 2.0 * style.WindowPadding.y;
+    local mainWindowSize = ig.GetMainViewport().Size;
+    local mainWindowPos = ig.GetMainViewport().Pos;
+    local offset = statusBarHeight + style.ItemSpacing.y * 2.0;
 
-	notifications:Render(ig.ImVec2(
-	mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
-	mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
-	
-	if showhelp then
-		ig.SetNextWindowSize(ig.ImVec2(500,200));
-		ig.OpenPopup("Help##p")
-		if ig.BeginPopupModal("Help##p") then 
-			ig.TextWrapped(help_txt)
-			if ig.Button("OK") then
-				ig.CloseCurrentPopup()
-				showhelp = false
-			end
-			ig.EndPopup()
-		end
-	end
+    notifications:Render(ig.ImVec2(
+    mainWindowPos.x + mainWindowSize.x - ig.GetStyle().ItemSpacing.x,
+    mainWindowPos.y + mainWindowSize.y - ig.GetStyle().ItemSpacing.y - offset));
+    
+    if showhelp then
+        ig.SetNextWindowSize(ig.ImVec2(500,200));
+        ig.OpenPopup("Help##p")
+        if ig.BeginPopupModal("Help##p") then 
+            ig.TextWrapped(help_txt)
+            if ig.Button("OK") then
+                ig.CloseCurrentPopup()
+                showhelp = false
+            end
+            ig.EndPopup()
+        end
+    end
 end
 
 win:start()
