@@ -291,6 +291,10 @@ local function renderMenuBar(self)
                 -- if (ig.MenuItem("Show Context Menus", nullptr, &showContextMenus)) { toggleContextMenus(); }
                 ig.Separator();
                 --ig.MenuItem("Show Debug Information", nullptr, &showDebugInformation);
+                if (ig.MenuItem("iterate")) then
+                --ig.lib.IterateIdentifiers(editor,it_cb)
+					editor:IterateIdentifiers(it_cb)
+                end
                 ig.EndMenu();
             end
             
@@ -309,17 +313,12 @@ local function Render(self)
     renderStatusBar(self)
 
     editor:Render("texteditor"..self.ID)
+
+    -- kepped as example
     -- if ig.IsItemClicked() and ig.IsMouseDoubleClicked(0) then 
         -- local docpos = editor:GetDocPosAtMousePos(ig.GetMousePos())
         -- self.breakpoints[tonumber(docpos.line + 1)] = true
     -- end
-    -- just opened with scrolling
-    if self.line then
-        editor:SetCursor(ig.DocPos(self.line-1,0)[0])
-        editor:ScrollToLine(self.line-1, ig.lib.alignTop)
-        editor:SetFocus()
-        self.line = nil
-    end
 
     if self.render_diff then
         RenderDiff(self)
@@ -364,12 +363,13 @@ local function CTEwindow(file_name, args)
     local editor = ig.TextEditor()
     --W.setStack = args.setStack
     W.Log = args.Log
-    W.line = args.line -- for scrolling a just opened doc
     W.editor = editor
     --editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
-    W.breakpoints = {}
+
+    W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
-    editor:SetLineDecorator(10.0, function(decorator) 
+    editor:SetLineDecorator(15.0, function(decorator) 
+
     local size = decorator.height - 1.0;
     local pos = ig.GetCursorScreenPos();
     local drawlist = ig.GetWindowDrawList();

@@ -27,8 +27,8 @@ local function run()
 
 		print("hello",i)
 		i = i + 1
-		--Sleep(1)
-		--error"debug"
+		Sleep(1)
+		error"debug"
 	end
 end
 

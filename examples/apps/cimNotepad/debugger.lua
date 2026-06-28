@@ -225,10 +225,10 @@ function Debugger.debug_hook (event, line)
     end
 end
 
-function Debugger:init(bp,K,Kdebuggerlinda,verbose, maxdeph)
+function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
     print_if_verbose("debugger: debuggerlinda soy yo", tostring(Kdebuggerlinda),"\n")
     debuggerlinda = Kdebuggerlinda
-    
+    bp = bp or {}
     if verbose then
         print_if_verbose = function(...)
             return io.write(...)
@@ -269,7 +269,9 @@ function Debugger:init(bp,K,Kdebuggerlinda,verbose, maxdeph)
     --local f,m,c = debug.gethook ()
     --print("gethook",f,m,c)
     --print("gethook",type(f),type(m),type(c))
-    debug.sethook(Debugger.debug_hook, "l")
+	if do_debug then
+		debug.sethook(Debugger.debug_hook, "l")
+	end
 end
 return Debugger
 

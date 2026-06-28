@@ -53,7 +53,7 @@ end
 
 local deblinda
 
-local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, ...)
+local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, ...)
     local Thread = require"lj-async.thread"
     local Kmaker = require"lj-async.keeper"
     K = Kmaker.KeeperCast(K)
@@ -77,7 +77,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         ---[[--------loadstring bad for same process sdl or glfw
         local f,err = loadfile(file_path.."/runner.lua")--cmd)
         if f then 
-            ret = f()(cmd, K, debuggerlinda, breakpoints) 
+            ret = f()(cmd, K, debuggerlinda, breakpoints, do_debug) 
         else 
             K:send("clave","loadfile error:"..tostring(err)) 
         end
@@ -95,11 +95,15 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         ---[=[
         local serializer = require"imgui.libs.serializer"
         --send initial breakpoits via a file which runner will get
-        local breakstr = serializer("tab_name",breakpoints,";")..";return tab_name;"
-        local f,err = io.open(file_path.."/breakpoints","w")
-        assert(f,err)
-        f:write(breakstr)
-        f:close()
+        if do_debug then
+            local breakstr = serializer("tab_name",breakpoints,";")..";return tab_name;"
+            local f,err = io.open(file_path.."/breakpoints","w")
+            assert(f,err)
+            f:write(breakstr)
+            f:close()
+        else
+            os.remove(file_path.."/breakpoints")
+        end
         
         local pcomand = executable.." ".." "..file_path.."/runner.lua "..cmd
         if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
@@ -136,11 +140,11 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
     end
 end
 
-Execute = function(self, cmd, inprocess, breakpoints)
+Execute = function(self, cmd, inprocess, breakpoints, do_debug)
     self.Log:Clear()
     self.setStack({}) -- clear Stack
     --print("Execute",executable, cmd, inprocess)
-    local thread = Thread(os_execute_async, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints)
+    local thread = Thread(os_execute_async, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug)
     return thread
 end
 
@@ -153,20 +157,20 @@ ExecutePull = function(self)
             assert(f,err)
             value = f()
             local Stack = value[3]
-            local err = value[4]
+            local _error = value[4]
             local vars = value[5]
             local f,err = loadstring(vars)
             assert(f,err)
             vars = f()
-            self.setStack(Stack, err, vars)
+            self.setStack(Stack, _error, vars)
         elseif key == "debugger" then
             local Stack = value[3]
-            local err = value[4]
+            local _error = value[4]
             local vars = value[5]
             local f,err = loadstring(vars)
             assert(f,err)
             vars = f()
-            self.setStack(Stack, err, vars)
+            self.setStack(Stack, _error, vars)
         else
             self.Log:Add(string.format("-- %s: %s\n", key,value))
         end
@@ -193,48 +197,50 @@ ExecutePull = function(self)
     end
 end
 
---require"anima.utils"
+
 local function send_breakpoint(bp)
-    --print("deblinda",deblinda)
-    --prtable(bp)
     if deblinda then
         deblinda:send("brpoints",bp)
     end
 end
-
+local ffi = require"ffi"
+local do_debug = ffi.new("bool[?]",1)
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
     local ig = self.ig
     if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread ))  then 
             if (ig.MenuItem("Execute in this process",nil,nil,not self.runningThread))  then 
                 deblinda = debuggerlinda
-                local thread = Execute(self, self.file_name, true, self.getBreakPoints())
+                local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0])
                 self.runningThread = thread
             end 
             if (ig.MenuItem("Execute in other process", nil, nil, not self.runningThread))  then 
                 deblindaS:close()
                 deblindaS:init()
                 deblinda = deblindaS
-                local thread = Execute(self, self.file_name, false, self.getBreakPoints())
+                local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0])
                 self.runningThread = thread
             end
             ig.Separator()
-            if (ig.MenuItem("continue", "F9", nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("Debug", nil, do_debug, not self.runningThread))  then 
+            end 
+            ig.Separator()
+            if (ig.MenuItem("continue", "F9", nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("continue",true)
             end 
-            if (ig.MenuItem("break", nil, nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("break", nil, nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("break",true)
             end 
-            if (ig.MenuItem("debug_exit", nil, nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("debug_exit", nil, nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("debug_exit",true)
             end 
-            if (ig.MenuItem("step_into", "F10", nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("step_into", "F10", nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("step_into",true)
             end
-            if (ig.MenuItem("step_over", "Shift-F10", nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("step_over", "Shift-F10", nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("step_over",true)
             end
-            if (ig.MenuItem("step_out", "Ctrl-F10", nil, self.runningThread and true or false))  then 
+            if (ig.MenuItem("step_out", "Ctrl-F10", nil, self.runningThread and do_debug[0] or false))  then 
                 deblinda:send("step_out",true)
             end
         ig.EndMenu();

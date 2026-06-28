@@ -77,7 +77,7 @@ end
 if not arg then
     --print"returnning function"
     inprocess = true
-    return function(script, K, debuggerlinda, bp)
+    return function(script, K, debuggerlinda, bp, do_debug)
         local old_print2 = print
         print = function(...)
             --old_print2(...)
@@ -90,7 +90,8 @@ if not arg then
         end
         
         --local bp = {breakpoints = {[10] = {["@"..script] = true}}}
-        Debugger:init(bp, K, debuggerlinda)
+        Debugger:init(do_debug, bp, K, debuggerlinda)
+        
         local ok,err = xpcall(load_script(script), xpcallerror)
         --io.write("xpcall ",tostring(ok)," ",tostring(err),"\n")
         
@@ -152,12 +153,20 @@ else
     local script = arg[1]
     
     --get initial breakpoints 
-    local bp = dofile(pathut.chain(file_path,"breakpoints"))
+    local bp
+    --check existence, only exists if do_debug
+    local brf,err = io.open(pathut.chain(file_path,"breakpoints"),"r")
+    if brf then
+        brf:close()
+        bp = dofile(pathut.chain(file_path,"breakpoints"))
+    end
     
     assert(not script:match"runner.lua","dont execute runner in other process")
-
+    
+    local do_debug = bp and true or false
     deblinda:init()
-    Debugger:init(bp, Sender, deblinda)
+    Debugger:init(do_debug, bp, Sender, deblinda)
+
     local ok,err = xpcall(load_script(script), xpcallerror)
 
     local eret

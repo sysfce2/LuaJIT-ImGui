@@ -7892,6 +7892,7 @@ ImU32 Palette_const_get(const Palette*,Color);
 char* TextEditor_GetText_alloc(TextEditor* self);
 void TextEditor_GetText_free(char* ptr);
 const char* TextEditor_GetText_static(TextEditor* self);
+void SetDejavu();
 typedef struct ImPlot3DContext ImPlot3DContext;
 typedef struct ImPlot3DStyle_c ImPlot3DStyle_c;
 typedef struct ImPlot3DPoint_c ImPlot3DPoint_c;

@@ -14,9 +14,9 @@ local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=fals
 local pathut = require"imgui.libs.path"
 local currpath = pathut.file_path()
 -------singleton app
-local sing,err =io.open(pathut.chain(currpath,"singleton.log"),"r")
+local sing,err = io.open(pathut.chain(currpath,"singleton.log"),"r")
 if sing then
-    print"there is singleton open, on error delete singleton.log"
+    print"there is singleton open, on error delete 'singleton.log' from cimNotepad folder"
     sing:close()
     return
 else
@@ -33,7 +33,7 @@ local ffi = require"ffi"
 --------Thread execute
 --local Exec = require"executer"
 local Exec = dofile(pathut.chain(currpath,"executer.lua"))
-local Execute, ExecutePull, hasThread, executable, send_breakpoint = Exec.Execute, Exec.ExecutePull, Exec.hasThread, Exec.executable, Exec.send_breakpoint
+local ExecutePull, send_breakpoint = Exec.ExecutePull, Exec.send_breakpoint
 ------------------------------------------------------------------
 
 local Log = win.ig.Log() -- app Log
@@ -53,7 +53,7 @@ local StackLevel = 1
 local Vars = {}
 local setStack
 
-local function addEditor(fullname, line, is_new)
+local function addEditor(fullname, line, is_new, breakpoints)
 --print("---addEditor",fullname, line, is_new)
         if opendocfnames[fullname] then
             if line then
@@ -72,7 +72,13 @@ local function addEditor(fullname, line, is_new)
             return -- to avoid reopening
         end 
         
-        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, line = line, notifications = notifications, send_breakpoint = send_breakpoint})
+        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints})
+        -- set line
+        if line then
+            doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
+            doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
+            doc.editor:SetFocus()
+        end
         opendocfnames[fullname] = doc
         table.insert(opendocs,doc);
         curr_opendoc = #opendocs
@@ -219,18 +225,38 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
     end)
     
 --add editors
---addEditor(gui.pathut.abspath([[../cimgui/imgui/imgui.cpp]]))
-
---add relative to CWD
--- print("load:",gui.pathut.abspath("examples/loop.lua"))
--- addEditor(gui.pathut.abspath("examples/loop.lua"),5)
-
 --add relative to this script path
 --print("load:",gui.pathut.chain(currpath,"loop.lua"))
-addEditor(gui.pathut.chain(currpath,"loop.lua"))
+--addEditor(gui.pathut.chain(currpath,"loop.lua"))
 
---addEditor(gui.pathut.abspath("CTE_sample.lua"),77)
---addEditor(gui.pathut.abspath("CTE_sample.lua"),29)
+local serializer = require"imgui.libs.serializer"
+local function PersitenceSave()
+    local persist = {curr_opendoc = curr_opendoc}
+    for i,doc in ipairs(opendocs) do
+        persist[i] = {file_name = doc.file_name, breakpoints = doc.breakpoints} 
+    end
+    local persist_str = serializer("persist", persist).."return persist;"
+    local f,err =io.open(pathut.chain(currpath,"persistence.lua"),"w")
+    assert(f, err)
+    f:write(persist_str)
+    f:close()
+end
+
+local function PersistenceLoad()
+    local f,err =io.open(pathut.chain(currpath,"persistence.lua"),"r")
+    if f then
+        f:close()
+        local persist = dofile(pathut.chain(currpath,"persistence.lua"))
+        for i, v in ipairs(persist) do
+            addEditor(v.file_name, nil, nil, v.breakpoints)
+        end
+        curr_opendoc = persist.curr_opendoc or 1
+        set_tab = curr_opendoc
+    else -- have initial example
+        addEditor(gui.pathut.chain(currpath,"loop.lua"))
+    end
+end
+
 local function getBreakPoints()
     local bp = {}
     for i, doc in ipairs(opendocs) do
@@ -244,6 +270,11 @@ end
 local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs, notifications = notifications, getBreakPoints = getBreakPoints}
 win.ig.GetIO().IniFilename = "cimNotepad.ini"
 local done_docking
+--use dejavu font
+win.ig.lib.SetDejavu()
+-- load persistence
+PersistenceLoad()
+
 function win:draw(ig)
     --ig.ShowDemoWindow()
         ----check execute
@@ -360,14 +391,6 @@ function win:draw(ig)
             if (ig.MenuItem("Show")) then
                 showhelp = true
             end
-            if (ig.MenuItem("goto29")) then
-                editor:SetCursor(ig.DocPos(29-1,0)[0])
-                editor:ScrollToLine(29-1, ig.lib.alignTop)
-            end
-            if (ig.MenuItem("iterate")) then
-                --ig.lib.IterateIdentifiers(editor,it_cb)
-                editor:IterateIdentifiers(it_cb)
-            end
             ig.EndMenu()
         end
         ig.EndMenuBar()
@@ -407,5 +430,7 @@ function win:draw(ig)
 end
 
 win:start()
+-- persistence
+PersitenceSave()
 -- remove singleton.log
 os.remove(pathut.chain(currpath,"singleton.log"))
