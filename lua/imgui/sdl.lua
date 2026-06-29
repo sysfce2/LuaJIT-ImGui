@@ -2875,10 +2875,11 @@ TextDiff.IsShowSpacesEnabled = lib.TextDiff_IsShowSpacesEnabled
 TextDiff.IsShowTabsEnabled = lib.TextDiff_IsShowTabsEnabled
 TextDiff.IsShowWhitespacesEnabled = lib.TextDiff_IsShowWhitespacesEnabled
 TextDiff.IsWordWrapEnabled = lib.TextDiff_IsWordWrapEnabled
-function TextDiff:Render(title,size,border)
-    border = border or false
+function TextDiff:Render(title,size,childFlags,windowFlags)
+    childFlags = childFlags or 0
     size = size or ImVec2()
-    return lib.TextDiff_Render(self,title,size,border)
+    windowFlags = windowFlags or 65540
+    return lib.TextDiff_Render(self,title,size,childFlags,windowFlags)
 end
 TextDiff.SetColors = lib.TextDiff_SetColors
 TextDiff.SetFocus = lib.TextDiff_SetFocus
@@ -2954,7 +2955,7 @@ TextEditor.GetSectionText_DocPos = lib.TextEditor_GetSectionText_DocPos
 TextEditor.GetSectionText_DocSelection = lib.TextEditor_GetSectionText_DocSelection
 function TextEditor:GetSectionText(a2,a3) -- generic version
     if ffi.istype('DocPos',a2) then return self:GetSectionText_DocPos(a2,a3) end
-    if ffi.istype('DocSelection',a2) then return self:GetSectionText_DocSelection(a2) end
+    if ffi.istype('const DocSelection',a2) then return self:GetSectionText_DocSelection(a2) end
     print(a2,a3)
     error'TextEditor:GetSectionText could not find overloaded'
 end
@@ -3004,16 +3005,17 @@ TextEditor.MoveUpLines = lib.TextEditor_MoveUpLines
 TextEditor.OpenFindReplaceWindow = lib.TextEditor_OpenFindReplaceWindow
 TextEditor.Paste = lib.TextEditor_Paste
 TextEditor.Redo = lib.TextEditor_Redo
-function TextEditor:Render(title,size,border)
-    border = border or false
+function TextEditor:Render(title,size,childFlags,windowFlags)
+    childFlags = childFlags or 0
     size = size or ImVec2()
-    return lib.TextEditor_Render(self,title,size,border)
+    windowFlags = windowFlags or 67588
+    return lib.TextEditor_Render(self,title,size,childFlags,windowFlags)
 end
 TextEditor.ReplaceSectionText_DocPos = lib.TextEditor_ReplaceSectionText_DocPos
 TextEditor.ReplaceSectionText_DocSelection = lib.TextEditor_ReplaceSectionText_DocSelection
 function TextEditor:ReplaceSectionText(a2,a3,a4) -- generic version
     if ffi.istype('DocPos',a2) then return self:ReplaceSectionText_DocPos(a2,a3,a4) end
-    if ffi.istype('DocSelection',a2) then return self:ReplaceSectionText_DocSelection(a2,a3) end
+    if ffi.istype('const DocSelection',a2) then return self:ReplaceSectionText_DocSelection(a2,a3) end
     print(a2,a3,a4)
     error'TextEditor:ReplaceSectionText could not find overloaded'
 end

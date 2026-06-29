@@ -53,39 +53,7 @@ local StackLevel = 1
 local Vars = {}
 local setStack
 
-local function addEditor(fullname, line, is_new, breakpoints)
---print("---addEditor",fullname, line, is_new)
-        if opendocfnames[fullname] then
-            if line then
-                for i,doc in ipairs(opendocs) do
-                    if doc.file_name == fullname then 
-                        doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
-                        doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
-                        doc.editor:SetFocus()
-                        curr_opendoc = i
-                        set_tab = i
-                        return doc
-                    end
-                end
-                print("Error not found",fullname)
-            end
-            return -- to avoid reopening
-        end 
-        
-        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints})
-        -- set line
-        if line then
-            doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
-            doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
-            doc.editor:SetFocus()
-        end
-        opendocfnames[fullname] = doc
-        table.insert(opendocs,doc);
-        curr_opendoc = #opendocs
-        set_tab = #opendocs
-        doc.shrt_name = fullname:match([[([^/\]+)$]])
-        return doc
-end
+local addEditor
 
 setStack = function(stack,err, vars)
 
@@ -209,10 +177,7 @@ local function CheckCloseEditor(id)
     end
     return true
 end
-local function CloseEditor(id)
-    local doc = table.remove(opendocs,id)
-    opendocfnames[doc.file_name] = nil
-end
+
 
 local fb = gui.FileBrowser(nil,{key="loader",pattern=nil},
     function(fullname,dir,fname)
@@ -229,10 +194,126 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 --print("load:",gui.pathut.chain(currpath,"loop.lua"))
 --addEditor(gui.pathut.chain(currpath,"loop.lua"))
 
+local function showTabBar()
+	local TabBar = ig.GetCurrentTabBar()
+	local Tabs = TabBar.Tabs
+	print"---ShowTabBar ---------------"
+	for i=0, Tabs.Size-1 do
+		local tab = Tabs.Data[i]
+		print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
+	end
+end
+
+-- uses internal API
+local do_tab_action
+local new_opendocs 
+local new_curr_opendoc
+local tab_reorder
+local function getTabBar()
+	local TabBar = ig.GetCurrentTabBar()
+	if TabBar.ReorderRequestTabId == 0 then
+		if do_tab_action then
+			tab_reorder = {}
+			new_opendocs = {}
+			local Tabs = TabBar.Tabs
+			local Tabs_reorder = {}
+			print"---reordering ---------------"
+			for i=0, Tabs.Size-1 do
+				local tab = Tabs.Data[i]
+				print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
+				tab_reorder[tab.BeginOrder + 1] = i + 1
+				new_opendocs[i + 1] = opendocs[tab.BeginOrder + 1]
+				--tab.BeginOrder = i -- -1
+				Tabs_reorder[i] = {tab = tab, neworder = tab.BeginOrder}
+			end
+			-- do reorder TabBar.tabs
+			print"do reorder TabBar.tabs"
+			for i=0, Tabs.Size-1 do
+				--local tab = Tabs.Data[i]
+				print(Tabs_reorder[i].neworder + 1, "takes from", i + 1 )
+				local tab = Tabs_reorder[i].tab
+				--tab.BeginOrder = Tabs_reorder[i].neworder
+				--print(Tabs_reorder[i].neworder + 1, "BeginOrder", tab.BeginOrder + 1 )
+				Tabs.Data[Tabs_reorder[i].neworder] = tab
+			end
+			print"---check BeginOrder apply"
+			for i=0, Tabs.Size-1 do
+				local tab = Tabs.Data[i]
+				tab.BeginOrder = i
+				print("tab",i + 1 ,tab.BeginOrder + 1)
+			end
+			new_curr_opendoc = tab_reorder[curr_opendoc]
+			curr_opendoc = new_curr_opendoc
+			opendocs = new_opendocs
+			print"-- new_opendocs"
+			for i,v in ipairs(new_opendocs) do
+				print(i,v.shrt_name)
+			end
+			print"--- after reordering ---------------"
+			for i=0, Tabs.Size-1 do
+				local tab = Tabs.Data[i]
+				print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
+			end
+			print("new curr_opendoc", new_curr_opendoc)
+			do_tab_action = false
+		end
+	else
+		if do_tab_action then print"repeat do_tab_action" end
+		do_tab_action = true -- next frame will perform the action
+	end
+end
+
+addEditor = function(fullname, line, is_new, breakpoints)
+--print("---addEditor",fullname, line, is_new)
+        if opendocfnames[fullname] then
+            if line then
+                for i,doc in ipairs(opendocs) do
+                    if doc.file_name == fullname then 
+                        doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
+                        doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
+                        doc.editor:SetFocus()
+                        curr_opendoc = i
+                        set_tab = i
+                        return doc
+                    end
+                end
+                print("Error not found",fullname)
+            end
+            return -- to avoid reopening
+        end 
+        
+        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints})
+        -- set line
+        if line then
+            doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
+            doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
+            doc.editor:SetFocus()
+        end
+        opendocfnames[fullname] = doc
+        table.insert(opendocs,doc);
+        curr_opendoc = #opendocs
+        set_tab = #opendocs
+		if new_opendocs then
+			table.insert(new_opendocs,doc);
+		end
+        doc.shrt_name = fullname:match([[([^/\]+)$]])
+        return doc
+end
+
+local function CloseEditor(id)
+	print("CloseEditor",id, opendocs[id].shrt_name)
+    local doc = table.remove(opendocs,id)
+	if new_opendocs then
+		print("CloseEditor",tab_reorder[id],new_opendocs[tab_reorder[id]].shrt_name)
+		table.remove(new_opendocs, tab_reorder[id])
+	end
+    opendocfnames[doc.file_name] = nil
+end
+
 local serializer = require"imgui.libs.serializer"
 local function PersitenceSave()
-    local persist = {curr_opendoc = curr_opendoc}
-    for i,doc in ipairs(opendocs) do
+    local persist = {curr_opendoc = tab_reorder and tab_reorder[curr_opendoc] or curr_opendoc}
+    for i,doc in ipairs(new_opendocs or opendocs) do
         persist[i] = {file_name = doc.file_name, breakpoints = doc.breakpoints} 
     end
     local persist_str = serializer("persist", persist).."return persist;"
@@ -316,7 +397,7 @@ function win:draw(ig)
     --ig.lib.ImGuiWindowFlags_NoMove , 
     ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
     
-    
+    -- main menu
     ig.Begin("Documents",nil, host_window_flags)
         if (ig.BeginMenuBar()) then
             if (ig.BeginMenu("File")) then
@@ -349,12 +430,18 @@ function win:draw(ig)
             end
             ig.EndMenuBar()
         end
+
     if openfilepopup then fb.open() end
     fb.draw()
+
     if savefilepopup then fbs.open() end
     fbs.draw(opendocs[curr_opendoc] and opendocs[curr_opendoc].shrt_name)
 
-    if (ig.BeginTabBar("##Tabs", ig.lib.ImGuiTabBarFlags_None)) then
+ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
+
+
+    if (ig.BeginTabBar("##Tabs", ig.lib.ImGuiTabBarFlags_Reorderable)) then
+		--getTabBar()
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
             --if set_tab ~= -1 then print("settint_tab",i,set_tab,curr_opendoc) end
@@ -364,6 +451,7 @@ function win:draw(ig)
                 if set_tab == -1 or set_tab == i then
                     set_tab = -1
                     curr_opendoc = i
+					if ig.Button("showTabBar") then showTabBar() end
                     v:Render()
                 end
                 ig.EndTabItem();
@@ -374,6 +462,7 @@ function win:draw(ig)
                 break
             end
         end
+		getTabBar()
         ig.EndTabBar();
     end
     local doit = false
@@ -430,6 +519,8 @@ function win:draw(ig)
 end
 
 win:start()
+
+-- after start finishes
 -- persistence
 PersitenceSave()
 -- remove singleton.log

@@ -534,16 +534,21 @@ end)
         --print("get color",col.name)
         --local a = ig.lib.Palette_const_get(lpal, col.calc_value)
         local a = ig.lib.Palette_get(ffi.cast("Palette*",lpal), i)
+		-- local imcolor = ig.lib.ImColor_ImColor_U32(a);
+		-- imcolor.Value.w = 1
+		-- a = ig.GetColorU32(imcolor.Value)
         --print("value",a)
         ig.lib.Palette_set(W.custom_palette, a, i)
         end
     end
-    ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,0,1),ig.lib.identifier)
+	--ig.lib.Palette_set(W.custom_palette,ig.U32(1,0,0,1),ig.lib.knownIdentifier)
+    --ig.lib.Palette_set(W.custom_palette,ig.U32(0,0.5,0.8,1),ig.lib.identifier)
     ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
     ig.lib.Palette_set(W.custom_palette,ig.U32(0.5,0.5,0.5,1),ig.lib.string)
-    W.editor:SetPalette(W.custom_palette)
-    W.diff:SetPalette(W.custom_palette)
-    ig.StyleColorsLight()
+	--set palette
+    W.editor:SetPalette(ig.TextEditor_GetDarkPalette())
+    W.diff:SetPalette(ig.TextEditor_GetDarkPalette())
+    ig.StyleColorsDark()
     --------------------------------
     W.window_scale = ffi.new("float[?]",1,1)
     W.Render = Render
