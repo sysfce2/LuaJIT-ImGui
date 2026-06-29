@@ -25,7 +25,7 @@ else
     assert(sing, err)
     sing:close()
 end
-----------------------------
+---------- locals ---------------------------------
 local ig = win.ig
 local CTE = dofile(pathut.chain(currpath,"CTEwindow.lua"))(win.ig)
 local gui = require"imgui.libs.filebrowser"(win.ig)
@@ -53,8 +53,19 @@ local StackLevel = 1
 local Vars = {}
 local setStack
 
-local addEditor
+local openfilepopup = false
+local savefilepopup = false
+local doclosefile = false
 
+local help_txt = 
+[[multicursor (ctrl + click to add a new one)
+ctrl + d for selecting next match
+ctrl + [ and ctrl + ] for indentation
+ctrl + backspace and ctrl + delete for word mode delete
+ctrl + / for comment toggling]]
+
+local addEditor
+---------------------------------------------------
 setStack = function(stack,err, vars)
 
     Vars = vars or {}
@@ -193,75 +204,90 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 --add relative to this script path
 --print("load:",gui.pathut.chain(currpath,"loop.lua"))
 --addEditor(gui.pathut.chain(currpath,"loop.lua"))
+-------------------Menus
 
+local function renderMenuFile()
+    if (ig.BeginMenuBar()) then
+            if (ig.BeginMenu("File")) then
+                if (ig.MenuItem("New")) then
+                    local fname = "new1.lua"
+                    while true do
+                        if not opendocfnames[fname] then break
+                        else 
+                            local number = fname:match("%d+")
+                            fname = "new"..tostring(number + 1)..".lua"
+                        end
+                    end
+                    addEditor(fname, nil, true)
+                end
+                if (ig.MenuItem("Load")) then
+                    openfilepopup = true
+                end
+                if (ig.MenuItem("Save")) then
+                    local doc = opendocs[curr_opendoc]
+                    doc:Save(doc.file_name)
+                end
+                if (ig.MenuItem("Save As")) then
+                    savefilepopup = true
+                end
+                if (ig.MenuItem("Close")) then
+                   doclosefile = true
+                   close_doc = curr_opendoc
+                end
+                ig.EndMenu();
+            end
+            ig.EndMenuBar()
+        end
+
+    if openfilepopup then fb.open() end
+    fb.draw()
+
+    if savefilepopup then fbs.open() end
+    fbs.draw(opendocs[curr_opendoc] and opendocs[curr_opendoc].shrt_name)
+end
+
+-------------------TabBar functions
 local function showTabBar()
-	local TabBar = ig.GetCurrentTabBar()
-	local Tabs = TabBar.Tabs
-	print"---ShowTabBar ---------------"
-	for i=0, Tabs.Size-1 do
-		local tab = Tabs.Data[i]
-		print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
-	end
+    local TabBar = ig.GetCurrentTabBar()
+    local Tabs = TabBar.Tabs
+    print"---ShowTabBar ---------------"
+    for i=0, Tabs.Size-1 do
+        local tab = Tabs.Data[i]
+        print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
+    end
 end
 
 -- uses internal API
 local do_tab_action
-local new_opendocs 
-local new_curr_opendoc
-local tab_reorder
-local function getTabBar()
-	local TabBar = ig.GetCurrentTabBar()
-	if TabBar.ReorderRequestTabId == 0 then
-		if do_tab_action then
-			tab_reorder = {}
-			new_opendocs = {}
-			local Tabs = TabBar.Tabs
-			local Tabs_reorder = {}
-			print"---reordering ---------------"
-			for i=0, Tabs.Size-1 do
-				local tab = Tabs.Data[i]
-				print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
-				tab_reorder[tab.BeginOrder + 1] = i + 1
-				new_opendocs[i + 1] = opendocs[tab.BeginOrder + 1]
-				--tab.BeginOrder = i -- -1
-				Tabs_reorder[i] = {tab = tab, neworder = tab.BeginOrder}
-			end
-			-- do reorder TabBar.tabs
-			print"do reorder TabBar.tabs"
-			for i=0, Tabs.Size-1 do
-				--local tab = Tabs.Data[i]
-				print(Tabs_reorder[i].neworder + 1, "takes from", i + 1 )
-				local tab = Tabs_reorder[i].tab
-				--tab.BeginOrder = Tabs_reorder[i].neworder
-				--print(Tabs_reorder[i].neworder + 1, "BeginOrder", tab.BeginOrder + 1 )
-				Tabs.Data[Tabs_reorder[i].neworder] = tab
-			end
-			print"---check BeginOrder apply"
-			for i=0, Tabs.Size-1 do
-				local tab = Tabs.Data[i]
-				tab.BeginOrder = i
-				print("tab",i + 1 ,tab.BeginOrder + 1)
-			end
-			new_curr_opendoc = tab_reorder[curr_opendoc]
-			curr_opendoc = new_curr_opendoc
-			opendocs = new_opendocs
-			print"-- new_opendocs"
-			for i,v in ipairs(new_opendocs) do
-				print(i,v.shrt_name)
-			end
-			print"--- after reordering ---------------"
-			for i=0, Tabs.Size-1 do
-				local tab = Tabs.Data[i]
-				print("tab",i + 1 ,tab.BeginOrder + 1, opendocs[tab.BeginOrder + 1].shrt_name)
-			end
-			print("new curr_opendoc", new_curr_opendoc)
-			do_tab_action = false
-		end
-	else
-		if do_tab_action then print"repeat do_tab_action" end
-		do_tab_action = true -- next frame will perform the action
-	end
+local just_reordered
+local function getTabBarOrder()
+    local TabBar = ig.GetCurrentTabBar()
+    if TabBar.ReorderRequestTabId == 0 then
+        if do_tab_action and ig.IsMouseReleased(0) then
+
+            local tab_reorder = {}
+            local new_opendocs = {}
+            local Tabs = TabBar.Tabs
+
+            for i=0, Tabs.Size-1 do
+                local tab = Tabs.Data[i]
+                tab_reorder[tab.BeginOrder + 1] = i + 1
+                new_opendocs[i + 1] = opendocs[tab.BeginOrder + 1]
+            end
+
+            curr_opendoc = tab_reorder[curr_opendoc]
+            set_tab = curr_opendoc
+            opendocs = new_opendocs
+            just_reordered = true -- for just next frame ImGuiTabBarFlags_Reorderable will be unset
+            do_tab_action = false
+        end
+    else
+        do_tab_action = true -- next frame will perform the action
+    end
 end
+
+
+
 
 addEditor = function(fullname, line, is_new, breakpoints)
 --print("---addEditor",fullname, line, is_new)
@@ -293,27 +319,20 @@ addEditor = function(fullname, line, is_new, breakpoints)
         table.insert(opendocs,doc);
         curr_opendoc = #opendocs
         set_tab = #opendocs
-		if new_opendocs then
-			table.insert(new_opendocs,doc);
-		end
         doc.shrt_name = fullname:match([[([^/\]+)$]])
         return doc
 end
 
 local function CloseEditor(id)
-	print("CloseEditor",id, opendocs[id].shrt_name)
+    --print("CloseEditor",id, opendocs[id].shrt_name)
     local doc = table.remove(opendocs,id)
-	if new_opendocs then
-		print("CloseEditor",tab_reorder[id],new_opendocs[tab_reorder[id]].shrt_name)
-		table.remove(new_opendocs, tab_reorder[id])
-	end
     opendocfnames[doc.file_name] = nil
 end
 
 local serializer = require"imgui.libs.serializer"
 local function PersitenceSave()
-    local persist = {curr_opendoc = tab_reorder and tab_reorder[curr_opendoc] or curr_opendoc}
-    for i,doc in ipairs(new_opendocs or opendocs) do
+    local persist = {curr_opendoc = curr_opendoc}
+    for i,doc in ipairs(opendocs) do
         persist[i] = {file_name = doc.file_name, breakpoints = doc.breakpoints} 
     end
     local persist_str = serializer("persist", persist).."return persist;"
@@ -383,10 +402,6 @@ function win:draw(ig)
     end
     ig.DockSpaceOverViewport(dockspace_id[0], viewport, lib.ImGuiDockNodeFlags_PassthruCentralNode + lib.ImGuiDockNodeFlags_NoTabBar);
     
-    local openfilepopup = false
-    local savefilepopup = false
-    local doclosefile = false
-    
     --Not needed with dock_builder
     --Submit a window filling the entire viewport
     -- ig.SetNextWindowPos(viewport.WorkPos);
@@ -397,51 +412,20 @@ function win:draw(ig)
     --ig.lib.ImGuiWindowFlags_NoMove , 
     ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
     
+    openfilepopup = false
+    savefilepopup = false
+    doclosefile = false
+
     -- main menu
     ig.Begin("Documents",nil, host_window_flags)
-        if (ig.BeginMenuBar()) then
-            if (ig.BeginMenu("File")) then
-                if (ig.MenuItem("New")) then
-                    local fname = "new1.lua"
-                    while true do
-                        if not opendocfnames[fname] then break
-                        else 
-                            local number = fname:match("%d+")
-                            fname = "new"..tostring(number + 1)..".lua"
-                        end
-                    end
-                    addEditor(fname, nil, true)
-                end
-                if (ig.MenuItem("Load")) then
-                    openfilepopup = true
-                end
-                if (ig.MenuItem("Save")) then
-                    local doc = opendocs[curr_opendoc]
-                    doc:Save(doc.file_name)
-                end
-                if (ig.MenuItem("Save As")) then
-                    savefilepopup = true
-                end
-                if (ig.MenuItem("Close")) then
-                   doclosefile = true
-                   close_doc = curr_opendoc
-                end
-                ig.EndMenu();
-            end
-            ig.EndMenuBar()
-        end
-
-    if openfilepopup then fb.open() end
-    fb.draw()
-
-    if savefilepopup then fbs.open() end
-    fbs.draw(opendocs[curr_opendoc] and opendocs[curr_opendoc].shrt_name)
+        renderMenuFile()
 
 ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
 
+    local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
+    if just_reordered then just_reordered = false end
 
-    if (ig.BeginTabBar("##Tabs", ig.lib.ImGuiTabBarFlags_Reorderable)) then
-		--getTabBar()
+    if (ig.BeginTabBar("##Tabs", flag)) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
             --if set_tab ~= -1 then print("settint_tab",i,set_tab,curr_opendoc) end
@@ -449,9 +433,10 @@ ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
             if ig.IsItemHovered() then ig.SetTooltip(v.file_name) end
             if opentab then
                 if set_tab == -1 or set_tab == i then
+                    --if set_tab ~= -1 then print("set_tab",set_tab) end
                     set_tab = -1
                     curr_opendoc = i
-					if ig.Button("showTabBar") then showTabBar() end
+                    --if ig.Button("showTabBar") then showTabBar() end
                     v:Render()
                 end
                 ig.EndTabItem();
@@ -462,7 +447,7 @@ ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
                 break
             end
         end
-		getTabBar()
+        getTabBarOrder()
         ig.EndTabBar();
     end
     local doit = false

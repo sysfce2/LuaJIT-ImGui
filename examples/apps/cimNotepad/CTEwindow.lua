@@ -8,12 +8,6 @@ local ffi = require"ffi"
 local langNames = {"None", "Cpp", "C", "Cs", "Python", "Lua", "Json", "Sql", "AngelScript", "Glsl", "Hlsl","Markdown"}
 local function toint(x) return ffi.new("int",x) end
 
-local help_txt = 
-[[multicursor (ctrl + click to add a new one)
-ctrl + d for selecting next match
-ctrl + [ and ctrl + ] for indentation
-ctrl + backspace and ctrl + delete for word mode delete
-ctrl + / for comment toggling]]
 local it_cb = ffi.cast("void(*)(const char *)", function(ident)
     if ident ~= nil then
         print(ffi.string(ident))
@@ -76,6 +70,8 @@ local function renderStatusBar(self)
              ig.GetStyle().FontScaleMain = self.window_scale[0]
         end 
 end
+
+-- should be global options?
 local function renderMenuOptions(self)
         local editor = self.editor
         if (ig.BeginMenu("Options"))  then 
@@ -159,23 +155,6 @@ local function IM_COL32(a,b,c,d)
     return ig.U32(a/255,b/255,c/255,d/255)
 end
 
-local function toggleLineMarkers(self)
-    local editor = self.editor
-    --// see if we are turning it on or off
-    if (self.showLineMarkers[0]) then
-        local errorlineNumber = 7;
-        local breakPointLineNumber = 9;
-        local justBecauseLineNumber = 12;
-        editor:AddMarker(errorlineNumber, 0, IM_COL32(128, 0, 32, 128), "", "Error detected on this line");
-        editor:AddMarker(breakPointLineNumber, IM_COL32(0, 255, 32, 100), 0, "", "");
-        editor:AddMarker(breakPointLineNumber, IM_COL32(0, 255, 32, 100), 0, "", "");
-        editor:AddMarker(justBecauseLineNumber, IM_COL32(255, 224, 32, 100), IM_COL32(255, 224, 32, 100), "Just Because", "Just Because");
-        self.notifications:Add(ig.lib.info, "Line markers activated");
-    else 
-        editor:ClearMarkers();
-        self.notifications:Add(ig.lib.info, "Line markers deactivated");
-    end
-end
 
 local function renderMenuBar(self)
         local editor = self.editor
@@ -249,7 +228,7 @@ local function renderMenuBar(self)
                 ig.Separator();
                 ig.EndMenu();
             end
-
+            -- should be general menu?
             if (ig.BeginMenu("View")) then
                 -- if (ig.MenuItem("Zoom In", "Ctrl-+")) then increaseFontSIze(); end
                 -- if (ig.MenuItem("Zoom Out", "Ctrl--")) then decreaseFontSIze(); end
@@ -286,7 +265,7 @@ local function renderMenuBar(self)
                 if (ig.MenuItem("Trie-based AutoComplete", nullptr, self.demoTrieAutoComplete)) then toggleTrieAutoComplete(self); end
                 --if (ig.MenuItem("Language Server Protocol Bridge", nullptr, &demoLspBridge)) { toggleLspBridge(); }
                 --if (ig.MenuItem("Show Word at Mouse", nullptr, &showWordAtMouse)) { toggleShowWordAtMouse(); }
-                if (ig.MenuItem("Show Line Markers", nullptr, self.showLineMarkers)) then toggleLineMarkers(self); end
+                -- if (ig.MenuItem("Show Line Markers", nullptr, self.showLineMarkers)) then toggleLineMarkers(self); end
                 -- if (ig.MenuItem("Show Line Decorator", nullptr, &showLineDecorator)) { toggleLineDecorator(); }
                 -- if (ig.MenuItem("Show Context Menus", nullptr, &showContextMenus)) { toggleContextMenus(); }
                 ig.Separator();
@@ -297,10 +276,6 @@ local function renderMenuBar(self)
                 end
                 ig.EndMenu();
             end
-            
-            
-            
-            
             ig.EndMenuBar();
         end
 end
@@ -365,7 +340,7 @@ local function CTEwindow(file_name, args)
     W.Log = args.Log
     W.editor = editor
     --editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
-
+    --editor:SetTextContextMenuCallback(function(pp) print("cbaaaa2",pp.pos.line) end)
     W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
     editor:SetLineDecorator(15.0, function(decorator) 
@@ -403,7 +378,9 @@ end)
 
     W.diff = ig.TextDiff()
     W.trieAutoComplete = ig.TrieAutoComplete()
-    W.demoTrieAutoComplete = ffi.new("bool[?]",1,false);
+    W.trieAutoComplete:Connect(W.editor);
+
+    W.demoTrieAutoComplete = ffi.new("bool[?]",1,true);
     W.showLineMarkers = ffi.new("bool[?]",1,false);
     W.render_diff = false
     W.originalText = strtext
