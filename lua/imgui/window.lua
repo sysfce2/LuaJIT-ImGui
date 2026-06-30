@@ -10,10 +10,30 @@ local function MainDockSpace(W)
 end
 local M = {}
 
+local function quitGLFW(self)
+    self.window:setShouldClose(self.lj_glfw.glfwc.GLFW_TRUE)
+end
+    
+local function quitSDL(self)
+    local event = ffi.new"SDL_Event"
+    event.type = self.sdl.QUIT
+    self.sdl.pushEvent(event)
+end
+
+local function quitSDL3(self)
+    local event = ffi.new"SDL_Event"
+    event.type = self.sdl.EVENT_QUIT
+    self.sdl.pushEvent(event)
+end
+
 local function startGLFW(W, postf)
+    postf = postf or function() return true end
+    local confirm_quit
+    local do_quit
     local window = W.window
     local ig = W.ig
     local gl, glc, glu, glext = W.gllib.libraries()
+    ::DONTQUIT::
     while not window:shouldClose() do
 
         W.lj_glfw.pollEvents()
@@ -31,6 +51,17 @@ local function startGLFW(W, postf)
         W.ig_impl:NewFrame()
 
         MainDockSpace(W)
+        if confirm_quit then
+            local is_confirmed = confirm_quit()
+            if is_confirmed then
+                do_quit = true
+                window:setShouldClose(true)
+            elseif is_confirmed == nil then
+                -- continue confirmation
+            elseif is_confirmed == false then
+                confirm_quit = nil
+            end
+        end
         W:draw(ig)
 
         W.ig_impl:Render()
@@ -53,7 +84,15 @@ local function startGLFW(W, postf)
         if not W.args.dont_sleep then ig.lib.ImGui_ImplGlfw_Sleep(10); end
         ::continue::
     end
-    if postf then postf() end
+    if postf and not do_quit then 
+        local conf,fun = postf() 
+        if conf == "nil" then conf = true end
+        if conf == false then
+            confirm_quit = fun
+            window:setShouldClose(false)
+            goto DONTQUIT
+        end
+    end
     W.ig_impl:destroy()
     window:destroy()
     W.lj_glfw.terminate()
@@ -109,18 +148,23 @@ function M:GLFW(w,h,title,args)
 
     W.window = window
     W.start = startGLFW
+    W.quit = quitGLFW
     return W
 end
 
 local function startSDL(W, postf)
     local ffi = require"ffi"
-
+    postf = postf or function() return true end
+    local confirm_quit
+    local do_quit
+    
     local window = W.window
     local sdl = W.sdl
     local ig = W.ig
     local gl,glc = W.gllib.gl,W.gllib.glc
     local igio = ig.GetIO()
     local done = false;
+    ::DONTQUIT::
     while (not done) do
         --SDL_Event
         local event = ffi.new"SDL_Event"
@@ -147,6 +191,17 @@ local function startSDL(W, postf)
         W.ig_Impl:NewFrame()
 
         MainDockSpace(W)
+        if confirm_quit then
+            local is_confirmed = confirm_quit()
+            if is_confirmed then
+                do_quit = true
+                done = true
+            elseif is_confirmed == nil then
+                -- continue confirmation
+            elseif is_confirmed == false then
+                confirm_quit = nil
+            end
+        end
         W:draw(ig)
 
         W.ig_Impl:Render()
@@ -168,7 +223,15 @@ local function startSDL(W, postf)
     end
 
     -- Cleanup
-    if postf then postf() end
+    if postf and not do_quit then 
+        local conf,fun = postf() 
+        if conf == "nil" then conf = true end
+        if conf == false then
+            confirm_quit = fun
+            done = false
+            goto DONTQUIT
+        end
+    end
     W.ig_Impl:destroy()
 
     sdl.gL_DeleteContext(W.gl_context);
@@ -244,18 +307,23 @@ function M:SDL(w,h,title,args)
 
     W.window = window
     W.start = startSDL
+    W.quit = quitSDL
     return W
 end
 
 local function startSDL3(W, postf)
     local ffi = require"ffi"
-
+    postf = postf or function() return true end
+    local confirm_quit
+    local do_quit
+    
     local window = W.window
     local sdl = W.sdl
     local ig = W.ig
     local gl,glc = W.gllib.gl,W.gllib.glc
     local igio = ig.GetIO()
     local done = false;
+    ::DONTQUIT::
     while (not done) do
         --SDL_Event
         local event = ffi.new"SDL_Event"
@@ -282,6 +350,17 @@ local function startSDL3(W, postf)
         W.ig_Impl:NewFrame()
 
         MainDockSpace(W)
+        if confirm_quit then
+            local is_confirmed = confirm_quit()
+            if is_confirmed then
+                do_quit = true
+                done = true
+            elseif is_confirmed == nil then
+                -- continue confirmation
+            elseif is_confirmed == false then
+                confirm_quit = nil
+            end
+        end
         W:draw(ig)
 
         W.ig_Impl:Render()
@@ -303,7 +382,15 @@ local function startSDL3(W, postf)
     end
 
     -- Cleanup
-    if postf then postf() end
+    if postf and not do_quit then 
+        local conf,fun = postf() 
+        if conf == "nil" then conf = true end
+        if conf == false then
+            confirm_quit = fun
+            done = false
+            goto DONTQUIT
+        end
+    end
     W.ig_Impl:destroy()
 
     sdl.gL_DestroyContext(W.gl_context);
@@ -375,7 +462,7 @@ function M:SDL3(w,h,title,args)
 
     W.window = window
     W.start = startSDL3
-
+    W.quit = quitSDL3
     return W
 end
 

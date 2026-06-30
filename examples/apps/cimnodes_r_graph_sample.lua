@@ -535,8 +535,7 @@ function win:draw(ig)
     --ig.ShowDemoWindow()
 end
 
-local function clean()
-  editor1:save()
-end
 
-win:start(clean)
+win:start()
+
+editor1:save()

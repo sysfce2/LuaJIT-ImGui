@@ -45,8 +45,6 @@ function win:draw(ig)
     ig.End()
 end
 
-local function clean()
-    win.ig.ImPlot_DestroyContext()
-end
+win:start()
 
-win:start(clean)
+win.ig.ImPlot_DestroyContext()

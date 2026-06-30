@@ -8,7 +8,8 @@ print(package.path)
 -------------------------------------------------------------------------------
 --]]
 local igwin = require"imgui.window"
-local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 --local win = igwin:GLFW(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 local pathut = require"imgui.libs.path"
@@ -206,7 +207,7 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 --addEditor(gui.pathut.chain(currpath,"loop.lua"))
 -------------------Menus
 
-local function renderMenuFile()
+local function renderMenuFile(win)
     if (ig.BeginMenuBar()) then
             if (ig.BeginMenu("File")) then
                 if (ig.MenuItem("New")) then
@@ -223,7 +224,7 @@ local function renderMenuFile()
                 if (ig.MenuItem("Load")) then
                     openfilepopup = true
                 end
-                if (ig.MenuItem("Save")) then
+                if (ig.MenuItem("Save","Ctrl-S")) then
                     local doc = opendocs[curr_opendoc]
                     doc:Save(doc.file_name)
                 end
@@ -234,10 +235,18 @@ local function renderMenuFile()
                    doclosefile = true
                    close_doc = curr_opendoc
                 end
+                if (ig.MenuItem("Quit")) then
+                    win:quit()
+                end
                 ig.EndMenu();
             end
             ig.EndMenuBar()
         end
+
+    if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_S)) then
+        local doc = opendocs[curr_opendoc]
+        doc:Save(doc.file_name)
+    end
 
     if openfilepopup then fb.open() end
     fb.draw()
@@ -418,7 +427,7 @@ function win:draw(ig)
 
     -- main menu
     ig.Begin("Documents",nil, host_window_flags)
-        renderMenuFile()
+        renderMenuFile(win)
 
 ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
 
@@ -503,7 +512,36 @@ ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
     end
 end
 
-win:start()
+local function check_quit()
+    local needs_confirm
+    for i, doc in ipairs(opendocs) do
+        if doc.editor:CanUndo() then
+            needs_confirm = true
+            break
+        end
+    end
+
+    local function checker()
+
+        if needs_confirm then
+            confirm_close.open()
+        end
+
+        local is_confirmed = confirm_close.draw(nil)
+        if is_confirmed then
+            -- doclose
+            return true
+        elseif is_confirmed == false then
+            -- dont close
+            return false
+        elseif is_confirmed == nil then
+            -- continue checking
+            return nil
+        end
+    end
+    return not needs_confirm, checker
+end
+win:start(check_quit)
 
 -- after start finishes
 -- persistence

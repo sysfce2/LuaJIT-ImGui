@@ -227,8 +227,7 @@ function win:draw(ig)
     editor1:draw()
 end
 
-local function clean()
-  editor1:save()
-end
 
-win:start(clean)
+win:start()
+
+editor1:save()

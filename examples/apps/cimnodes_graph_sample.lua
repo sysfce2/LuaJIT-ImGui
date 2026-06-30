@@ -548,11 +548,11 @@ function win:draw(ig)
     ig.ShowDemoWindow()
 end
 
-local function clean()
-    editor1:save()
-    ig.imnodes_PopAttributeFlag();
-    editor1:free()
-    ig.imnodes_DestroyContext()
-end
 
-win:start(clean)
+win:start()
+
+--postquit
+editor1:save()
+ig.imnodes_PopAttributeFlag();
+editor1:free()
+ig.imnodes_DestroyContext()

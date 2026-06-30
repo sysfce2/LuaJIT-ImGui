@@ -46,5 +46,11 @@ function win:draw(ig)
     ig.ShowDemoWindow()
 end
 
+local function check_quit()
+	-- return nil or true to quit
+	return true
+	-- return false, function confirmer to chck
+	--return false, function() return false end
+end
 
-win:start(clean)
+win:start(check_quit)

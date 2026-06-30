@@ -18,7 +18,7 @@ function gui.YesNo(msg)
     end
     function D.draw(doit)
         local resp = doit
-        if ig.BeginPopupModal("yesno",nil,0) then
+        if ig.BeginPopupModal("yesno",nil,ig.lib.ImGuiWindowFlags_AlwaysAutoResize) then
             ig.Text(msg)
             if ig.Button("yes") then
                 resp = true

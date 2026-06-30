@@ -310,13 +310,12 @@ function win:draw(ig)
     editor2:draw()
 end
 
-local function clean()
-    editor1:save()
-    editor2:save()
-    ig.imnodes_PopAttributeFlag();
-    editor1:free()
-    editor2:free()
-    ig.imnodes_DestroyContext()
-end
 
-win:start(clean)
+win:start()
+
+editor1:save()
+editor2:save()
+ig.imnodes_PopAttributeFlag();
+editor1:free()
+editor2:free()
+ig.imnodes_DestroyContext()
