@@ -75,6 +75,7 @@ setStack = function(stack,err, vars)
     end
 
     Stack = stack
+
     --add error marker
     for i,v in ipairs(stack) do
         if v.source:match"^@" then
@@ -342,7 +343,9 @@ local serializer = require"imgui.libs.serializer"
 local function PersitenceSave()
     local persist = {curr_opendoc = curr_opendoc}
     for i,doc in ipairs(opendocs) do
-        persist[i] = {file_name = doc.file_name, breakpoints = doc.breakpoints} 
+        local cupos = doc.editor:GetMainCursorPosition()
+        local line = tonumber(cupos.line) + 1
+        persist[i] = {file_name = doc.file_name, breakpoints = doc.breakpoints, is_new = doc.is_new, line = line} 
     end
     local persist_str = serializer("persist", persist).."return persist;"
     local f,err =io.open(pathut.chain(currpath,"persistence.lua"),"w")
@@ -357,7 +360,7 @@ local function PersistenceLoad()
         f:close()
         local persist = dofile(pathut.chain(currpath,"persistence.lua"))
         for i, v in ipairs(persist) do
-            addEditor(v.file_name, nil, nil, v.breakpoints)
+            addEditor(v.file_name, v.line, v.is_new, v.breakpoints)
         end
         curr_opendoc = persist.curr_opendoc or 1
         set_tab = curr_opendoc
@@ -428,8 +431,8 @@ function win:draw(ig)
     -- main menu
     ig.Begin("Documents",nil, host_window_flags)
         renderMenuFile(win)
-
-ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
+-- for debug
+-- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
 
     local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
     if just_reordered then just_reordered = false end

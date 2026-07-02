@@ -317,6 +317,7 @@ local function Save(self,fname)
             --print"fname == self.file_name"
             editor:SetText(str)
         end
+        self.is_new = nil
     end
 end
 local function CTEwindow(file_name, args)
@@ -334,7 +335,7 @@ local function CTEwindow(file_name, args)
     shrt_name = shrt_name.."."..ext
 
 
-    local W = {file_name = file_name or "", shrt_name = shrt_name or ""}
+    local W = {file_name = file_name or "", shrt_name = shrt_name or "", is_new = args.is_new}
     local editor = ig.TextEditor()
     --W.setStack = args.setStack
     W.Log = args.Log

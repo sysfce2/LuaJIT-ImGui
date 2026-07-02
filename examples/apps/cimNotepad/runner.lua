@@ -46,8 +46,8 @@ local function xpcallerror(err)
     local debuginfo = debug.getinfo(2,"Slf")
     local stack,vars = Debugger:get_call_stack(3) 
     -- vars can have cycles so serialize for Keeper
-    Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
-    --Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
+    --Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
+    Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
     --print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
     print(debug.traceback(2))
     print("======= error:",err)
@@ -63,8 +63,8 @@ local function load_script(script)
             local info = {}
             info.source = "@"..script
             info.currentline = err:match(":(%d*):") or -1
-            Debugger.send_debuginfo(info.source, info.currentline,{info}, err,serializer("tab_name",{},";").."return tab_name;")
-            --Debugger.send_debuginfo(info.source, info.currentline,{info}, err, {})
+            --Debugger.send_debuginfo(info.source, info.currentline,{info}, err,serializer("tab_name",{},";").."return tab_name;")
+            Debugger.send_debuginfo(info.source, info.currentline,{info}, err, {})
             return false
         else
             return fs()

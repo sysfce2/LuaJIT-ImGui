@@ -179,8 +179,8 @@ function Debugger.debug_hook (event, line)
             print_if_verbose("debugger going to send_debuginfo\n")
             
             -- serializer to avoid cycles in table
-            send_debuginfo(s,line, cleanStack(stack), "debugging this line", serializer("tab_name",vars,";").."return tab_name;")
-            --send_debuginfo(s,line, cleanStack(stack), "debugging this line", vars)
+            --send_debuginfo(s,line, cleanStack(stack), "debugging this line", serializer("tab_name",vars,";").."return tab_name;")
+            send_debuginfo(s,line, cleanStack(stack), "debugging this line", vars)
             print_if_verbose("debugger going to loop\n")
             print_if_verbose("debugger11",event,line,tostring(debuggerlinda),"\n")
             while true do
@@ -234,11 +234,10 @@ function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
             return io.write(...)
         end
     end
-    --require"anima.utils"
+
     send_debuginfo = function(...)
-        --print_if_verbose("going to prtable\n")
         --local str = serializer("tab_name1",{...})
-        --print_if_verbose(str)
+        --print(str)
         --print_if_verbose("going to send\n")
         K:send("debugger",{...})
         --print_if_verbose("senddebuginfo done\n")

@@ -150,6 +150,7 @@ end
 
 
 ExecutePull = function(self)
+	while true do
     local key,value = K:receive("debuggerXXXX","debugger","clave") --,"stack"
     if key then
         if key == "debuggerXXXX" then
@@ -159,22 +160,27 @@ ExecutePull = function(self)
             local Stack = value[3]
             local _error = value[4]
             local vars = value[5]
-            local f,err = loadstring(vars)
-            assert(f,err)
-            vars = f()
+            -- not needed with keepper with cycles
+            -- local f,err = loadstring(vars)
+            -- assert(f,err)
+            -- vars = f()
             self.setStack(Stack, _error, vars)
         elseif key == "debugger" then
             local Stack = value[3]
             local _error = value[4]
             local vars = value[5]
-            local f,err = loadstring(vars)
-            assert(f,err)
-            vars = f()
+            -- not needed with keepper with cycles
+            -- local f,err = loadstring(vars)
+            -- assert(f,err)
+            -- vars = f()
             self.setStack(Stack, _error, vars)
         else
             self.Log:Add(string.format("-- %s: %s\n", key,value))
         end
+	else
+		break
     end
+	end
     if self.runningThread then
             local ok, err = self.runningThread:join(0.01, true) --true for getting number
             if ok then
