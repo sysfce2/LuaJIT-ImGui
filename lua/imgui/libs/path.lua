@@ -82,7 +82,7 @@ function M.file_open_here()
 	local here_path = debug.getinfo(2,'S').source:match("@(.*)$") 
 	here_path = splitpath(abspath(here_path))
 	return function(fname, fmode)
-		print("open_here", here_path, fname, M.chain(here_path, fname))
+		--print("open_here", here_path, fname, M.chain(here_path, fname))
 		return io.open(M.chain(here_path, fname), fmode)
 	end
 end

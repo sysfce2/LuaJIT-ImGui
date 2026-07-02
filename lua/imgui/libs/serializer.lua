@@ -4,39 +4,56 @@ local ffi = require"ffi"
 local function cdataSerialize(cd)
     if ffi.istype("float[1]", cd) then
         return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
-    elseif ffi.istype("int[1]", cd) then
-        return table.concat{[[ffi.new('int[1]',]],cd[0],[[)]]}
-    elseif ffi.istype("bool[1]", cd) then
-        return table.concat{[[ffi.new('bool[1]',]],tostring(cd[0]),[[)]]}
     elseif ffi.istype("float[]",cd) then
         local size = ffi.sizeof(cd)/ffi.sizeof"float"
         local tab = {[[ffi.new("float[?]",]],size}
         for i=0,size-1 do tab[#tab+1] = ",";tab[#tab+1] = cd[i] end
         tab[#tab+1] = [[)]]
         return table.concat(tab)
+    elseif ffi.istype("int64_t", cd) or ffi.istype("uint64_t", cd) then
+        return tostring(cd)
+    elseif ffi.istype("int[1]", cd) then
+        return table.concat{[[ffi.new('int[1]',]],cd[0],[[)]]}
+    elseif ffi.istype("int[]",cd) then
+        local size = ffi.sizeof(cd)/ffi.sizeof"int"
+        local tab = {[[ffi.new("int[?]",]],size}
+        for i=0,size-1 do tab[#tab+1] = ",";tab[#tab+1] = cd[i] end
+        tab[#tab+1] = [[)]]
+        return table.concat(tab)
+    elseif ffi.istype("bool[1]", cd) then
+        return table.concat{[[ffi.new('bool[1]',]],tostring(cd[0]),[[)]]}
     elseif ffi.istype("void*",cd) then
         return table.concat{[[ffi.cast('void*',]],tonumber(ffi.cast("uintptr_t",cd)),[[)]]}
     elseif ffi.istype("void*[1]",cd) then
         return table.concat{[[ffi.new('void*[1]',ffi.cast('void*',]],tonumber(ffi.cast("uintptr_t",cd[0])),[[))]]}
     elseif ffi.istype("const char*[1]",cd) then
         return table.concat{[[ffi.new('const char*[1]',{']],ffi.string(cd[0]),[['})]]}
-    elseif ffi.istype("SlotInfo[]",cd) then
-        local size = ffi.sizeof(cd)/ffi.sizeof"SlotInfo"
-        local tab = {[[ffi.new("SlotInfo[?]",]],size,",{"}
-        for i=0,size-1 do
-            tab[#tab+1]="{'"
-            tab[#tab+1]= ffi.string(cd[i].title)
-            tab[#tab+1]= "',"
-            tab[#tab+1]= cd[i].kind
-            tab[#tab+1]= "},"
-        end
-        tab[#tab+1] = "})"
-        return table.concat(tab)
-    elseif ffi.istype("ImVec2",cd) then
-        return table.concat{[[ig.ImVec2(]],cd.x,",",cd.y,")"}
+    ---those below need imgui to be required
     else
-        print(cd,"not serialized")
-        error"serialization error"
+        local has_imgui,_ = pcall(ffi.istype, "SlotInfo[]", cd)
+        if has_imgui then
+            if ffi.istype("SlotInfo[]",cd) then
+                local size = ffi.sizeof(cd)/ffi.sizeof"SlotInfo"
+                local tab = {[[ffi.new("SlotInfo[?]",]],size,",{"}
+                for i=0,size-1 do
+                    tab[#tab+1]="{'"
+                    tab[#tab+1]= ffi.string(cd[i].title)
+                    tab[#tab+1]= "',"
+                    tab[#tab+1]= cd[i].kind
+                    tab[#tab+1]= "},"
+                end
+                tab[#tab+1] = "})"
+                return table.concat(tab)
+            elseif ffi.istype("ImVec2",cd) then
+                return table.concat{[[ig.ImVec2(]],cd.x,",",cd.y,")"}
+            else
+                print(cd,"not serialized")
+                error"serialization error"
+            end
+        else
+            print(cd,"not serialized")
+            error"serialization error"
+        end
     end
 end
 
@@ -49,6 +66,8 @@ local function basicSerialize (o)
         return string.format("%q", o)
     elseif type(o)=="cdata" then
         return cdataSerialize(o)
+    elseif type(o)=="userdata" then
+        return tostring(o)
     else
         return tostring(nil) --"nil"
     end
