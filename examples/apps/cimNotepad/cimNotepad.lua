@@ -267,38 +267,19 @@ local function showTabBar()
     end
 end
 
--- uses internal API
-local do_tab_action
-local just_reordered
-local function getTabBarOrder()
-    local TabBar = ig.GetCurrentTabBar()
-    if TabBar.ReorderRequestTabId == 0 then
-        if do_tab_action and ig.IsMouseReleased(0) then
-
-            local tab_reorder = {}
-            local new_opendocs = {}
-            local Tabs = TabBar.Tabs
-
-            for i=0, Tabs.Size-1 do
-                local tab = Tabs.Data[i]
-                tab_reorder[tab.BeginOrder + 1] = i + 1
-                new_opendocs[i + 1] = opendocs[tab.BeginOrder + 1]
-            end
-
-            curr_opendoc = tab_reorder[curr_opendoc]
-            set_tab = curr_opendoc
-            opendocs = new_opendocs
-            just_reordered = true -- for just next frame ImGuiTabBarFlags_Reorderable will be unset
-            do_tab_action = false
-        end
-    else
-        do_tab_action = true -- next frame will perform the action
+local function do_reorder(order,orderinv)
+    local new_opendocs = {}
+    for i,v in ipairs(order) do
+        new_opendocs[i] = opendocs[v]
     end
+    curr_opendoc = orderinv[curr_opendoc]
+    set_tab = curr_opendoc
+    opendocs = new_opendocs
 end
 
+local tro = gui.TabReorder(do_reorder)
 
-
-
+---------------------------------
 addEditor = function(fullname, line, is_new, breakpoints)
 --print("---addEditor",fullname, line, is_new)
         if opendocfnames[fullname] then
@@ -381,15 +362,16 @@ local function getBreakPoints()
 end
 local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs, notifications = notifications, getBreakPoints = getBreakPoints}
 win.ig.GetIO().IniFilename = "cimNotepad.ini"
-local done_docking
+
 --use dejavu font
 win.ig.lib.SetDejavu()
 -- load persistence
 PersistenceLoad()
-
+-- do docking build only once 
+local done_docking
 function win:draw(ig)
     --ig.ShowDemoWindow()
-        ----check execute
+    ----check execute
     ExecutePull(this)
     
     local lib = ig.lib
@@ -434,22 +416,30 @@ function win:draw(ig)
 -- for debug
 -- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
 
-    local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
-    if just_reordered then just_reordered = false end
-
-    if (ig.BeginTabBar("##Tabs", flag)) then
+    if (ig.BeginTabBar("##Tabs", tro.flag())) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
-            --if set_tab ~= -1 then print("settint_tab",i,set_tab,curr_opendoc) end
             local opentab = ig.BeginTabItem(v.shrt_name.."##"..i, opened,(i==set_tab) and ig.lib.ImGuiTabItemFlags_SetSelected or 0)
             if ig.IsItemHovered() then ig.SetTooltip(v.file_name) end
             if opentab then
                 if set_tab == -1 or set_tab == i then
-                    --if set_tab ~= -1 then print("set_tab",set_tab) end
+
+                    if set_tab ~= -1 then 
+                        -- we come from addEditor or getTabOrder
+                        --print("set_tab just setted",set_tab) 
+                    end
+                    
+                    if curr_opendoc~=i then 
+                        --print("manual changeg",string.format(" curr: %d, i: %d, set_tab: %d",curr_opendoc, i,set_tab))
+                        v.editor:SetFocus()
+                    end
+                    
                     set_tab = -1
                     curr_opendoc = i
                     --if ig.Button("showTabBar") then showTabBar() end
                     v:Render()
+                else 
+                    --print("going to change tab from", i,"to",set_tab)
                 end
                 ig.EndTabItem();
             end
@@ -459,7 +449,7 @@ function win:draw(ig)
                 break
             end
         end
-        getTabBarOrder()
+        tro.Update()
         ig.EndTabBar();
     end
     local doit = false

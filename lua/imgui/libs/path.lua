@@ -5,7 +5,10 @@
 --local lfs = require"lfs"
 -- or to get unicode lfs with luajit
 -- https://github.com/sonoro1234/luafilesystem
-local lfs = require"lfs_ffi"
+local has_lfs_ffi, lfs = pcall(require,"lfs_ffi")
+if not has_lfs_ffi then
+    lfs = require"lfs"
+end
 
 local M = {}
 local is_windows = package.config:sub(1,1) == '\\'

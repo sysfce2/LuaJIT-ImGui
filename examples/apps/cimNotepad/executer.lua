@@ -54,6 +54,7 @@ end
 local deblinda
 
 local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, ...)
+	local pathut = require"imgui.libs.path"
     local Thread = require"lj-async.thread"
     local Kmaker = require"lj-async.keeper"
     K = Kmaker.KeeperCast(K)
@@ -75,7 +76,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         local ret
         if inprocess then
         ---[[--------loadstring bad for same process sdl or glfw
-        local f,err = loadfile(file_path.."/runner.lua")--cmd)
+        local f,err = loadfile(pathut.chain(file_path,"runner.lua"))--cmd)
         if f then 
             ret = f()(cmd, K, debuggerlinda, breakpoints, do_debug) 
         else 
@@ -105,7 +106,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
             os.remove(file_path.."/breakpoints")
         end
         
-        local pcomand = executable.." ".." "..file_path.."/runner.lua "..cmd
+        local pcomand = executable.." ".." "..pathut.chain(file_path,"runner.lua").." "..cmd
         if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
         --K:send("clave","pcomand is:"..pcomand)
         local exe,err = io.popen(pcomand, "r")

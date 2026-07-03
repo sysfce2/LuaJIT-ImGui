@@ -4,7 +4,10 @@ local ffi = require "ffi"
 --local lfs = require"lfs"
 -- or to get unicode lfs with luajit
 -- https://github.com/sonoro1234/luafilesystem
-local lfs = require"lfs_ffi"
+local has_lfs_ffi, lfs = pcall(require,"lfs_ffi")
+if not has_lfs_ffi then
+    lfs = require"lfs"
+end
 
 local pathut = require"imgui.libs.path"
 
@@ -166,6 +169,43 @@ function gui.FileBrowser(filename_p, args, funcOK)
         end
     end
     return {draw = filechooser, open = function() curr_dir_done = false;ig.OpenPopup(args.key) end,func = funcOK}
+end
+
+
+function gui.TabReorder(reorder_func)
+    assert(reorder_func, "TabReorder created without reorder_func")
+    local drag_begun
+    local just_reordered
+    local M = {}
+    M.Update = function()
+            local TabBar = ig.GetCurrentTabBar()
+            if TabBar.ReorderRequestTabId == 0 then
+                -- drag just finished
+                if drag_begun and ig.IsMouseReleased(0) then
+                    local order_inv = {}
+                    local order = {}
+                    
+                    local Tabs = TabBar.Tabs
+                    for i=0, Tabs.Size-1 do
+                        local tab = Tabs.Data[i]
+                        order_inv[tab.BeginOrder + 1] = i + 1
+                        order[i + 1] = tab.BeginOrder + 1
+                    end
+                    
+                    just_reordered = true -- for just next frame ImGuiTabBarFlags_Reorderable will be unset
+                    drag_begun = false
+                    reorder_func(order, order_inv)
+                end
+            else --TabBar.ReorderRequestTabId == true
+                drag_begun = true -- next frame will perform the action
+            end
+        end
+    M.flag = function()
+        local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
+        if just_reordered then just_reordered = false end
+        return flag
+    end
+    return M
 end
 
 return gui
