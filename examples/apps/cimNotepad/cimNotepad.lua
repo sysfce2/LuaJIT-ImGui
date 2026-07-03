@@ -275,6 +275,12 @@ local function do_reorder(order,orderinv)
     curr_opendoc = orderinv[curr_opendoc]
     set_tab = curr_opendoc
     opendocs = new_opendocs
+    -------------
+    local doc = opendocs[curr_opendoc]
+    local cupos = doc.editor:GetMainCursorPosition()
+    local line = tonumber(cupos.line) + 1
+    doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
+    doc.editor:SetFocus()
 end
 
 local tro = gui.TabReorder(do_reorder)
@@ -288,7 +294,6 @@ addEditor = function(fullname, line, is_new, breakpoints)
                     if doc.file_name == fullname then 
                         doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
                         doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
-                        doc.editor:SetFocus()
                         curr_opendoc = i
                         set_tab = i
                         return doc
@@ -304,7 +309,6 @@ addEditor = function(fullname, line, is_new, breakpoints)
         if line then
             doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
             doc.editor:ScrollToLine(line-1, ig.lib.alignTop)
-            doc.editor:SetFocus()
         end
         opendocfnames[fullname] = doc
         table.insert(opendocs,doc);
@@ -426,20 +430,21 @@ function win:draw(ig)
 
                     if set_tab ~= -1 then 
                         -- we come from addEditor or getTabOrder
-                        --print("set_tab just setted",set_tab) 
+                        --print("set_tab just setted",set_tab)
+                        v.editor:SetFocus()
                     end
                     
                     if curr_opendoc~=i then 
                         --print("manual changeg",string.format(" curr: %d, i: %d, set_tab: %d",curr_opendoc, i,set_tab))
                         v.editor:SetFocus()
                     end
-                    
+
                     set_tab = -1
                     curr_opendoc = i
                     --if ig.Button("showTabBar") then showTabBar() end
                     v:Render()
                 else 
-                    --print("going to change tab from", i,"to",set_tab)
+                   -- print("going to change tab from", i,"to",set_tab)
                 end
                 ig.EndTabItem();
             end
