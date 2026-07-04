@@ -200,6 +200,9 @@ function gui.TabReorder(reorder_func)
                 drag_begun = true -- next frame will perform the action
             end
         end
+	M.clear_next = function()
+		just_reordered = true
+	end
     M.flag = function()
         local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
         if just_reordered then just_reordered = false end

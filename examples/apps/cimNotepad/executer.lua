@@ -54,7 +54,7 @@ end
 local deblinda
 
 local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, ...)
-	local pathut = require"imgui.libs.path"
+    local pathut = require"imgui.libs.path"
     local Thread = require"lj-async.thread"
     local Kmaker = require"lj-async.keeper"
     K = Kmaker.KeeperCast(K)
@@ -126,7 +126,9 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
                         K:send("debuggerXXXX", value)
                     elseif line:match"^eretXXXX" then
                         ret = line:match("^eretXXXX(.+)")
-                    else K:send("clave",line) end
+                    else 
+                        K:send("clave",line) 
+                    end
                 else
                     break
                 end
@@ -149,43 +151,46 @@ Execute = function(self, cmd, inprocess, breakpoints, do_debug)
     return thread
 end
 
-
+local deb_wait = false
 ExecutePull = function(self)
-	while true do
-    local key,value = K:receive("debuggerXXXX","debugger","clave") --,"stack"
-    if key then
-        if key == "debuggerXXXX" then
-            local f,err = loadstring(value)
-            assert(f,err)
-            value = f()
-            local Stack = value[3]
-            local _error = value[4]
-            local vars = value[5]
-            -- not needed with keepper with cycles
-            -- local f,err = loadstring(vars)
-            -- assert(f,err)
-            -- vars = f()
-            self.setStack(Stack, _error, vars)
-        elseif key == "debugger" then
-            local Stack = value[3]
-            local _error = value[4]
-            local vars = value[5]
-            -- not needed with keepper with cycles
-            -- local f,err = loadstring(vars)
-            -- assert(f,err)
-            -- vars = f()
-            self.setStack(Stack, _error, vars)
+    while true do
+        local key,value = K:receive("debuggerXXXX","debugger","clave") 
+        if key then
+            if key == "debuggerXXXX" then
+                local f,err = loadstring(value)
+                assert(f,err)
+                value = f()
+                local Stack = value[3]
+                local _error = value[4]
+                local vars = value[5]
+                -- not needed with keepper with cycles
+                -- local f,err = loadstring(vars)
+                -- assert(f,err)
+                -- vars = f()
+                self.setStack(Stack, _error, vars)
+                deb_wait = true
+            elseif key == "debugger" then
+                local Stack = value[3]
+                local _error = value[4]
+                local vars = value[5]
+                -- not needed with keepper with cycles
+                -- local f,err = loadstring(vars)
+                -- assert(f,err)
+                -- vars = f()
+                self.setStack(Stack, _error, vars)
+                deb_wait = true
+            else
+                --self.Log:Add(string.format("-- %s: %s\n", key,value))
+                self.Log:Add(string.format("%s\n",value))
+            end
         else
-            self.Log:Add(string.format("-- %s: %s\n", key,value))
+            break
         end
-	else
-		break
     end
-	end
     if self.runningThread then
             local ok, err = self.runningThread:join(0.01, true) --true for getting number
             if ok then
-                self.Log:Add("-- Joined %s %d\n", self.shrt_name, err)
+                self.Log:Add(string.format("Joined %q %d\n", self.shrt_name, tonumber(err)))
                 if err == 1 then
                     self.setStack({}) -- clear Stack
                     self.notifications:Add(self.ig.lib.info, "Execute finished",10000);
@@ -194,7 +199,8 @@ ExecutePull = function(self)
                 elseif err==3 then
                     self.notifications:Add(self.ig.lib.error, "Execute error",10000);
                 end
-                self.runningThread = nil
+                self.runningThread = false
+                deb_wait = false
             elseif not err then
                 --print("  Timed out")
             else
@@ -210,59 +216,79 @@ local function send_breakpoint(bp)
         deblinda:send("brpoints",bp)
     end
 end
+
+
 local ffi = require"ffi"
 local do_debug = ffi.new("bool[?]",1)
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
+    self.shrt_name = self.opendocs[curdoc] and self.opendocs[curdoc].shrt_name or nil
     local ig = self.ig
+    local function is_running()
+        return self.runningThread and true --or false
+    end
     if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread ))  then 
-            if (ig.MenuItem("Execute in this process",nil,nil,not self.runningThread))  then 
+            --print(deb_wait, self.runningThread,do_debug[0], deb_wait and self.runningThread and (do_debug[0] or false))
+            if (ig.MenuItem("Execute in this process",nil,nil,not is_running()))  then 
                 deblinda = debuggerlinda
                 local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0])
+                deb_wait = false
                 self.runningThread = thread
             end 
-            if (ig.MenuItem("Execute in other process", nil, nil, not self.runningThread))  then 
+            if (ig.MenuItem("Execute in other process", nil, nil, not is_running()))  then 
                 deblindaS:close()
                 deblindaS:init()
                 deblinda = deblindaS
                 local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0])
+                deb_wait = false
                 self.runningThread = thread
             end
             ig.Separator()
-            if (ig.MenuItem("Debug", nil, do_debug, not self.runningThread))  then 
+            if (ig.MenuItem("Debug", nil, do_debug, not is_running()))  then 
             end 
             ig.Separator()
-            if (ig.MenuItem("continue", "F9", nil, self.runningThread and do_debug[0] or false))  then 
+            if (ig.MenuItem("continue", "F9", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("continue",true)
+                deb_wait = false
             end 
-            if (ig.MenuItem("break", nil, nil, self.runningThread and do_debug[0] or false))  then 
+            --if (ig.MenuItem("break", nil, nil, (not deb_wait) and self.runningThread and do_debug[0]))  then 
+            if (ig.MenuItem("break", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
                 deblinda:send("break",true)
             end 
-            if (ig.MenuItem("debug_exit", nil, nil, self.runningThread and do_debug[0] or false))  then 
+            if (ig.MenuItem("debug_exit", nil, nil, is_running() and do_debug[0]))  then 
                 deblinda:send("debug_exit",true)
+                do_debug[0] = false
             end 
-            if (ig.MenuItem("step_into", "F10", nil, self.runningThread and do_debug[0] or false))  then 
+            if (ig.MenuItem("step_into", "F10", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("step_into",true)
             end
-            if (ig.MenuItem("step_over", "Shift-F10", nil, self.runningThread and do_debug[0] or false))  then 
+            if (ig.MenuItem("step_over", "Shift-F10", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("step_over",true)
             end
-            if (ig.MenuItem("step_out", "Ctrl-F10", nil, self.runningThread and do_debug[0] or false))  then 
+            if (ig.MenuItem("step_out", "Ctrl-F10", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("step_out",true)
             end
         ig.EndMenu();
     end 
     if ig.Shortcut(ig.lib.ImGuiKey_F9) then
-        deblinda:send("continue",true)
+        if deb_wait and is_running() and do_debug[0] then
+            deblinda:send("continue",true)
+        end
     end
     if ig.Shortcut(ig.lib.ImGuiKey_F10) then
-        deblinda:send("step_into",true)
+        if deb_wait and is_running() and do_debug[0] then
+            deblinda:send("step_into",true)
+        end
     end
     if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_F10)) then
-        deblinda:send("step_out",true)
+        if deb_wait and is_running() and do_debug[0] then
+            deblinda:send("step_out",true)
+        end
     end
     if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Shift, ig.lib.ImGuiKey_F10)) then
-        deblinda:send("step_over",true)
+        if deb_wait and is_running() and do_debug[0] then
+            deblinda:send("step_over",true)
+        end
     end
 end
 

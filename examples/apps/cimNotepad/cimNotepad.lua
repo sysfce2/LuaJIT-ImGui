@@ -8,8 +8,8 @@ print(package.path)
 -------------------------------------------------------------------------------
 --]]
 local igwin = require"imgui.window"
---local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
-local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 --local win = igwin:GLFW(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 local pathut = require"imgui.libs.path"
@@ -136,6 +136,8 @@ local function renderStack()
         ig.TableSetupColumn("namewhat");
         ig.TableSetupColumn("source");
         ig.TableHeadersRow();
+
+        local row_n = 1
         for i,lev in ipairs(Stack) do
             ig.TableNextRow()
             ig.TableNextColumn();ig.TextUnformatted(lev.name or "")
@@ -149,12 +151,13 @@ local function renderStack()
                 local shrt_name = source
                 local doc = opendocfnames[source]
                 if not doc then 
-                    --print("not found",source)
                     shrt_name = source
                 else
                     shrt_name = doc.shrt_name
                 end
-                if ig.Selectable(shrt_name..":"..tostring(lev.currentline),nil,ig.lib.ImGuiSelectableFlags_SpanAllColumns) then
+                local show_name = shrt_name..":"..tostring(lev.currentline).."##"..tostring(row_n)
+                row_n = row_n + 1
+                if ig.Selectable(show_name,nil,ig.lib.ImGuiSelectableFlags_SpanAllColumns) then
                     StackLevel = i
                     addEditor(source, lev.currentline)
                 end
@@ -196,16 +199,23 @@ local fb = gui.FileBrowser(nil,{key="loader",pattern=nil},
     function(fullname,dir,fname)
         addEditor(fullname)
     end)
+
+local TRO
 local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
     function(fname)
         local doc = opendocs[curr_opendoc]
+        if doc.file_name ~= fname then
+            opendocfnames[doc.file_name] = nil
+            opendocfnames[fname] = doc
+            doc.file_name = fname
+            doc.shrt_name = fname:match([[([^/\]+)$]])
+            set_tab = curr_opendoc
+            TRO.clear_next()
+        end
         doc:Save(fname)
     end)
     
---add editors
---add relative to this script path
---print("load:",gui.pathut.chain(currpath,"loop.lua"))
---addEditor(gui.pathut.chain(currpath,"loop.lua"))
+
 -------------------Menus
 
 local function renderMenuFile(win)
@@ -253,7 +263,7 @@ local function renderMenuFile(win)
     fb.draw()
 
     if savefilepopup then fbs.open() end
-    fbs.draw(opendocs[curr_opendoc] and opendocs[curr_opendoc].shrt_name)
+    fbs.draw()
 end
 
 -------------------TabBar functions
@@ -283,8 +293,7 @@ local function do_reorder(order,orderinv)
     doc.editor:SetFocus()
 end
 
-local tro = gui.TabReorder(do_reorder)
-
+TRO = gui.TabReorder(do_reorder)
 ---------------------------------
 addEditor = function(fullname, line, is_new, breakpoints)
 --print("---addEditor",fullname, line, is_new)
@@ -364,7 +373,8 @@ local function getBreakPoints()
     end
     return {breakpoints = bp}
 end
-local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs, notifications = notifications, getBreakPoints = getBreakPoints}
+local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs,
+ notifications = notifications, getBreakPoints = getBreakPoints, runningThread = false}
 win.ig.GetIO().IniFilename = "cimNotepad.ini"
 
 --use dejavu font
@@ -418,13 +428,19 @@ function win:draw(ig)
     ig.Begin("Documents",nil, host_window_flags)
         renderMenuFile(win)
 -- for debug
--- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc))
+-- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc).." "..opendocs[curr_opendoc].file_name)
 
-    if (ig.BeginTabBar("##Tabs", tro.flag())) then
+    if (ig.BeginTabBar("##Tabs", TRO.flag())) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
             local opentab = ig.BeginTabItem(v.shrt_name.."##"..i, opened,(i==set_tab) and ig.lib.ImGuiTabItemFlags_SetSelected or 0)
-            if ig.IsItemHovered() then ig.SetTooltip(v.file_name) end
+            if ig.IsItemHovered() then 
+                ig.SetTooltip(v.file_name) 
+                if ig.IsMouseClicked(0) then 
+                    --print"click";
+                    v.editor:SetFocus() 
+                end
+            end
             if opentab then
                 if set_tab == -1 or set_tab == i then
 
@@ -444,7 +460,7 @@ function win:draw(ig)
                     --if ig.Button("showTabBar") then showTabBar() end
                     v:Render()
                 else 
-                   -- print("going to change tab from", i,"to",set_tab)
+                    --print("going to change tab from", i,"to",set_tab)
                 end
                 ig.EndTabItem();
             end
@@ -454,7 +470,7 @@ function win:draw(ig)
                 break
             end
         end
-        tro.Update()
+        TRO.Update()
         ig.EndTabBar();
     end
     local doit = false

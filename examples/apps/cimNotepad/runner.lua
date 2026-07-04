@@ -30,8 +30,13 @@ local Debugger = dofile(pathut.chain(file_path,"debugger.lua"))
 local serializer = require"imgui.libs.serializer"
 
 local function xpcallerror(err)
-    -- print"===========xpcallerror=============="
-    -- print("xpcallerror1: "..tostring(err).."\n")
+     --print"===========xpcallerror=============="
+     --print("xpcallerror1: "..tostring(err))
+     if tostring(err):match"stack overflow" then
+        print("stack overflow in:")
+        local debinfo = debug.getinfo(2,"Slf")
+        print(debinfo.source, debinfo.currentline)
+     end
     ---- detect recursive error
     for i=2,math.huge do
         local debuginfo = debug.getinfo(i,"Snlf")
@@ -42,15 +47,17 @@ local function xpcallerror(err)
             return
         end
     end
-    
+
     local debuginfo = debug.getinfo(2,"Slf")
+
     local stack,vars = Debugger:get_call_stack(3) 
+
     -- vars can have cycles so serialize for Keeper
     --Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
     Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
-    --print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars,false)
-    print(debug.traceback(2))
-    print("======= error:",err)
+    --print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars)
+    --print("traceback",debug.traceback(2))
+    --print("======= error:",err)
 
 end
 
@@ -103,6 +110,9 @@ if not arg then
             if err==nil then return 1 end
             return 2
         else
+            if err then
+                print("error:",err)
+            end
             return 3
         end
     end
@@ -174,6 +184,9 @@ else
         if err==nil then eret = 1
         else eret = 2 end
     else
+        if err then
+            print("error:", err) 
+        end
         eret = 3
     end
     -- sending to popen
