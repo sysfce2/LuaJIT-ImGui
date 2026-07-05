@@ -142,7 +142,7 @@ if not has_lptime then
     end
 end
 function Debugger.debug_hook (event, line)
-    --print(event, line)
+    --if event~="line" then print(event, line) end
     --print_if_verbose(event,line,tostring(debuggerlinda),"\n")
 
     cancelcount = cancelcount + 1
@@ -257,19 +257,21 @@ function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
         local key, value = debuggerlinda:receive(unpack(keys))
         if not key then break end
     end
-    --for debugging coroutines
-    local oldcocreate = coroutine.create
-    coroutine.create = function(f)
-            local thread = oldcocreate(f) 
-            print("coroutine.running() is",thread,Debugger.debug_hook)
-            debug.sethook(thread,Debugger.debug_hook,"l")
-            return thread
-            end
-    --local f,m,c = debug.gethook ()
-    --print("gethook",f,m,c)
-    --print("gethook",type(f),type(m),type(c))
 	if do_debug then
+		--for debugging coroutines
+		local oldcocreate = coroutine.create
+		coroutine.create = function(f)
+				local thread = oldcocreate(f) 
+				--print("coroutine.running() is", thread, Debugger.debug_hook)
+				debug.sethook(thread, Debugger.debug_hook, "l")
+				return thread
+			end
+			
 		debug.sethook(Debugger.debug_hook, "l")
+		
+		-- local f,m,c = debug.gethook ()
+		-- print("gethook",f,m,c)
+		-- print("gethook",type(f),type(m),type(c))
 	end
 end
 return Debugger

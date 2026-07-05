@@ -57,7 +57,7 @@ local function xpcallerror(err)
     Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
     --print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars)
     --print("traceback",debug.traceback(2))
-    --print("======= error:",err)
+    print("======= error:",err)
 
 end
 
@@ -100,7 +100,7 @@ if not arg then
         Debugger:init(do_debug, bp, K, debuggerlinda)
         
         local ok,err = xpcall(load_script(script), xpcallerror)
-        --io.write("xpcall ",tostring(ok)," ",tostring(err),"\n")
+        -- io.write("xpcall ",tostring(ok)," ",tostring(err),"\n")
         
         -- true false is compile error -> nilorfalse
         -- true nil is run success -> true

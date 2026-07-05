@@ -100,7 +100,7 @@ function win:draw(ig)
 		ig.lib.TextEditor_CanUndo(editor) and "*" or " ",
 		ig.lib.TextEditor_GetLanguageName(editor),fileN)
 		
-		ig.lib.TextEditor_Render(editor, "texteditor",ig.ImVec2(),false)
+		ig.lib.TextEditor_Render(editor, "texteditor",ig.ImVec2(), 0, 0)
 	ig.End()
 
 end
