@@ -325,9 +325,14 @@ local function CTEwindow(file_name, args)
     local ext shrt_name = "" , ""
     if not args.is_new then
         local file,err = io.open(file_name,"r")
-        assert(file,err)
-        strtext = file:read"*a"
-        file:close()
+        --assert(file,err)
+		if not file then
+			print(err)
+			args.is_new = true
+		else
+			strtext = file:read"*a"
+			file:close()
+		end
     end
 
     ext = file_name:match("[^%.]+$")
