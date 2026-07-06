@@ -1,4 +1,6 @@
 
+local M = require"imgui.base"('cimgui_sdl3')
+local lib = M.lib
 -----------------------Imgui_Impl_SDL3_opengl3
 local Imgui_Impl_SDL3_opengl3 = {}
 Imgui_Impl_SDL3_opengl3.__index = Imgui_Impl_SDL3_opengl3
@@ -62,3 +64,5 @@ function Imgui_Impl_SDL3_opengl2:Render()
     lib.ImGui_ImplOpenGL2_RenderDrawData(lib.igGetDrawData());
 end
 M.Imgui_Impl_SDL3_opengl2 = setmetatable({},Imgui_Impl_SDL3_opengl2)
+
+return M

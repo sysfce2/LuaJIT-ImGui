@@ -1,4 +1,6 @@
 
+local M = require"imgui.base"('cimgui_glfw')
+local lib = M.lib
 -----------------------Imgui_Impl_glfw_opengl3
 local Imgui_Impl_glfw_opengl3 = {}
 Imgui_Impl_glfw_opengl3.__index = Imgui_Impl_glfw_opengl3
@@ -95,3 +97,5 @@ function Imgui_Impl_glfw_opengl2.CharCallback(window,c)
 end
 
 M.Imgui_Impl_glfw_opengl2 = setmetatable({},Imgui_Impl_glfw_opengl2)
+
+return M

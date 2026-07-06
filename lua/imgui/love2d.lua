@@ -1,7 +1,7 @@
 -- RenderDrawLists is based on love-imgui (https://github.com/slages/love-imgui) Copyright (c) 2016 slages, licensed under the MIT license
 
 --local path = (...):gsub("[^%.]*$", "")
-local M = require "imgui.base"
+local M = require"imgui.base"('cimgui')
 local ffi = require("ffi")
 local bit = require("bit")
 M.love = require("love")

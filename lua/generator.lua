@@ -96,28 +96,27 @@ save_data("./imgui/cdefs.lua",table.concat(cdefs,"\n"), hstrfile)
 print"generate classes"
 local class_gen = require"class_gen"
 local classes = class_gen(sources, FREETYPE_GENERATION)
------ generate imgui/glfw.lua
-print"save glfw.lua"
-local iniclass = "local cimguimodule = 'cimgui_glfw' --set imgui directory location\n"
-local base = read_data("./imgui_base.lua")
-local base_glfw = read_data("./imgui_base_glfw.lua")
-save_data("./imgui/glfw.lua",iniclass, base, base_glfw, classes)
 
------ generate imgui/sdl.lua
-print"save sdl.lua"
-local iniclass = "local cimguimodule = 'cimgui_sdl' --set imgui directory location\n"
-local base_sdl = read_data("./imgui_base_sdl.lua")
-save_data("./imgui/sdl.lua",iniclass, base, base_sdl, classes)
-
------ generate imgui/sdl3.lua
-print"save sdl3.lua"
-local iniclass = "local cimguimodule = 'cimgui_sdl3' --set imgui directory location\n"
-local base_sdl3 = read_data("./imgui_base_sdl3.lua")
-save_data("./imgui/sdl3.lua",iniclass, base, base_sdl3, classes)
 
 ----- generate imgui/base.lua
 print"save base.lua"
-local iniclass = "local cimguimodule = 'cimgui' --set imgui directory location\n"
-save_data("./imgui/base.lua",iniclass, base, classes)
+local base = read_data("./imgui_base.lua")
+save_data("./imgui/base.lua", 'return function(cimguimodule) --loader\n', base, classes, 'end --loader')
+
+----- generate imgui/glfw.lua
+print"save glfw.lua"
+local base_glfw = read_data("./imgui_base_glfw.lua")
+save_data("./imgui/glfw.lua", base_glfw)
+
+----- generate imgui/sdl.lua
+print"save sdl.lua"
+local base_sdl = read_data("./imgui_base_sdl.lua")
+save_data("./imgui/sdl.lua", base_sdl)
+
+----- generate imgui/sdl3.lua
+print"save sdl3.lua"
+local base_sdl3 = read_data("./imgui_base_sdl3.lua")
+save_data("./imgui/sdl3.lua", base_sdl3)
+
 
 print"-----------------------------done generation"
