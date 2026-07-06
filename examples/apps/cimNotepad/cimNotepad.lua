@@ -8,8 +8,8 @@ print(package.path)
 -------------------------------------------------------------------------------
 --]]
 local igwin = require"imgui.window"
-local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
---local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 --local win = igwin:GLFW(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 local pathut = require"imgui.libs.path"
@@ -137,7 +137,6 @@ local function renderStack()
         ig.TableSetupColumn("source");
         ig.TableHeadersRow();
 
-        local row_n = 1
         for i,lev in ipairs(Stack) do
             ig.TableNextRow()
             ig.TableNextColumn();ig.TextUnformatted(lev.name or "")
@@ -146,6 +145,11 @@ local function renderStack()
             ig.TableNextColumn();
             if lev.source == "=[C]" then
                 ig.TextUnformatted(lev.source..":"..tostring(lev.currentline))
+				-- local show_name = lev.source..":"..tostring(lev.currentline).."##"..tostring(i)
+				-- if ig.Selectable(show_name,nil,
+				-- bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
+                    -- StackLevel = i
+                -- end
             else
                 local source = lev.source:sub(2)
                 local shrt_name = source
@@ -155,9 +159,9 @@ local function renderStack()
                 else
                     shrt_name = doc.shrt_name
                 end
-                local show_name = shrt_name..":"..tostring(lev.currentline).."##"..tostring(row_n)
-                row_n = row_n + 1
-                if ig.Selectable(show_name,nil,ig.lib.ImGuiSelectableFlags_SpanAllColumns) then
+                local show_name = shrt_name..":"..tostring(lev.currentline).."##"..tostring(i)
+                if ig.Selectable(show_name,nil,
+				bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
                     StackLevel = i
                     addEditor(source, lev.currentline)
                 end
@@ -382,7 +386,22 @@ win.ig.lib.SetDejavu()
 -- load persistence
 PersistenceLoad()
 -- do docking build only once 
-local done_docking
+
+local dock_id_bottom_left, dock_id_bottom, dock_id_top, dockspace_id
+local old_viewport_size
+
+local function ExpandLog(vSize)
+    ig.DockBuilderSetNodeSize(dock_id_top[0], ig.ImVec2(vSize.x,40))
+    ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize)
+    ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize)
+end
+
+local function ContractLog(vSize)
+    ig.DockBuilderSetNodeSize(dock_id_top[0], vSize*0.75)
+    ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize*0.25)
+    ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize*0.5)
+end
+
 function win:draw(ig)
     --ig.ShowDemoWindow()
     ----check execute
@@ -391,14 +410,15 @@ function win:draw(ig)
     local lib = ig.lib
     
     local viewport = ig.GetMainViewport();
-    local dockspace_id = ffi.new("ImGuiID[?]",1,ig.GetID("My Dockspace"));
-    if not done_docking then
+
+    if not dockspace_id then
+        dockspace_id = ffi.new("ImGuiID[?]",1,ig.GetID("My Dockspace"));
         ig.DockBuilderAddNode(dockspace_id[0], lib.ImGuiDockNodeFlags_DockSpace);
-        ig.DockBuilderSetNodeSize(dockspace_id[0], viewport.Size);
+        --ig.DockBuilderSetNodeSize(dockspace_id[0], viewport.Size);
         local dock_id_main = ffi.new("ImGuiID[?]",1,dockspace_id[0])--dockspace_id;
-        local dock_id_top = ffi.new("ImGuiID[?]",1,0);
-        local dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
-        local dock_id_bottom_left = ffi.new("ImGuiID[?]",1,0);
+        dock_id_top = ffi.new("ImGuiID[?]",1,0);
+        dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
+        dock_id_bottom_left = ffi.new("ImGuiID[?]",1,0);
         local dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
         ig.DockBuilderSplitNode(dock_id_main[0], lib.ImGuiDir_Up, 0.80, dock_id_top, dock_id_bottom);
         ig.DockBuilderSplitNode(dock_id_bottom[0], lib.ImGuiDir_Left, 0.50, dock_id_bottom_left, dock_id_bottom_right);
@@ -410,11 +430,12 @@ function win:draw(ig)
     end
     ig.DockSpaceOverViewport(dockspace_id[0], viewport, lib.ImGuiDockNodeFlags_PassthruCentralNode + lib.ImGuiDockNodeFlags_NoTabBar);
     
-    --Not needed with dock_builder
-    --Submit a window filling the entire viewport
-    -- ig.SetNextWindowPos(viewport.WorkPos);
-    -- ig.SetNextWindowSize(viewport.WorkSize);
-    -- ig.SetNextWindowViewport(viewport.ID);
+    
+    if (viewport.Size~=old_viewport_size) then
+        old_viewport_size = ig.ImVec2(viewport.Size.x, viewport.Size.y)
+        ContractLog(viewport.Size)      
+    end
+
     
     local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, --ig.lib.ImGuiWindowFlags_NoResize ,
     --ig.lib.ImGuiWindowFlags_NoMove , 
@@ -496,6 +517,13 @@ function win:draw(ig)
     ig.End() --documents
     
     ig.Begin("comments")
+        if ig.SmallButton("expand") then
+            ExpandLog(viewport.Size)
+        end
+        ig.SameLine()
+        if ig.SmallButton("contract") then
+            ContractLog(viewport.Size)
+        end
         Log:Draw()
     ig.End()
     
