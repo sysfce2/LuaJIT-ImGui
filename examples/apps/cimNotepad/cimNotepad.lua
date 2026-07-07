@@ -377,29 +377,37 @@ local function getBreakPoints()
     end
     return {breakpoints = bp}
 end
+
 local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs,
  notifications = notifications, getBreakPoints = getBreakPoints, runningThread = false}
-win.ig.GetIO().IniFilename = "cimNotepad.ini"
+ 
+win.ig.GetIO().IniFilename = nil --"cimNotepad.ini"
 
 --use dejavu font
 win.ig.lib.SetDejavu()
 -- load persistence
 PersistenceLoad()
--- do docking build only once 
 
+-- docking stuff
 local dock_id_bottom_left, dock_id_bottom, dock_id_top, dockspace_id
 local old_viewport_size
+local comments_size 
+local comments_ratio = ig.ImVec2(0.5,0.25)
 
+
+local ExpandContract_used
 local function ExpandLog(vSize)
     ig.DockBuilderSetNodeSize(dock_id_top[0], ig.ImVec2(vSize.x,40))
     ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize)
     ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize)
+	ExpandContract_used = true
 end
 
-local function ContractLog(vSize)
-    ig.DockBuilderSetNodeSize(dock_id_top[0], vSize*0.75)
-    ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize*0.25)
-    ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize*0.5)
+local function ContractLog(vSize, ratio)
+    ig.DockBuilderSetNodeSize(dock_id_top[0], vSize*(1 - ratio.y))
+    ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize*ratio.y)
+    ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize*ratio.x)
+	ExpandContract_used = true
 end
 
 function win:draw(ig)
@@ -414,7 +422,7 @@ function win:draw(ig)
     if not dockspace_id then
         dockspace_id = ffi.new("ImGuiID[?]",1,ig.GetID("My Dockspace"));
         ig.DockBuilderAddNode(dockspace_id[0], lib.ImGuiDockNodeFlags_DockSpace);
-        --ig.DockBuilderSetNodeSize(dockspace_id[0], viewport.Size);
+        ig.DockBuilderSetNodeSize(dockspace_id[0], viewport.Size);
         local dock_id_main = ffi.new("ImGuiID[?]",1,dockspace_id[0])--dockspace_id;
         dock_id_top = ffi.new("ImGuiID[?]",1,0);
         dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
@@ -426,14 +434,14 @@ function win:draw(ig)
         ig.DockBuilderDockWindow("comments", dock_id_bottom_left[0]);
         ig.DockBuilderDockWindow("StackVars", dock_id_bottom_right[0]);
         ig.DockBuilderFinish(dockspace_id[0]);
-        done_docking = true
     end
     ig.DockSpaceOverViewport(dockspace_id[0], viewport, lib.ImGuiDockNodeFlags_PassthruCentralNode + lib.ImGuiDockNodeFlags_NoTabBar);
     
-    
+    local viewport_justresized = false
     if (viewport.Size~=old_viewport_size) then
+		--print("viewport resize", old_viewport_size, viewport.Size)
         old_viewport_size = ig.ImVec2(viewport.Size.x, viewport.Size.y)
-        ContractLog(viewport.Size)      
+		viewport_justresized = true
     end
 
     
@@ -517,12 +525,27 @@ function win:draw(ig)
     ig.End() --documents
     
     ig.Begin("comments")
+		if comments_size ~= ig.GetWindowSize() then
+			local siz = ig.GetWindowSize()
+			--print("comments_size change", comments_size, siz, viewport.Size, viewport_justresized)
+			if viewport_justresized then 
+				--print("just resiz")
+				ContractLog(viewport.Size, comments_ratio)
+			elseif ExpandContract_used then
+				--print("ExpandContract_used")
+				ExpandContract_used = false --clear flag
+			else
+				comments_ratio = siz/viewport.Size
+				--print("comments_ratio", comments_ratio)
+			end
+			comments_size = ig.ImVec2(siz.x, siz.y)
+		end
         if ig.SmallButton("expand") then
             ExpandLog(viewport.Size)
         end
         ig.SameLine()
         if ig.SmallButton("contract") then
-            ContractLog(viewport.Size)
+            ContractLog(viewport.Size, comments_ratio)
         end
         Log:Draw()
     ig.End()
