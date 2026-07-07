@@ -53,6 +53,7 @@ local function debugger_copy(object,lookup_table)
 end
 
 function Debugger:get_call_stack(inilevel)
+	local thread, is_main_thread = coroutine.running()
     local deph = self.maxdeph or math.huge
     --print("staklevel",deph)
     local endlevel = inilevel + deph
@@ -61,7 +62,7 @@ function Debugger:get_call_stack(inilevel)
     local lookup_table = {}
     for level = inilevel or 1,endlevel do
         local stlevel = level - inilevel + 1
-        local stinfo = debug.getinfo(level,"Snlf")
+        local stinfo = debug.getinfo( level,"Snlf")
         if not stinfo then return stack,vars end
 
         stack[stlevel] = stinfo
@@ -69,7 +70,7 @@ function Debugger:get_call_stack(inilevel)
         vars[stlevel] = {locals= {},upvalues= {}}
         local i = 1
         while true do
-            local name,value = debug.getlocal(level,i)
+            local name,value = debug.getlocal( level,i)
             if not name then break end
             if string.sub(name, 1, 1) ~= '(' then
                 vars[stlevel].locals[name] = debugger_copy(value,lookup_table)
@@ -158,7 +159,8 @@ function Debugger.debug_hook (event, line)
     end
 
     if Debugger.breakpoints[line] or Debugger.step_into or Debugger.step_over then
-        local thread = coroutine.running() or 0
+        local thread, is_main_thread = coroutine.running() --or 0
+		--print("coroutine.running", thread, is_main_thread)
         local debuginfo = debug.getinfo(2,"S")
         local s = absolutePath(debuginfo.source)
 
