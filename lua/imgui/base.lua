@@ -48,11 +48,13 @@ ImVec2 = {
     __mul = function(a, b) 
             if not ffi.istype(ImVec2, a) then a, b = b, a end
             if not ffi.istype(ImVec2, b) then
+            assert(type(b)=="number", "ImVec2 multiplied by not number or ImVec2")
             return ImVec2(a.x * b, a.y * b) end
             return ImVec2(a.x * b.x , a.y * b.y)
     end,
     __div = function(a, b) 
             if not ffi.istype(ImVec2, b) then
+            assert(type(b)=="number", "ImVec2 divided by not number or ImVec2")
             return ImVec2(a.x / b, a.y / b) end
             return ImVec2(a.x / b.x , a.y / b.y)
     end,
