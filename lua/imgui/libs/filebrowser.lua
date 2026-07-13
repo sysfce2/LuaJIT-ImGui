@@ -133,7 +133,7 @@ function gui.FileBrowser(filename_p, args, funcOK)
                 local savefilename = save_file_name~=nil and ffi.string(save_file_name) or nil
                 fullname = ""
                 if #savefilename > 0 then
-                    fullname = pathut.chain(curr_dir,savefilename)
+                    fullname = pathut.abspath(pathut.chain(curr_dir,savefilename))
                     if args.check_existence then
                         if lfs.attributes(fullname) then
                             print("check_existence true",fullname)

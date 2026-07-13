@@ -55,11 +55,11 @@ function M.chain(...)
     local res={}
     for i=1, select('#', ...) do
         local t = select(i, ...)
-		if t == ".." then
-			res[i-1] = res[i-1]:gsub("[/\\][^/\\]+$","")
-		else
-			table.insert(res,t)
-		end
+		-- if t == ".." then
+			-- res[i-1] = res[i-1]:gsub("[/\\][^/\\]+$","")
+		-- else
+			 table.insert(res,t)
+		-- end
     end
     return table.concat(res,sep)
 end
