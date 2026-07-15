@@ -5,6 +5,7 @@ local send_debuginfo = function() end
 local print_if_verbose = function() end
 local serializer = require"imgui.libs.serializer"
 
+
 local function cleanStack(stack)
     for i,v in ipairs(stack) do
         for k,val in pairs(v) do
@@ -53,7 +54,7 @@ local function debugger_copy(object,lookup_table)
 end
 
 function Debugger:get_call_stack(inilevel)
-	local thread, is_main_thread = coroutine.running()
+    local thread, is_main_thread = coroutine.running()
     local deph = self.maxdeph or math.huge
     --print("staklevel",deph)
     local endlevel = inilevel + deph
@@ -152,6 +153,14 @@ function Debugger.debug_hook (event, line)
         -- if cancel_test() then
             -- error(lanes.cancel_error)
         -- end
+        if debuggerlinda:receive("cancel") then
+            print("debug cancel")
+            local Thread = require"lj-async.thread"
+            debug.sethook()
+            --Thread.exit(9)
+            os.exit() --only when inprocess = false
+            --error"cancel"
+        end
         if debuggerlinda:receive("break") then
             Debugger.step_into = true
             Debugger.step_over = false
@@ -160,7 +169,7 @@ function Debugger.debug_hook (event, line)
 
     if Debugger.breakpoints[line] or Debugger.step_into or Debugger.step_over then
         local thread, is_main_thread = coroutine.running() --or 0
-		--print("coroutine.running", thread, is_main_thread)
+        --print("coroutine.running", thread, is_main_thread)
         local debuginfo = debug.getinfo(2,"S")
         local s = absolutePath(debuginfo.source)
 
@@ -259,22 +268,22 @@ function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
         local key, value = debuggerlinda:receive(unpack(keys))
         if not key then break end
     end
-	if do_debug then
-		--for debugging coroutines
-		local oldcocreate = coroutine.create
-		coroutine.create = function(f)
-				local thread = oldcocreate(f) 
-				--print("coroutine.running() is", thread, Debugger.debug_hook)
-				debug.sethook(thread, Debugger.debug_hook, "l")
-				return thread
-			end
-			
-		debug.sethook(Debugger.debug_hook, "l")
-		
-		-- local f,m,c = debug.gethook ()
-		-- print("gethook",f,m,c)
-		-- print("gethook",type(f),type(m),type(c))
-	end
+    if do_debug then
+        --for debugging coroutines
+        local oldcocreate = coroutine.create
+        coroutine.create = function(f)
+                local thread = oldcocreate(f) 
+                --print("coroutine.running() is", thread, Debugger.debug_hook)
+                debug.sethook(thread, Debugger.debug_hook, "l")
+                return thread
+            end
+            
+        debug.sethook(Debugger.debug_hook, "l")
+        
+        -- local f,m,c = debug.gethook ()
+        -- print("gethook",f,m,c)
+        -- print("gethook",type(f),type(m),type(c))
+    end
 end
 return Debugger
 

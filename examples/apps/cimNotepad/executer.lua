@@ -1,9 +1,7 @@
---WINUSEPTHREAD=true
+WINUSEPTHREAD=true
 local hasThread, Thread = pcall(require, "lj-async.thread")
 
-if not hasThread then
-    return {Execute = nil, ExecutePull = function() end, debuggerlinda = debuggerlinda, hasThread = hasThread}
-end
+
 
 ---------get LuaJIT path
 local function get_executable(arg)
@@ -220,6 +218,7 @@ end
 
 local ffi = require"ffi"
 local do_debug = ffi.new("bool[?]",1)
+local inprocess
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
     self.shrt_name = self.opendocs[curdoc] and self.opendocs[curdoc].shrt_name or nil
@@ -231,6 +230,7 @@ local function renderMenuExecute(self, curdoc)
             --print(deb_wait, self.runningThread,do_debug[0], deb_wait and self.runningThread and (do_debug[0] or false))
             if (ig.MenuItem("Execute in this process",nil,nil,not is_running()))  then 
                 deblinda = debuggerlinda
+                inprocess = true
                 local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0])
                 deb_wait = false
                 self.runningThread = thread
@@ -239,6 +239,7 @@ local function renderMenuExecute(self, curdoc)
                 deblindaS:close()
                 deblindaS:init()
                 deblinda = deblindaS
+                inprocess = false
                 local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0])
                 deb_wait = false
                 self.runningThread = thread
@@ -252,6 +253,9 @@ local function renderMenuExecute(self, curdoc)
                 deb_wait = false
             end 
             --if (ig.MenuItem("break", nil, nil, (not deb_wait) and self.runningThread and do_debug[0]))  then 
+            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0] and not inprocess))  then 
+                deblinda:send("cancel",true)
+            end 
             if (ig.MenuItem("break", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
                 deblinda:send("break",true)
             end 
@@ -292,4 +296,8 @@ local function renderMenuExecute(self, curdoc)
     end
 end
 
+if not hasThread then
+    return {Execute = nil, ExecutePull = function() end, debuggerlinda = debuggerlinda, hasThread = hasThread, renderMenuExecute = renderMenuExecute}
+else
 return {Execute = Execute, ExecutePull = ExecutePull, send_breakpoint = send_breakpoint, executable = executable, hasThread = hasThread, renderMenuExecute = renderMenuExecute}
+end
