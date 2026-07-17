@@ -1,4 +1,4 @@
-WINUSEPTHREAD=true
+--WINUSEPTHREAD=true
 local hasThread, Thread = pcall(require, "lj-async.thread")
 
 
