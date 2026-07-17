@@ -81,9 +81,9 @@ function gui.FileBrowser(filename_p, args, funcOK)
     local save_file_name = ffi.new("char[256]",args.filename or "")
     local function filechooser(sfile)
         if sfile then save_file_name = ffi.new("char[256]",sfile) end
-        
-        
-        if (ig.BeginPopupModal(args.key, nil, ffi.C.ImGuiWindowFlags_AlwaysAutoResize)) then
+
+        ig.SetNextWindowSizeConstraints(ig.ImVec2(300,400), ig.ImVec2(ig.FLT_MAX,ig.FLT_MAX))
+        if (ig.BeginPopupModal(args.key)) then --, nil, ffi.C.ImGuiWindowFlags_AlwaysAutoResize)) then
 
             local tsize = ig.CalcTextSize(curr_dir_ed, nil,false, -1.0);
             ig.PushItemWidth(tsize.x + ig.GetStyle().ItemInnerSpacing.x * 2)

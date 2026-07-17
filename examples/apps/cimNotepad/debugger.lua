@@ -113,12 +113,12 @@ function Debugger.hook_call_ret(event)
         local source = absolutePath(debuginfo.source)
         --local source = debuginfo.source
         --print(source,path.abspath(source))
-        for i,line in ipairs(activelines) do
+        for i,line in pairs(activelines) do
             if Debugger.breakpoints[line] and Debugger.breakpoints[line][source] then
                 Debugger.functable[func] = true
             end
         end
-        Debugger.functable[func] = false
+        if Debugger.functable[func]==nil then Debugger.functable[func] = false end
     end
 end
 local cancelcount = 0
@@ -158,8 +158,8 @@ function Debugger.debug_hook (event, line)
             local Thread = require"lj-async.thread"
             debug.sethook()
             --Thread.exit(9)
-            os.exit() --only when inprocess = false
-            --error"cancel"
+            --os.exit() --only when inprocess = false
+            error"cancel"
         end
         if debuggerlinda:receive("break") then
             Debugger.step_into = true

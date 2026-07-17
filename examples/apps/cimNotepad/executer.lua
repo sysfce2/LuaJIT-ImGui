@@ -253,7 +253,7 @@ local function renderMenuExecute(self, curdoc)
                 deb_wait = false
             end 
             --if (ig.MenuItem("break", nil, nil, (not deb_wait) and self.runningThread and do_debug[0]))  then 
-            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0] and not inprocess))  then 
+            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
                 deblinda:send("cancel",true)
             end 
             if (ig.MenuItem("break", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
