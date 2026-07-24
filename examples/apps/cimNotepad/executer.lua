@@ -1,7 +1,4 @@
---WINUSEPTHREAD=true
-local hasThread, Thread = pcall(require, "lj-async.thread")
-
-
+--WINUSEPTHREAD=true --this sets WINUSEPTHREAD for windows
 
 ---------get LuaJIT path
 local function get_executable(arg)
@@ -17,82 +14,44 @@ local function get_executable(arg)
     end
     return arg[i]
 end
-
-local executable = get_executable(arg)
-
----------for in process
-local Kmaker = require"lj-async.keeper"
-local K = Kmaker.MakeKeeper()
-local debuggerlinda = Kmaker.MakeKeeper()
 ---------for out process
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
-local serializer = require"imgui.libs.serializer"
---print("executer file_path:",file_path)
---- for out process sends to deblinda in runner
-local deblindaS = {}
-function deblindaS:init()
-    self.file,err = io.open(pathut.chain(file_path,"debuggerlinda"),"w")
-    assert(self.file, err)
-end
-function deblindaS:close()
-    if self.file then
-        self.file:close()
-    end
-end
 
-function deblindaS:send(key, value)
-    if type(value)=="table" then
-        value = "TABLE"..serializer("ttt",value,";").."return ttt;"
-    end
-    self.file:write("key"..tostring(key).."value"..tostring(value).."\n")
-    self.file:flush()
-end
-
-local deblinda
-
-local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, ...)
+local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug , coop_cancel, ...)
+    --print("00000os_execute_async",executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel)
     local pathut = require"imgui.libs.path"
     local Thread = require"lj-async.thread"
     local Kmaker = require"lj-async.keeper"
+    FINALIZER = function(ok,val) print("---i am executer finalizer",ok,val) end
     K = Kmaker.KeeperCast(K)
     debuggerlinda = Kmaker.KeeperCast(debuggerlinda)
     local args = {...}
     return function(ud)
         local ffi = require"ffi"
         
-        --print("thread curpath",file_path)
-        --package.path = file_path.."/?.lua;"..package.path
-        --print("thread package path",package.path)
-        
-        -- K:send("clave","going to execute")
-        -- K:send("clave","inprocess: "..tostring(inprocess))
-        -- K:send("clave",nil)
-        -- K:send("clave","una linea\notra linea\n")
-        -- K:send("clave","inprocess end")
-        
         local ret
         if inprocess then
-        ---[[--------loadstring bad for same process sdl or glfw
+        --------loadstring bad for same process sdl or glfw
         local f,err = loadfile(pathut.chain(file_path,"runner.lua"))--cmd)
         if f then 
             ret = f()(cmd, K, debuggerlinda, breakpoints, do_debug) 
         else 
             K:send("clave","loadfile error:"..tostring(err)) 
         end
-        --]]
-        else
-        
+
+        else 
+        --not inprocess
+        --print"=====not in process------------"
         ---for another process we have:
         ------- 1 execute
         -- but needs ipc 
-        --local ret = os.execute(executable.." ".." ./libs/runner.lua "..cmd)
+        -- local ret = os.execute(executable.." ".." ./libs/runner.lua "..cmd)
         
-        --------2 popen
-        --pero se me queda pegado en exe:read("*l") hasta que el programa acaba y viene a ser como execute
-        --pero leo stdout
-        ---[=[
+        -------- 2 popen
+        -- debuggerlinda cant be used so that a file is opened by runner and will read deblindaS
         local serializer = require"imgui.libs.serializer"
+        --print"=====not in process------------2"
         --send initial breakpoits via a file which runner will get
         if do_debug then
             local breakstr = serializer("tab_name",breakpoints,";")..";return tab_name;"
@@ -104,16 +63,16 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
             os.remove(file_path.."/breakpoints")
         end
         
-        local pcomand = executable.." ".." "..pathut.chain(file_path,"runner.lua").." "..cmd
+        local jitstr = coop_cancel and "-j off" or ""
+        local pcomand = executable.." "..jitstr.." "..pathut.chain(file_path,"runner.lua").." "..cmd
+        --print("==========pcomand",pcomand)
         if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
-        --K:send("clave","pcomand is:"..pcomand)
+
         local exe,err = io.popen(pcomand, "r")
         if not exe then
             K:send("clave","Could not popen. Error: "..tostring(err))
         else
-            --K:send("clave","exe opened. Error: "..tostring(err))
             exe:setvbuf("no")
-            --K:send("clave","going to lopp............")
             repeat
                 exe:flush()
                 local line = exe:read("*l")
@@ -135,17 +94,55 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         end
         --ret = err 
         end
-        --]=]
 
+        print("executer finishig", ret)
         if ret then return Thread._return(tonumber(ret)) end
     end
 end
 
-Execute = function(self, cmd, inprocess, breakpoints, do_debug)
+----------------------------------------------------------------------
+local hasThread, Thread = pcall(require, "lj-async.thread")
+
+local executable = get_executable(arg)
+---------for in process
+local Kmaker = require"lj-async.keeper"
+local K = Kmaker.MakeKeeper()
+local debuggerlinda = Kmaker.MakeKeeper()
+
+---------for out process
+local serializer = require"imgui.libs.serializer"
+--  print("executer file_path:",file_path)
+
+--- for out process sends to deblinda in runner
+local deblindaS = {}
+function deblindaS:init()
+    self.file,err = io.open(pathut.chain(file_path,"debuggerlinda"),"w")
+    assert(self.file, err)
+end
+function deblindaS:close()
+    if self.file then
+        self.file:close()
+    end
+end
+
+function deblindaS:send(key, value)
+    if type(value)=="table" then
+        value = "TABLE"..serializer("ttt",value,";").."return ttt;"
+    end
+    self.file:write("key"..tostring(key).."value"..tostring(value).."\n")
+    self.file:flush()
+end
+
+Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel)
     self.Log:Clear()
     self.setStack({}) -- clear Stack
     --print("Execute",executable, cmd, inprocess)
-    local thread = Thread(os_execute_async, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug)
+    local func = os_execute_async
+    if coop_cancel then
+        func = {os_execute_async}
+    end
+    local thread = Thread(func, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel)
+    print("Execute thread", thread.thread)
     return thread
 end
 
@@ -161,21 +158,23 @@ ExecutePull = function(self)
                 local Stack = value[3]
                 local _error = value[4]
                 local vars = value[5]
+                local compile_err = value[6]
                 -- not needed with keepper with cycles
                 -- local f,err = loadstring(vars)
                 -- assert(f,err)
                 -- vars = f()
-                self.setStack(Stack, _error, vars)
+                self.setStack(Stack, _error, vars,compile_err)
                 deb_wait = true
             elseif key == "debugger" then
                 local Stack = value[3]
                 local _error = value[4]
                 local vars = value[5]
+                local compile_err = value[6]
                 -- not needed with keepper with cycles
                 -- local f,err = loadstring(vars)
                 -- assert(f,err)
                 -- vars = f()
-                self.setStack(Stack, _error, vars)
+                self.setStack(Stack, _error, vars, compile_err)
                 deb_wait = true
             else
                 --self.Log:Add(string.format("-- %s: %s\n", key,value))
@@ -188,15 +187,21 @@ ExecutePull = function(self)
     if self.runningThread then
             local ok, err = self.runningThread:join(0.01, true) --true for getting number
             if ok then
-                self.Log:Add(string.format("Joined %q %d\n", self.shrt_name, tonumber(err)))
+                local color
+               
                 if err == 1 then
                     self.setStack({}) -- clear Stack
-                    self.notifications:Add(self.ig.lib.info, "Execute finished",10000);
+                    self.notifications:Add(self.ig.lib.success, "Execute finished",10000);
+                    color = self.ig.U32(0,1,0,1)
                 elseif err==2 then
-                    self.notifications:Add(self.ig.lib.error, "Compile error",10000);
+                    self.notifications:Add(self.ig.lib.warning, "Compile error",10000);
+                    color = self.ig.U32(1,1,0,1)
                 elseif err==3 then
                     self.notifications:Add(self.ig.lib.error, "Execute error",10000);
+                    color = self.ig.U32(1,0,0,1)
                 end
+                self.Log:Add(string.format("Joined %q %d\n", self.shrt_name, tonumber(err) or -1), color)
+                self.runningThread:free()
                 self.runningThread = false
                 deb_wait = false
             elseif not err then
@@ -208,6 +213,9 @@ ExecutePull = function(self)
     end
 end
 
+-- the used debugger linda
+-- debuggerlinda or deblindaS
+local deblinda
 
 local function send_breakpoint(bp)
     if deblinda then
@@ -217,43 +225,48 @@ end
 
 
 local ffi = require"ffi"
-local do_debug = ffi.new("bool[?]",1)
-local inprocess
+local do_debug = ffi.new("bool[?]",1,true)
+local inprocess = ffi.new("bool[?]",1,true)
+local coop_cancel = ffi.new("bool[?]",1,true)
+
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
     self.shrt_name = self.opendocs[curdoc] and self.opendocs[curdoc].shrt_name or nil
+    
+    local function MenuExecute()
+        deb_wait = false
+        if inprocess[0] then
+            deblinda = debuggerlinda
+            local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0], coop_cancel[0])
+            self.runningThread = thread
+        else
+            deblindaS:close()
+            deblindaS:init()
+            deblinda = deblindaS
+            local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0], coop_cancel[0])
+            self.runningThread = thread
+        end
+    end
     local ig = self.ig
     local function is_running()
         return self.runningThread and true --or false
     end
     if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread ))  then 
             --print(deb_wait, self.runningThread,do_debug[0], deb_wait and self.runningThread and (do_debug[0] or false))
-            if (ig.MenuItem("Execute in this process",nil,nil,not is_running()))  then 
-                deblinda = debuggerlinda
-                inprocess = true
-                local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0])
-                deb_wait = false
-                self.runningThread = thread
-            end 
-            if (ig.MenuItem("Execute in other process", nil, nil, not is_running()))  then 
-                deblindaS:close()
-                deblindaS:init()
-                deblinda = deblindaS
-                inprocess = false
-                local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0])
-                deb_wait = false
-                self.runningThread = thread
+            if (ig.MenuItem("Execute", "F6", nil, not is_running()))  then
+                MenuExecute()
             end
             ig.Separator()
-            if (ig.MenuItem("Debug", nil, do_debug, not is_running()))  then 
-            end 
+            ig.MenuItem("Debug", nil, do_debug, not is_running())
+            ig.MenuItem("In process", nil, inprocess , not is_running())
+            ig.MenuItem("Coop cancel", nil, coop_cancel , not is_running())
             ig.Separator()
             if (ig.MenuItem("continue", "F9", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("continue",true)
                 deb_wait = false
             end 
             --if (ig.MenuItem("break", nil, nil, (not deb_wait) and self.runningThread and do_debug[0]))  then 
-            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
+            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0] and coop_cancel[0]))  then 
                 deblinda:send("cancel",true)
             end 
             if (ig.MenuItem("break", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
@@ -274,6 +287,11 @@ local function renderMenuExecute(self, curdoc)
             end
         ig.EndMenu();
     end 
+    if ig.Shortcut(ig.lib.ImGuiKey_F6) then
+        if not is_running() then
+            MenuExecute()
+        end
+    end
     if ig.Shortcut(ig.lib.ImGuiKey_F9) then
         if deb_wait and is_running() and do_debug[0] then
             deblinda:send("continue",true)

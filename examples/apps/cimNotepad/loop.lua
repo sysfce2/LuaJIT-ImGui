@@ -20,7 +20,7 @@ local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
 --local this_script_path = pathut.this_script_path()
 print("pathssss", file_path, this_script_path)
-
+local a = 0
 local function run()
 	local i = 0
 	while i < 5 do
@@ -28,8 +28,14 @@ local function run()
 		print("hello",i)
 		i = i + 1
 		Sleep(1)
-		error"debug"
+		--error"debug"
+		while true do  end
+			-- a = a + 1 
+		-- end
 	end
+	print(a)
 end
-
+--aa 0
+--FINALIZER = function(ok,val) print("---i am loop finalizer",ok,val) end
+print("jit.status",jit.status())
 run()

@@ -200,9 +200,9 @@ function gui.TabReorder(reorder_func)
                 drag_begun = true -- next frame will perform the action
             end
         end
-	M.clear_next = function()
-		just_reordered = true
-	end
+    M.clear_next = function()
+        just_reordered = true
+    end
     M.flag = function()
         local flag = just_reordered and 0 or ig.lib.ImGuiTabBarFlags_Reorderable
         if just_reordered then just_reordered = false end
@@ -210,6 +210,92 @@ function gui.TabReorder(reorder_func)
     end
     return M
 end
+
+function gui.CLog()
+    local L = {}
+    local       F_Items --= {}
+    local       Items = {}
+    local       Filter = ffi.new"ImGuiTextFilter"
+    local       AutoScroll = ffi.new("bool[1]",true)
+    local       ScrollToBottom = false
+    local       just_add = false
+
+    function L:Clear()
+        Items = {}
+        F_Items = nil
+     end 
+
+    function L:Add(txt, color)
+        --split on \n
+        for tt in txt:gmatch("[^\r\n]+") do
+            table.insert(Items, {txt = tt, color = color})
+        end
+        ScrollToBottom = true
+        just_add = true
+     end 
+
+    function L:Draw(title)
+      
+        if (ig.SmallButton("Clear"))            then  L:Clear();  end 
+        ig.SameLine();
+        local copy_to_clipboard = ig.SmallButton("Copy");
+
+        ig.SameLine();
+
+        if Filter:Draw("Filter", 180) or just_add then
+            F_Items = {}
+            for i, item in ipairs(Items) do
+                if (Filter:PassFilter(item.txt)) then
+                    table.insert(F_Items, item)
+                end
+            end
+            just_add = false
+        else
+            if not F_Items  then F_Items = Items end
+        end
+        ig.Separator();
+
+        if (ig.BeginChild("ScrollingRegion", ig.ImVec2(0, 0), ig.lib.ImGuiChildFlags_NavFlattened, ig.lib.ImGuiWindowFlags_HorizontalScrollbar))
+         then 
+            if (ig.BeginPopupContextWindow())
+             then 
+                if (ig.Selectable("Clear")) then L:Clear() end
+                ig.EndPopup();
+             end 
+
+            ig.PushStyleVar(ig.lib.ImGuiStyleVar_ItemSpacing, ig.ImVec2(4, 1)); --// Tighten spacing
+            if (copy_to_clipboard) then ig.LogToClipboard(); end
+            
+            local clipper = ig.ImGuiListClipper()
+            clipper:Begin(#F_Items)
+            while (clipper:Step()) do
+            --for i, item in ipairs(Items) do --(const char* item : Items)
+            --print(clipper.DisplayStart+1,clipper.DisplayEnd-1+1)
+            for line = clipper.DisplayStart+1,clipper.DisplayEnd-1+1 do
+                local item = F_Items[line]
+
+                local color = item.color;
+
+                if (color) then
+                    ig.PushStyleColor(ig.lib.ImGuiCol_Text, color);
+                end
+                ig.TextUnformatted(item.txt);
+                if (color) then ig.PopStyleColor(); end
+            end 
+            end
+            clipper:End()
+            if (copy_to_clipboard) then ig.LogFinish(); end
+
+            if (ScrollToBottom) then ig.SetScrollHereY(1.0); ScrollToBottom = false end
+
+            ig.PopStyleVar();
+         end 
+        ig.EndChild();
+
+     end 
+     return L
+end 
+ 
 
 return gui
 end

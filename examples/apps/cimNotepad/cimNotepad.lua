@@ -7,25 +7,37 @@ package.path = currpath..sep.."?.lua;"..package.path
 print(package.path)
 -------------------------------------------------------------------------------
 --]]
+local pathut = require"imgui.libs.path"
+local currpath = pathut.file_path()
+
+-------singleton app
+local sing,err = io.open(pathut.chain(currpath,"singleton.log"),"r")
+if sing then
+    sing:close()
+    print"There is singleton open, on last execution error delete 'singleton.log' from cimNotepad folder"
+    print"Dont delete if there is another cimNotepad executing."
+    print("delete?: y/n")
+    local del = io.read"*l"
+    if del=="y" then
+        os.remove(pathut.chain(currpath,"singleton.log"))
+        print("singleton.log deleted. cimNotepad is active.")
+    else
+        return
+    end
+end
+--create singleton.log
+sing,err =io.open(pathut.chain(currpath,"singleton.log"),"w")
+assert(sing, err)
+sing:close()
+------------------------------------------
 local igwin = require"imgui.window"
 --local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 --local win = igwin:GLFW(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
-local pathut = require"imgui.libs.path"
-local currpath = pathut.file_path()
--------singleton app
-local sing,err = io.open(pathut.chain(currpath,"singleton.log"),"r")
-if sing then
-    print"there is singleton open, on error delete 'singleton.log' from cimNotepad folder"
-    sing:close()
-    return
-else
-    --create singleton.log
-    sing,err =io.open(pathut.chain(currpath,"singleton.log"),"w")
-    assert(sing, err)
-    sing:close()
-end
+
+
+
 ---------- locals ---------------------------------
 local ig = win.ig
 local CTE = dofile(pathut.chain(currpath,"CTEwindow.lua"))(win.ig)
@@ -37,7 +49,7 @@ local Exec = dofile(pathut.chain(currpath,"executer.lua"))
 local ExecutePull, send_breakpoint = Exec.ExecutePull, Exec.send_breakpoint
 ------------------------------------------------------------------
 
-local Log = win.ig.Log() -- app Log
+local Log = gui.CLog() -- app Log
 --tab orderer docs
 local opendocs = {}
 local opendocfnames = {}
@@ -67,7 +79,7 @@ ctrl + / for comment toggling]]
 
 local addEditor
 ---------------------------------------------------
-setStack = function(stack,err, vars)
+setStack = function(stack,err, vars, is_compile_err)
 
     Vars = vars or {}
     for i,doc in ipairs(opendocs) do
@@ -77,12 +89,13 @@ setStack = function(stack,err, vars)
     Stack = stack
 
     --add error marker
+	local color = is_compile_err and ig.U32(0.5,0.5,0,1) or ig.U32(128/255, 0, 32/255, 128/255)
     for i,v in ipairs(stack) do
         if v.source:match"^@" then
             StackLevel = i
             local doc = addEditor(v.source:sub(2), v.currentline)
             if doc then
-                doc.editor:AddMarker( v.currentline-1, 0, ig.U32(128/255, 0, 32/255, 128/255), "", err or "Error detected on this line");
+                doc.editor:AddMarker( v.currentline-1, 0, color, "", err or "Error detected on this line");
             end
             break
         end
@@ -221,6 +234,20 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
     
 
 -------------------Menus
+local function renderMenuDocs()
+	--if (ig.BeginMenuBar()) then
+		if ig.BeginMenu("Docs") then
+			for i,doc in ipairs(opendocs) do
+				if ig.MenuItem(doc.shrt_name, nil, i==curr_opendoc) then
+			        curr_opendoc = i
+					set_tab = i
+				end
+			end
+			ig.EndMenu()
+		end
+		--ig.EndMenuBar()
+	--end
+end
 
 local function renderMenuFile(win)
     if (ig.BeginMenuBar()) then
@@ -512,7 +539,7 @@ function win:draw(ig)
     
     if (ig.BeginMenuBar()) then
         Exec.renderMenuExecute(this, curr_opendoc)
-            
+        renderMenuDocs()
         if ig.BeginMenu("Help") then
             if (ig.MenuItem("Show")) then
                 showhelp = true

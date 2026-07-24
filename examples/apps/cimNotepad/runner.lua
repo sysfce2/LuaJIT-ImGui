@@ -1,9 +1,5 @@
 --flush for popen:read"*l"
-local old_print = print
-print = function(...)
-    old_print(...)
-    io.stdout:flush()
-end
+io.stdout:setvbuf"no"
 
 --[[
 print"=======================================I am runner"
@@ -29,13 +25,21 @@ local file_path = pathut.file_path()
 local Debugger = dofile(pathut.chain(file_path,"debugger.lua"))
 local serializer = require"imgui.libs.serializer"
 
-local function xpcallerror(err)
+local xpcallerror
+xpcallerror = function(err)
      --print"===========xpcallerror=============="
-     --print("xpcallerror1: "..tostring(err))
-     if tostring(err):match"stack overflow" then
-        print("stack overflow in:")
-        local debinfo = debug.getinfo(2,"Slf")
-        print(debinfo.source, debinfo.currentline)
+      if tostring(err):match"stack overflow" then
+		debug.sethook()
+        io.write("stack overflow\n")
+        --local debinfo = debug.getinfo(2,"Slf")
+        --print(debinfo.source, debinfo.currentline)
+		return --err
+     end
+     local lvl = 3
+     --print("xpcallerror1: "..err)
+     if err:match("debug cancel$") then
+        print"debug cancel detected"
+        lvl = 4
      end
     ---- detect recursive error
     for i=2,math.huge do
@@ -48,9 +52,9 @@ local function xpcallerror(err)
         end
     end
 
-    local debuginfo = debug.getinfo(2,"Slf")
+    local debuginfo = debug.getinfo(lvl,"Slf")
 
-    local stack,vars = Debugger:get_call_stack(3) 
+    local stack,vars = Debugger:get_call_stack(lvl + 1) 
 
     -- vars can have cycles so serialize for Keeper
     --Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
@@ -61,24 +65,21 @@ local function xpcallerror(err)
 
 end
 
+
 local function load_script(script)
-    --return function() dofile(script) end
-    return function()
         local fs, err = loadfile(script)
         if not fs then
             --send stack
             local info = {}
             info.source = "@"..script
             info.currentline = err:match(":(%d*):") or -1
-            --Debugger.send_debuginfo(info.source, info.currentline,{info}, err,serializer("tab_name",{},";").."return tab_name;")
-            Debugger.send_debuginfo(info.source, info.currentline,{info}, err, {})
-            return false
+            Debugger.send_debuginfo(info.source, info.currentline,{info}, err, {}, true) --compile error
+            return error"compile loadfile error"
         else
-            return fs()
+            return fs
         end
-        return
-    end
 end
+FINALIZER = function(ok,val) print("---i am runner finalizer",ok,val) end
 
 --runs from f in loadfile
 if not arg then
@@ -87,7 +88,7 @@ if not arg then
     return function(script, K, debuggerlinda, bp, do_debug)
         local old_print2 = print
         print = function(...)
-            --old_print2(...)
+            old_print2(...)
             local args = {}
             for i=1,select("#",...) do
                 args[i] = tostring(select(i,...))
@@ -95,24 +96,28 @@ if not arg then
             local str = table.concat(args,"\t")
             K:send("clave",str)
         end
-        
+
         --local bp = {breakpoints = {[10] = {["@"..script] = true}}}
         Debugger:init(do_debug, bp, K, debuggerlinda)
         
-        local ok,err = xpcall(load_script(script), xpcallerror)
-        -- io.write("xpcall ",tostring(ok)," ",tostring(err),"\n")
-        
-        -- true false is compile error -> nilorfalse
-        -- true nil is run success -> true
-        -- false nil is run error -> nilorfalse
-
-        if ok then
-            if err==nil then return 1 end
+        --local ok,err = xpcall(load_script(script), xpcallerror)
+        local err
+        local ok,fs = pcall(load_script, script)
+        if not ok then --compile error
+            print("compile error",fs)
             return 2
         else
-            if err then
-                print("error:",err)
-            end
+            ok, err = xpcall(fs, xpcallerror)
+        end
+        --print("xpcall ",tostring(ok)," ",tostring(err),"\n")
+		debug.sethook()
+		print = old_print2
+        if ok then
+            return 1
+        else
+            -- if err then
+                -- print("error:",err)
+            -- end
             return 3
         end
     end
@@ -176,17 +181,25 @@ else
     local do_debug = bp and true or false
     deblinda:init()
     Debugger:init(do_debug, bp, Sender, deblinda)
-
-    local ok,err = xpcall(load_script(script), xpcallerror)
+    
+    local err
+    local ok,fs = pcall(load_script, script)
+    if not ok then --compile error
+        print("compile error",fs)
+        print("eretXXXX"..tostring(2))
+        return 
+    else
+        ok, err = xpcall(fs, xpcallerror)
+    end
+    --print("xpcall ",tostring(ok)," ",tostring(err),"\n")
 
     local eret
     if ok then
-        if err==nil then eret = 1
-        else eret = 2 end
+        eret = 1
     else
-        if err then
-            print("error:", err) 
-        end
+        -- if err then
+            -- print("error:", err) 
+        -- end
         eret = 3
     end
     -- sending to popen

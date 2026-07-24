@@ -56,7 +56,7 @@ end
 function Debugger:get_call_stack(inilevel)
     local thread, is_main_thread = coroutine.running()
     local deph = self.maxdeph or math.huge
-    --print("staklevel",deph)
+    print("Debugger:get_call_stack",inilevel)
     local endlevel = inilevel + deph
     local stack = {}
     local vars = {}
@@ -159,7 +159,7 @@ function Debugger.debug_hook (event, line)
             debug.sethook()
             --Thread.exit(9)
             --os.exit() --only when inprocess = false
-            error"cancel"
+            error("debug cancel", 2)
         end
         if debuggerlinda:receive("break") then
             Debugger.step_into = true
