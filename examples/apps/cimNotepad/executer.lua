@@ -35,6 +35,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         --------loadstring bad for same process sdl or glfw
         local f,err = loadfile(pathut.chain(file_path,"runner.lua"))--cmd)
         if f then 
+            jit.off()
             ret = f()(cmd, K, debuggerlinda, breakpoints, do_debug) 
         else 
             K:send("clave","loadfile error:"..tostring(err)) 
@@ -63,7 +64,8 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
             os.remove(file_path.."/breakpoints")
         end
         
-        local jitstr = coop_cancel and "-j off" or ""
+        --local jitstr = coop_cancel and "-j off" or ""
+        local jitstr = "-j off" 
         local pcomand = executable.." "..jitstr.." "..pathut.chain(file_path,"runner.lua").." "..cmd
         --print("==========pcomand",pcomand)
         if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
@@ -135,7 +137,7 @@ end
 
 Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel)
     self.Log:Clear()
-    self.setStack({}) -- clear Stack
+    self.setStack() -- clear Stack
     --print("Execute",executable, cmd, inprocess)
     local func = os_execute_async
     if coop_cancel then
@@ -163,7 +165,7 @@ ExecutePull = function(self)
                 -- local f,err = loadstring(vars)
                 -- assert(f,err)
                 -- vars = f()
-                self.setStack(Stack, _error, vars,compile_err)
+                self.setStack(value[1], value[2],Stack, _error, vars,compile_err)
                 deb_wait = true
             elseif key == "debugger" then
                 local Stack = value[3]
@@ -174,7 +176,7 @@ ExecutePull = function(self)
                 -- local f,err = loadstring(vars)
                 -- assert(f,err)
                 -- vars = f()
-                self.setStack(Stack, _error, vars, compile_err)
+                self.setStack(value[1], value[2],Stack, _error, vars, compile_err)
                 deb_wait = true
             else
                 --self.Log:Add(string.format("-- %s: %s\n", key,value))
@@ -190,7 +192,7 @@ ExecutePull = function(self)
                 local color
                
                 if err == 1 then
-                    self.setStack({}) -- clear Stack
+                    self.setStack() -- clear Stack
                     self.notifications:Add(self.ig.lib.success, "Execute finished",10000);
                     color = self.ig.U32(0,1,0,1)
                 elseif err==2 then
@@ -199,6 +201,10 @@ ExecutePull = function(self)
                 elseif err==3 then
                     self.notifications:Add(self.ig.lib.error, "Execute error",10000);
                     color = self.ig.U32(1,0,0,1)
+                elseif err==4 then
+                    self.notifications:Add(self.ig.lib.error, "stack overflow",10000);
+                    color = self.ig.U32(1,0,1,1)
+                    self.Log:Add(string.format("stack overflow in %q \n", self.shrt_name), color)
                 end
                 self.Log:Add(string.format("Joined %q %d\n", self.shrt_name, tonumber(err) or -1), color)
                 self.runningThread:free()
@@ -227,7 +233,7 @@ end
 local ffi = require"ffi"
 local do_debug = ffi.new("bool[?]",1,true)
 local inprocess = ffi.new("bool[?]",1,true)
-local coop_cancel = ffi.new("bool[?]",1,true)
+local coop_cancel = ffi.new("bool[?]",1,false)
 
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
@@ -257,17 +263,27 @@ local function renderMenuExecute(self, curdoc)
                 MenuExecute()
             end
             ig.Separator()
-            ig.MenuItem("Debug", nil, do_debug, not is_running())
-            ig.MenuItem("In process", nil, inprocess , not is_running())
-            ig.MenuItem("Coop cancel", nil, coop_cancel , not is_running())
+            if ig.BeginMenu("Hooks", not is_running()) then
+                if ig.MenuItem("Debug", nil, do_debug) then coop_cancel[0] = false end
+                if ig.MenuItem("Coop cancel", nil, coop_cancel, inprocess[0]) then do_debug[0] = false end
+                ig.EndMenu()
+            end
+            if ig.MenuItem("In process", nil, inprocess , not is_running()) then
+                if not inprocess[0] then coop_cancel[0] = false end
+            end
+
             ig.Separator()
             if (ig.MenuItem("continue", "F9", nil, deb_wait and is_running() and do_debug[0]))  then 
                 deblinda:send("continue",true)
                 deb_wait = false
             end 
             --if (ig.MenuItem("break", nil, nil, (not deb_wait) and self.runningThread and do_debug[0]))  then 
-            if (ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and do_debug[0] and coop_cancel[0]))  then 
-                deblinda:send("cancel",true)
+            if ig.MenuItem("cancel", nil, nil, (not deb_wait) and is_running() and (do_debug[0] or (coop_cancel[0] and inprocess[0])))  then 
+                if do_debug[0] then
+                    deblinda:send("cancel",true)
+                else
+                    self.runningThread:cancel()
+                end
             end 
             if (ig.MenuItem("break", nil, nil, (not deb_wait) and is_running() and do_debug[0]))  then 
                 deblinda:send("break",true)

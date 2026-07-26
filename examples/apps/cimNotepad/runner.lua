@@ -27,13 +27,11 @@ local serializer = require"imgui.libs.serializer"
 
 local xpcallerror
 xpcallerror = function(err)
+        debug.sethook()
      --print"===========xpcallerror=============="
-      if tostring(err):match"stack overflow" then
-		debug.sethook()
-        io.write("stack overflow\n")
-        --local debinfo = debug.getinfo(2,"Slf")
-        --print(debinfo.source, debinfo.currentline)
-		return --err
+      if err:match"stack overflow" then
+        io.write(debug.traceback(err),"\n")
+        return err
      end
      local lvl = 3
      --print("xpcallerror1: "..err)
@@ -42,6 +40,8 @@ xpcallerror = function(err)
         lvl = 4
      end
     ---- detect recursive error
+    -- once needed but now luajit errors with error on error handler
+    --[[
     for i=2,math.huge do
         local debuginfo = debug.getinfo(i,"Snlf")
         if not debuginfo then break end
@@ -51,17 +51,12 @@ xpcallerror = function(err)
             return
         end
     end
+    --]]
 
     local debuginfo = debug.getinfo(lvl,"Slf")
-
-    local stack,vars = Debugger:get_call_stack(lvl + 1) 
-
-    -- vars can have cycles so serialize for Keeper
-    --Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, serializer("tab_name",vars,";").."return tab_name;")
+    local stack,vars = Debugger:get_call_stack(lvl + 1)
+    
     Debugger.send_debuginfo(debuginfo.source,debuginfo.currentline,Debugger.cleanStack(stack), err, vars)
-    --print("========xpcallerror ended: ",debuginfo.source,debuginfo.currentline,stack,vars)
-    --print("traceback",debug.traceback(2))
-    print("======= error:",err)
 
 end
 
@@ -87,6 +82,7 @@ if not arg then
     inprocess = true
     return function(script, K, debuggerlinda, bp, do_debug)
         local old_print2 = print
+        _G.old_print2 = old_print2
         print = function(...)
             old_print2(...)
             local args = {}
@@ -97,10 +93,8 @@ if not arg then
             K:send("clave",str)
         end
 
-        --local bp = {breakpoints = {[10] = {["@"..script] = true}}}
         Debugger:init(do_debug, bp, K, debuggerlinda)
         
-        --local ok,err = xpcall(load_script(script), xpcallerror)
         local err
         local ok,fs = pcall(load_script, script)
         if not ok then --compile error
@@ -109,15 +103,13 @@ if not arg then
         else
             ok, err = xpcall(fs, xpcallerror)
         end
-        --print("xpcall ",tostring(ok)," ",tostring(err),"\n")
-		debug.sethook()
-		print = old_print2
+        --io.write("\nxpcallres: ",tostring(ok)," ",tostring(err),"\n")
+        debug.sethook()
+
         if ok then
             return 1
         else
-            -- if err then
-                -- print("error:",err)
-            -- end
+            if err and err:match"stack overflow" then return 4 end
             return 3
         end
     end
@@ -161,7 +153,7 @@ else
     local Sender = {}
     function Sender:send(key,value)
         value = serializer("tab_name", value, ";").."return tab_name;"
-        print(key.."XXXX"..value)
+        print("\n"..key.."XXXX"..value)
     end
 
     assert(arg[1], "no script given to runner.lua")
@@ -186,7 +178,7 @@ else
     local ok,fs = pcall(load_script, script)
     if not ok then --compile error
         print("compile error",fs)
-        print("eretXXXX"..tostring(2))
+        print("\neretXXXX"..tostring(2))
         return 
     else
         ok, err = xpcall(fs, xpcallerror)
@@ -197,12 +189,13 @@ else
     if ok then
         eret = 1
     else
-        -- if err then
-            -- print("error:", err) 
-        -- end
-        eret = 3
+        if err and err:match"stack overflow" then 
+            eret = 4
+        else
+            eret = 3
+        end
     end
     -- sending to popen
     -- for key: eret
-    print("eretXXXX"..tostring(eret))
+    print("\neretXXXX"..tostring(eret))
 end

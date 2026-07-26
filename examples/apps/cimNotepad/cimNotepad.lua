@@ -79,18 +79,18 @@ ctrl + / for comment toggling]]
 
 local addEditor
 ---------------------------------------------------
-setStack = function(stack,err, vars, is_compile_err)
+setStack = function(sour, line,stack,err, vars, is_compile_err)
 
     Vars = vars or {}
     for i,doc in ipairs(opendocs) do
         doc.editor:ClearMarkers();
     end
 
-    Stack = stack
+    Stack = stack or {}
 
     --add error marker
-	local color = is_compile_err and ig.U32(0.5,0.5,0,1) or ig.U32(128/255, 0, 32/255, 128/255)
-    for i,v in ipairs(stack) do
+    local color = is_compile_err and ig.U32(0.5,0.5,0,1) or ig.U32(128/255, 0, 32/255, 128/255)
+    for i,v in ipairs(Stack) do
         if v.source:match"^@" then
             StackLevel = i
             local doc = addEditor(v.source:sub(2), v.currentline)
@@ -158,9 +158,9 @@ local function renderStack()
             ig.TableNextColumn();
             if lev.source == "=[C]" then
                 ig.TextUnformatted(lev.source..":"..tostring(lev.currentline))
-				-- local show_name = lev.source..":"..tostring(lev.currentline).."##"..tostring(i)
-				-- if ig.Selectable(show_name,nil,
-				-- bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
+                -- local show_name = lev.source..":"..tostring(lev.currentline).."##"..tostring(i)
+                -- if ig.Selectable(show_name,nil,
+                -- bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
                     -- StackLevel = i
                 -- end
             else
@@ -174,7 +174,7 @@ local function renderStack()
                 end
                 local show_name = shrt_name..":"..tostring(lev.currentline).."##"..tostring(i)
                 if ig.Selectable(show_name,nil,
-				bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
+                bit.bor(ig.lib.ImGuiSelectableFlags_SpanAllColumns, (StackLevel== i) and ig.lib.ImGuiSelectableFlags_Highlight or 0)) then
                     StackLevel = i
                     addEditor(source, lev.currentline)
                 end
@@ -235,18 +235,27 @@ local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
 
 -------------------Menus
 local function renderMenuDocs()
-	--if (ig.BeginMenuBar()) then
-		if ig.BeginMenu("Docs") then
-			for i,doc in ipairs(opendocs) do
-				if ig.MenuItem(doc.shrt_name, nil, i==curr_opendoc) then
-			        curr_opendoc = i
-					set_tab = i
-				end
-			end
-			ig.EndMenu()
-		end
-		--ig.EndMenuBar()
-	--end
+        if ig.BeginMenu("Docs") then
+            if ig.MenuItem("sort") then
+                local currdoc = opendocs[curr_opendoc]
+                table.sort(opendocs, function(a,b) return a.shrt_name < b.shrt_name end)
+                for i, doc in ipairs(opendocs) do
+                    if doc == currdoc then
+                        curr_opendoc = i
+                        set_tab = i
+                        break
+                    end
+                end
+            end
+            ig.Separator()
+            for i,doc in ipairs(opendocs) do
+                if ig.MenuItem(doc.shrt_name, nil, i==curr_opendoc) then
+                    curr_opendoc = i
+                    set_tab = i
+                end
+            end
+            ig.EndMenu()
+        end
 end
 
 local function renderMenuFile(win)
@@ -390,7 +399,7 @@ local function PersistenceLoad()
         curr_opendoc = persist.curr_opendoc or 1
         set_tab = curr_opendoc
     else -- have initial example
-        addEditor(gui.pathut.chain(currpath,"loop.lua"))
+        addEditor(gui.pathut.chain(currpath,"scripts","loop.lua"))
     end
 end
 
@@ -427,14 +436,14 @@ local function ExpandLog(vSize)
     ig.DockBuilderSetNodeSize(dock_id_top[0], ig.ImVec2(vSize.x,40))
     ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize)
     ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize)
-	ExpandContract_used = true
+    ExpandContract_used = true
 end
 
 local function ContractLog(vSize, ratio)
     ig.DockBuilderSetNodeSize(dock_id_top[0], vSize*(1 - ratio.y))
     ig.DockBuilderSetNodeSize(dock_id_bottom[0], vSize*ratio.y)
     ig.DockBuilderSetNodeSize(dock_id_bottom_left[0], vSize*ratio.x)
-	ExpandContract_used = true
+    ExpandContract_used = true
 end
 
 function win:draw(ig)
@@ -466,9 +475,9 @@ function win:draw(ig)
     
     local viewport_justresized = false
     if (viewport.Size~=old_viewport_size) then
-		--print("viewport resize", old_viewport_size, viewport.Size)
+        --print("viewport resize", old_viewport_size, viewport.Size)
         old_viewport_size = ig.ImVec2(viewport.Size.x, viewport.Size.y)
-		viewport_justresized = true
+        viewport_justresized = true
     end
 
     
@@ -552,21 +561,18 @@ function win:draw(ig)
     ig.End() --documents
     
     ig.Begin("comments")
-		if comments_size ~= ig.GetWindowSize() then
-			local siz = ig.GetWindowSize()
-			--print("comments_size change", comments_size, siz, viewport.Size, viewport_justresized)
-			if viewport_justresized then 
-				--print("just resiz")
-				ContractLog(viewport.Size, comments_ratio)
-			elseif ExpandContract_used then
-				--print("ExpandContract_used")
-				ExpandContract_used = false --clear flag
-			else
-				comments_ratio = siz/viewport.Size
-				--print("comments_ratio", comments_ratio)
-			end
-			comments_size = ig.ImVec2(siz.x, siz.y)
-		end
+        if comments_size ~= ig.GetWindowSize() then
+            local siz = ig.GetWindowSize()
+
+            if viewport_justresized then 
+                ContractLog(viewport.Size, comments_ratio)
+            elseif ExpandContract_used then
+                ExpandContract_used = false --clear flag
+            else
+                comments_ratio = siz/viewport.Size
+            end
+            comments_size = ig.ImVec2(siz.x, siz.y)
+        end
         if ig.SmallButton("expand") then
             ExpandLog(viewport.Size)
         end

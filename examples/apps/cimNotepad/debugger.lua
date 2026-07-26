@@ -54,9 +54,9 @@ local function debugger_copy(object,lookup_table)
 end
 
 function Debugger:get_call_stack(inilevel)
+
     local thread, is_main_thread = coroutine.running()
     local deph = self.maxdeph or math.huge
-    print("Debugger:get_call_stack",inilevel)
     local endlevel = inilevel + deph
     local stack = {}
     local vars = {}
@@ -69,6 +69,7 @@ function Debugger:get_call_stack(inilevel)
         stack[stlevel] = stinfo
         --locals
         vars[stlevel] = {locals= {},upvalues= {}}
+
         local i = 1
         while true do
             local name,value = debug.getlocal( level,i)
@@ -150,15 +151,8 @@ function Debugger.debug_hook (event, line)
     cancelcount = cancelcount + 1
     if cancelcount > 10 then
         cancelcount = 0
-        -- if cancel_test() then
-            -- error(lanes.cancel_error)
-        -- end
         if debuggerlinda:receive("cancel") then
-            print("debug cancel")
-            local Thread = require"lj-async.thread"
             debug.sethook()
-            --Thread.exit(9)
-            --os.exit() --only when inprocess = false
             error("debug cancel", 2)
         end
         if debuggerlinda:receive("break") then
@@ -237,6 +231,7 @@ function Debugger.debug_hook (event, line)
 end
 
 function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
+
     print_if_verbose("debugger: debuggerlinda soy yo", tostring(Kdebuggerlinda),"\n")
     debuggerlinda = Kdebuggerlinda
     bp = bp or {}
@@ -247,11 +242,7 @@ function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
     end
 
     send_debuginfo = function(...)
-        --local str = serializer("tab_name1",{...})
-        --print(str)
-        --print_if_verbose("going to send\n")
         K:send("debugger",{...})
-        --print_if_verbose("senddebuginfo done\n")
     end
     self.send_debuginfo = send_debuginfo
     self.maxdeph = maxdeph
@@ -278,11 +269,10 @@ function Debugger:init(do_debug, bp, K,Kdebuggerlinda,verbose, maxdeph)
                 return thread
             end
             
-        debug.sethook(Debugger.debug_hook, "l")
-        
         -- local f,m,c = debug.gethook ()
         -- print("gethook",f,m,c)
         -- print("gethook",type(f),type(m),type(c))
+        debug.sethook(Debugger.debug_hook, "l")
     end
 end
 return Debugger

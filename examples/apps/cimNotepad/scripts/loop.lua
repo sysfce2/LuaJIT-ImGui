@@ -23,15 +23,13 @@ print("pathssss", file_path, this_script_path)
 local a = 0
 local function run()
 	local i = 0
-	while i < 5 do
+	while true do --i < 5 do
 
 		print("hello",i)
 		i = i + 1
 		Sleep(1)
 		--error"debug"
-		while true do  end
-			-- a = a + 1 
-		-- end
+		--while true do  end
 	end
 	print(a)
 end
