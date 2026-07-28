@@ -1,9 +1,10 @@
 local ThreadF = function()
 print"init thread"
+jit.off()
+print("jitstatus", jit.status())
 FINALIZER = function(ok,val) 
 	print("====i am ThreadF finalizer",ok);
 end
---jit.off(true,true)
 return function(ud)
 	local a = 0
 	local ffi = require "ffi"
@@ -65,7 +66,7 @@ while true do
 	 --error"dddddddd"
 	if sec == 20 then
 		print"send cancel"
-		t:cancel()
+		--t:cancel()
 	end
 end
 print"doing t:free"

@@ -28,7 +28,7 @@ local serializer = require"imgui.libs.serializer"
 local xpcallerror
 xpcallerror = function(err)
         debug.sethook()
-     --print"===========xpcallerror=============="
+     --print("===========xpcallerror==============",err)
       if err:match"stack overflow" then
         io.write(debug.traceback(err),"\n")
         return err
@@ -183,7 +183,8 @@ else
     else
         ok, err = xpcall(fs, xpcallerror)
     end
-    --print("xpcall ",tostring(ok)," ",tostring(err),"\n")
+    --io.write("\nxpcallres: ",tostring(ok)," ",tostring(err),"\n")
+    if FINALIZER then FINALIZER(ok,err) end
 
     local eret
     if ok then
