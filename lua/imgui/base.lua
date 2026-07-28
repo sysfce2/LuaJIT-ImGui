@@ -1488,6 +1488,27 @@ function ImGuiOnceUponAFrame.__new(ctype)
     return ffi.gc(ptr,lib.ImGuiOnceUponAFrame_destroy)
 end
 M.ImGuiOnceUponAFrame = ffi.metatype("ImGuiOnceUponAFrame",ImGuiOnceUponAFrame)
+--------------------------ImGuiPackedDate----------------------------
+local ImGuiPackedDate= {}
+ImGuiPackedDate.__index = ImGuiPackedDate
+function ImGuiPackedDate.ImGuiPackedDate_Nil()
+    local ptr = lib.ImGuiPackedDate_ImGuiPackedDate_Nil()
+    return ffi.gc(ptr,lib.ImGuiPackedDate_destroy)
+end
+function ImGuiPackedDate.ImGuiPackedDate_Int(yyyymmdd)
+    local ptr = lib.ImGuiPackedDate_ImGuiPackedDate_Int(yyyymmdd)
+    return ffi.gc(ptr,lib.ImGuiPackedDate_destroy)
+end
+function ImGuiPackedDate.__new(ctype,a1) -- generic version
+    if a1==nil then return ImGuiPackedDate.ImGuiPackedDate_Nil() end
+    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return ImGuiPackedDate.ImGuiPackedDate_Int(a1) end
+    print(ctype,a1)
+    error'ImGuiPackedDate.__new could not find overloaded'
+end
+ImGuiPackedDate.IsValid = lib.ImGuiPackedDate_IsValid
+ImGuiPackedDate.SubtractMonths = lib.ImGuiPackedDate_SubtractMonths
+ImGuiPackedDate.Unpack = lib.ImGuiPackedDate_Unpack
+M.ImGuiPackedDate = ffi.metatype("ImGuiPackedDate",ImGuiPackedDate)
 --------------------------ImGuiPayload----------------------------
 local ImGuiPayload= {}
 ImGuiPayload.__index = ImGuiPayload
@@ -2879,6 +2900,7 @@ TextEditor.GetCursorPosition = lib.TextEditor_GetCursorPosition
 TextEditor.GetCursorSelection = lib.TextEditor_GetCursorSelection
 TextEditor.GetCursorText = lib.TextEditor_GetCursorText
 M.TextEditor_GetDarkPalette = lib.TextEditor_GetDarkPalette
+TextEditor.GetDecorationLeftMargin = lib.TextEditor_GetDecorationLeftMargin
 M.TextEditor_GetDefaultPalette = lib.TextEditor_GetDefaultPalette
 TextEditor.GetDocPosAtMousePos = lib.TextEditor_GetDocPosAtMousePos
 TextEditor.GetFirstVisibleColumn = lib.TextEditor_GetFirstVisibleColumn
@@ -2891,6 +2913,7 @@ TextEditor.GetLastVisibleRow = lib.TextEditor_GetLastVisibleRow
 M.TextEditor_GetLightPalette = lib.TextEditor_GetLightPalette
 TextEditor.GetLineCount = lib.TextEditor_GetLineCount
 TextEditor.GetLineHeight = lib.TextEditor_GetLineHeight
+TextEditor.GetLineNumberLeftMargin = lib.TextEditor_GetLineNumberLeftMargin
 TextEditor.GetLineSpacing = lib.TextEditor_GetLineSpacing
 TextEditor.GetLineText = lib.TextEditor_GetLineText
 TextEditor.GetMainCursorPosition = lib.TextEditor_GetMainCursorPosition
@@ -2908,6 +2931,7 @@ function TextEditor:GetSectionText(a2,a3) -- generic version
 end
 TextEditor.GetTabSize = lib.TextEditor_GetTabSize
 TextEditor.GetText = lib.TextEditor_GetText
+TextEditor.GetTextLeftMargin = lib.TextEditor_GetTextLeftMargin
 TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
 TextEditor.GetUserData = lib.TextEditor_GetUserData
 TextEditor.GetWordAtMousePos = lib.TextEditor_GetWordAtMousePos
@@ -3005,6 +3029,7 @@ function TextEditor:SetChangeCallback(callback,delay)
 end
 TextEditor.SetCompletePairedGlyphs = lib.TextEditor_SetCompletePairedGlyphs
 TextEditor.SetCursor = lib.TextEditor_SetCursor
+TextEditor.SetDecorationLeftMargin = lib.TextEditor_SetDecorationLeftMargin
 M.TextEditor_SetDefaultPalette = lib.TextEditor_SetDefaultPalette
 TextEditor.SetDeletor = lib.TextEditor_SetDeletor
 TextEditor.SetFindAllButtonLabel = lib.TextEditor_SetFindAllButtonLabel
@@ -3019,6 +3044,7 @@ TextEditor.SetLineBreakConfig = lib.TextEditor_SetLineBreakConfig
 TextEditor.SetLineDecorator = lib.TextEditor_SetLineDecorator
 TextEditor.SetLineFoldingEnabled = lib.TextEditor_SetLineFoldingEnabled
 TextEditor.SetLineNumberContextMenuCallback = lib.TextEditor_SetLineNumberContextMenuCallback
+TextEditor.SetLineNumberLeftMargin = lib.TextEditor_SetLineNumberLeftMargin
 TextEditor.SetLineSpacing = lib.TextEditor_SetLineSpacing
 TextEditor.SetMiddleMousePanMode = lib.TextEditor_SetMiddleMousePanMode
 TextEditor.SetMiddleMouseScrollMode = lib.TextEditor_SetMiddleMouseScrollMode
@@ -3040,6 +3066,7 @@ TextEditor.SetTabSize = lib.TextEditor_SetTabSize
 TextEditor.SetText = lib.TextEditor_SetText
 TextEditor.SetTextContextMenuCallback = lib.TextEditor_SetTextContextMenuCallback
 TextEditor.SetTextHoverCallback = lib.TextEditor_SetTextHoverCallback
+TextEditor.SetTextLeftMargin = lib.TextEditor_SetTextLeftMargin
 
 TextEditor.SetUserData = lib.TextEditor_SetUserData
 TextEditor.SetWordWrapEnabled = lib.TextEditor_SetWordWrapEnabled
@@ -3202,6 +3229,7 @@ function M.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
 end
 M.ImGuizmo_AllowAxisFlip = lib.ImGuizmo_AllowAxisFlip
 M.ImGuizmo_BeginFrame = lib.ImGuizmo_BeginFrame
+M.ImGuizmo_ComputeMouseRay = lib.ImGuizmo_ComputeMouseRay
 M.ImGuizmo_DecomposeMatrixToComponents = lib.ImGuizmo_DecomposeMatrixToComponents
 M.ImGuizmo_DrawAxes = lib.ImGuizmo_DrawAxes
 M.ImGuizmo_DrawCubes = lib.ImGuizmo_DrawCubes
@@ -6954,6 +6982,7 @@ function M.CheckboxFlags(a1,a2,a3) -- generic version
     print(a1,a2,a3)
     error'M.CheckboxFlags could not find overloaded'
 end
+M.CleanupIniSettings = lib.igCleanupIniSettings
 M.ClearActiveID = lib.igClearActiveID
 M.ClearDragDrop = lib.igClearDragDrop
 M.ClearIniSettings = lib.igClearIniSettings
@@ -7431,6 +7460,11 @@ function M.GetIO(a1) -- generic version
     error'M.GetIO could not find overloaded'
 end
 M.GetInputTextState = lib.igGetInputTextState
+function M.GetItemClickedCountWithSingleClickDelay(mouse_button,delay)
+    delay = delay or -1.0
+    mouse_button = mouse_button or 0
+    return lib.igGetItemClickedCountWithSingleClickDelay(mouse_button,delay)
+end
 M.GetItemFlags = lib.igGetItemFlags
 M.GetItemID = lib.igGetItemID
 M.GetItemRectMax = lib.igGetItemRectMax
@@ -7533,6 +7567,7 @@ M.ImBitArrayGetStorageSizeInBytes = lib.igImBitArrayGetStorageSizeInBytes
 M.ImBitArraySetBit = lib.igImBitArraySetBit
 M.ImBitArraySetBitRange = lib.igImBitArraySetBitRange
 M.ImBitArrayTestBit = lib.igImBitArrayTestBit
+M.ImCeilFast = lib.igImCeilFast
 M.ImCharIsBlankA = lib.igImCharIsBlankA
 M.ImCharIsBlankW = lib.igImCharIsBlankW
 M.ImCharIsXdigitA = lib.igImCharIsXdigitA
@@ -7756,6 +7791,7 @@ M.ImTextureDataGetFormatBytesPerPixel = lib.igImTextureDataGetFormatBytesPerPixe
 M.ImTextureDataGetFormatName = lib.igImTextureDataGetFormatName
 M.ImTextureDataGetStatusName = lib.igImTextureDataGetStatusName
 M.ImTextureDataQueueUpload = lib.igImTextureDataQueueUpload
+M.ImTextureDataUpdateNewFrame = lib.igImTextureDataUpdateNewFrame
 M.ImToUpper = lib.igImToUpper
 M.ImTriangleArea = lib.igImTriangleArea
 M.ImTriangleBarycentricCoords = lib.igImTriangleBarycentricCoords
@@ -8018,7 +8054,10 @@ function M.IsMouseReleased(a1,a2) -- generic version
     print(a1,a2)
     error'M.IsMouseReleased could not find overloaded'
 end
-M.IsMouseReleasedWithDelay = lib.igIsMouseReleasedWithDelay
+function M.IsMouseReleasedWithDelay(button,delay)
+    delay = delay or -1.
+    return lib.igIsMouseReleasedWithDelay(button,delay)
+end
 M.IsNamedKey = lib.igIsNamedKey
 M.IsNamedKeyOrMod = lib.igIsNamedKeyOrMod
 function M.IsPopupOpen_Str(str_id,flags)
@@ -8169,7 +8208,10 @@ end
 M.MouseButtonToKey = lib.igMouseButtonToKey
 M.MultiSelectAddSetAll = lib.igMultiSelectAddSetAll
 M.MultiSelectAddSetRange = lib.igMultiSelectAddSetRange
-M.MultiSelectItemFooter = lib.igMultiSelectItemFooter
+function M.MultiSelectItemFooter(id,p_selected,p_pressed,extra_flags)
+    extra_flags = extra_flags or 0
+    return lib.igMultiSelectItemFooter(id,p_selected,p_pressed,extra_flags)
+end
 M.MultiSelectItemHeader = lib.igMultiSelectItemHeader
 M.NavClearPreferredPosForAxis = lib.igNavClearPreferredPosForAxis
 M.NavHighlightActivated = lib.igNavHighlightActivated
@@ -8362,9 +8404,10 @@ function M.RenderFrameBorder(p_min,p_max,rounding)
     return lib.igRenderFrameBorder(p_min,p_max,rounding)
 end
 M.RenderMouseCursor = lib.igRenderMouseCursor
-function M.RenderNavCursor(bb,id,flags)
+function M.RenderNavCursor(bb,id,flags,rounding)
     flags = flags or 0
-    return lib.igRenderNavCursor(bb,id,flags)
+    rounding = rounding or -1.0
+    return lib.igRenderNavCursor(bb,id,flags,rounding)
 end
 function M.RenderPlatformWindowsDefault(platform_render_arg,renderer_render_arg)
     platform_render_arg = platform_render_arg or nil
@@ -8454,7 +8497,6 @@ function M.SetAllocatorFunctions(alloc_func,free_func,user_data)
     return lib.igSetAllocatorFunctions(alloc_func,free_func,user_data)
 end
 M.SetClipboardText = lib.igSetClipboardText
-M.SetColorEditOptions = lib.igSetColorEditOptions
 M.SetColumnOffset = lib.igSetColumnOffset
 M.SetColumnWidth = lib.igSetColumnWidth
 M.SetContextName = lib.igSetContextName
@@ -8835,7 +8877,7 @@ M.TabItemSpacing = lib.igTabItemSpacing
 M.TableAngledHeadersRow = lib.igTableAngledHeadersRow
 M.TableAngledHeadersRowEx = lib.igTableAngledHeadersRowEx
 M.TableApplyExternalUnclipRect = lib.igTableApplyExternalUnclipRect
-M.TableBeginApplyRequests = lib.igTableBeginApplyRequests
+M.TableApplyQueuedRequests = lib.igTableApplyQueuedRequests
 M.TableBeginCell = lib.igTableBeginCell
 M.TableBeginContextMenuPopup = lib.igTableBeginContextMenuPopup
 M.TableBeginInitMemory = lib.igTableBeginInitMemory
@@ -8892,7 +8934,10 @@ M.TableGetRowIndex = lib.igTableGetRowIndex
 M.TableGetSortSpecs = lib.igTableGetSortSpecs
 M.TableHeader = lib.igTableHeader
 M.TableHeadersRow = lib.igTableHeadersRow
+M.TableInitColumnDefaults = lib.igTableInitColumnDefaults
 M.TableLoadSettings = lib.igTableLoadSettings
+M.TableLoadSettingsForColumn = lib.igTableLoadSettingsForColumn
+M.TableLoadSettingsForColumns = lib.igTableLoadSettingsForColumns
 M.TableMergeDrawChannels = lib.igTableMergeDrawChannels
 M.TableNextColumn = lib.igTableNextColumn
 function M.TableNextRow(row_flags,min_row_height)
@@ -8909,6 +8954,7 @@ M.TablePopColumnChannel = lib.igTablePopColumnChannel
 M.TablePushBackgroundChannel = lib.igTablePushBackgroundChannel
 M.TablePushColumnChannel = lib.igTablePushColumnChannel
 M.TableQueueSetColumnDisplayOrder = lib.igTableQueueSetColumnDisplayOrder
+M.TableReconcileColumns = lib.igTableReconcileColumns
 M.TableRemove = lib.igTableRemove
 M.TableResetSettings = lib.igTableResetSettings
 M.TableSaveSettings = lib.igTableSaveSettings
@@ -8926,11 +8972,11 @@ M.TableSetColumnWidthAutoSingle = lib.igTableSetColumnWidthAutoSingle
 M.TableSettingsAddSettingsHandler = lib.igTableSettingsAddSettingsHandler
 M.TableSettingsCreate = lib.igTableSettingsCreate
 M.TableSettingsFindByID = lib.igTableSettingsFindByID
-function M.TableSetupColumn(label,flags,init_width_or_weight,user_id)
+function M.TableSetupColumn(label,flags,init_width_or_weight,user_data)
     flags = flags or 0
     init_width_or_weight = init_width_or_weight or 0.0
-    user_id = user_id or 0
-    return lib.igTableSetupColumn(label,flags,init_width_or_weight,user_id)
+    user_data = user_data or 0
+    return lib.igTableSetupColumn(label,flags,init_width_or_weight,user_data)
 end
 M.TableSetupDrawChannels = lib.igTableSetupDrawChannels
 M.TableSetupScrollFreeze = lib.igTableSetupScrollFreeze
