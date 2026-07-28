@@ -153,6 +153,7 @@ else
     local Sender = {}
     function Sender:send(key,value)
         value = serializer("tab_name", value, ";").."return tab_name;"
+        value = value:gsub("\\\n","")
         print("\n"..key.."XXXX"..value)
     end
 

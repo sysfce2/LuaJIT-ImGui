@@ -349,7 +349,7 @@ local function CTEwindow(file_name, args)
     --editor:SetTextContextMenuCallback(function(pp) print("cbaaaa2",pp.pos.line) end)
     W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
-    editor:SetLineDecorator(15.0, function(decorator) 
+    editor:SetLineDecorator(1.0, function(decorator) 
 
     local size = decorator.height - 1.0;
     local pos = ig.GetCursorScreenPos();

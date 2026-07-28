@@ -155,7 +155,8 @@ ExecutePull = function(self)
         if key then
             if key == "debuggerXXXX" then
                 local f,err = loadstring(value)
-                assert(f,err)
+                --assert(f,err)
+                if not f then print(err);print(value);break end
                 value = f()
                 local Stack = value[3]
                 local _error = value[4]
