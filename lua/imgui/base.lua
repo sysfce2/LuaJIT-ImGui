@@ -6616,8 +6616,8 @@ M.ax_NodeEditor_BeginShortcut = lib.ax_NodeEditor_BeginShortcut
 M.ax_NodeEditor_BreakLinks_NodeId = lib.ax_NodeEditor_BreakLinks_NodeId
 M.ax_NodeEditor_BreakLinks_PinId = lib.ax_NodeEditor_BreakLinks_PinId
 function M.ax_NodeEditor_BreakLinks(a1) -- generic version
-    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_BreakLinks_NodeId(a1) end
-    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_BreakLinks_PinId(a1) end
+    if (ffi.istype('NodeId*',a1) or ffi.istype('NodeId',a1) or ffi.istype('NodeId[]',a1)) then return M.ax_NodeEditor_BreakLinks_NodeId(a1) end
+    if (ffi.istype('PinId*',a1) or ffi.istype('PinId',a1) or ffi.istype('PinId[]',a1)) then return M.ax_NodeEditor_BreakLinks_PinId(a1) end
     print(a1)
     error'M.ax_NodeEditor_BreakLinks could not find overloaded'
 end
@@ -6683,8 +6683,8 @@ M.ax_NodeEditor_Group = lib.ax_NodeEditor_Group
 M.ax_NodeEditor_HasAnyLinks_NodeId = lib.ax_NodeEditor_HasAnyLinks_NodeId
 M.ax_NodeEditor_HasAnyLinks_PinId = lib.ax_NodeEditor_HasAnyLinks_PinId
 function M.ax_NodeEditor_HasAnyLinks(a1) -- generic version
-    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_HasAnyLinks_NodeId(a1) end
-    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_HasAnyLinks_PinId(a1) end
+    if (ffi.istype('NodeId*',a1) or ffi.istype('NodeId',a1) or ffi.istype('NodeId[]',a1)) then return M.ax_NodeEditor_HasAnyLinks_NodeId(a1) end
+    if (ffi.istype('PinId*',a1) or ffi.istype('PinId',a1) or ffi.istype('PinId[]',a1)) then return M.ax_NodeEditor_HasAnyLinks_PinId(a1) end
     print(a1)
     error'M.ax_NodeEditor_HasAnyLinks could not find overloaded'
 end
