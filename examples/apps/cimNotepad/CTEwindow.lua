@@ -74,21 +74,23 @@ end
 -- should be global options?
 local function renderMenuOptions(self)
         local editor = self.editor
-        if (ig.BeginMenu("Options"))  then 
-            if (ig.BeginMenu("Tab Size"))  then 
-                if (ig.MenuItem("1"))  then  editor:SetTabSize(1);  end 
-                if (ig.MenuItem("2"))  then  editor:SetTabSize(2);  end 
-                if (ig.MenuItem("4"))  then  editor:SetTabSize(4);  end 
-                if (ig.MenuItem("8"))  then  editor:SetTabSize(8);  end 
+        if (ig.BeginMenu("Options"))  then
+            if (ig.BeginMenu("Tab Size"))  then
+                local tsiz = editor:GetTabSize()
+                if (ig.MenuItem("1",nil,tsiz == 1))  then  editor:SetTabSize(1);  end 
+                if (ig.MenuItem("2",nil,tsiz == 2))  then  editor:SetTabSize(2);  end 
+                if (ig.MenuItem("4",nil,tsiz == 4))  then  editor:SetTabSize(4);  end 
+                if (ig.MenuItem("8",nil,tsiz == 8))  then  editor:SetTabSize(8);  end 
                 ig.EndMenu();
              end 
 
             if (ig.BeginMenu("Line Spacing"))  then 
-                if (ig.MenuItem("1.0"))  then  editor:SetLineSpacing(1.0);  end 
-                if (ig.MenuItem("1.25"))  then  editor:SetLineSpacing(1.25);  end 
-                if (ig.MenuItem("1.5"))  then  editor:SetLineSpacing(1.5);  end 
-                if (ig.MenuItem("1.75"))  then  editor:SetLineSpacing(1.75);  end 
-                if (ig.MenuItem("2.0"))  then  editor:SetLineSpacing(2.0);  end 
+                local lspc = editor:GetLineSpacing()
+                if (ig.MenuItem("1.00", nil, lspc == 1))  then  editor:SetLineSpacing(1.0);  end 
+                if (ig.MenuItem("1.25", nil, lspc == 1.25))  then  editor:SetLineSpacing(1.25);  end 
+                if (ig.MenuItem("1.50", nil, lspc == 1.5))  then  editor:SetLineSpacing(1.5);  end 
+                if (ig.MenuItem("1.75", nil, lspc == 1.75))  then  editor:SetLineSpacing(1.75);  end 
+                if (ig.MenuItem("2.00", nil, lspc == 2))  then  editor:SetLineSpacing(2.0);  end 
                 ig.EndMenu();
              end 
 
@@ -272,7 +274,7 @@ local function renderMenuBar(self)
                 --ig.MenuItem("Show Debug Information", nullptr, &showDebugInformation);
                 if (ig.MenuItem("iterate")) then
                 --ig.lib.IterateIdentifiers(editor,it_cb)
-					editor:IterateIdentifiers(it_cb)
+                    editor:IterateIdentifiers(it_cb)
                 end
                 ig.EndMenu();
             end
@@ -326,13 +328,13 @@ local function CTEwindow(file_name, args)
     if not args.is_new then
         local file,err = io.open(file_name,"r")
         --assert(file,err)
-		if not file then
-			print(err)
-			args.is_new = true
-		else
-			strtext = file:read"*a"
-			file:close()
-		end
+        if not file then
+            print(err)
+            args.is_new = true
+        else
+            strtext = file:read"*a"
+            file:close()
+        end
     end
 
     ext = file_name:match("[^%.]+$")
@@ -517,18 +519,18 @@ end)
         --print("get color",col.name)
         --local a = ig.lib.Palette_const_get(lpal, col.calc_value)
         local a = ig.lib.Palette_get(ffi.cast("Palette*",lpal), i)
-		-- local imcolor = ig.lib.ImColor_ImColor_U32(a);
-		-- imcolor.Value.w = 1
-		-- a = ig.GetColorU32(imcolor.Value)
+        -- local imcolor = ig.lib.ImColor_ImColor_U32(a);
+        -- imcolor.Value.w = 1
+        -- a = ig.GetColorU32(imcolor.Value)
         --print("value",a)
         ig.lib.Palette_set(W.custom_palette, a, i)
         end
     end
-	--ig.lib.Palette_set(W.custom_palette,ig.U32(1,0,0,1),ig.lib.knownIdentifier)
+    --ig.lib.Palette_set(W.custom_palette,ig.U32(1,0,0,1),ig.lib.knownIdentifier)
     --ig.lib.Palette_set(W.custom_palette,ig.U32(0,0.5,0.8,1),ig.lib.identifier)
     ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
     ig.lib.Palette_set(W.custom_palette,ig.U32(0.5,0.5,0.5,1),ig.lib.string)
-	--set palette
+    --set palette
     W.editor:SetPalette(ig.TextEditor_GetDarkPalette())
     W.diff:SetPalette(ig.TextEditor_GetDarkPalette())
     ig.StyleColorsDark()
