@@ -280,6 +280,9 @@ local function renderMenuBar(self)
             end
             ig.EndMenuBar();
         end
+        if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_L)) then
+            editor:ToggleComments()
+        end
 end
 
 local function Render(self)

@@ -258,6 +258,8 @@ local function renderMenuExecute(self, curdoc)
     local function is_running()
         return self.runningThread and true --or false
     end
+    
+    if (ig.BeginMenuBar()) then
     if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread ))  then 
             --print(deb_wait, self.runningThread,do_debug[0], deb_wait and self.runningThread and (do_debug[0] or false))
             if (ig.MenuItem("Execute", "F6", nil, not is_running()))  then
@@ -304,6 +306,8 @@ local function renderMenuExecute(self, curdoc)
             end
         ig.EndMenu();
     end 
+        ig.EndMenuBar()
+    end
     if ig.Shortcut(ig.lib.ImGuiKey_F6) then
         if not is_running() then
             MenuExecute()

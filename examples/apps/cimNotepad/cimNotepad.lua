@@ -249,7 +249,8 @@ local function renderMenuDocs()
             end
             ig.Separator()
             for i,doc in ipairs(opendocs) do
-                if ig.MenuItem(doc.shrt_name, nil, i==curr_opendoc) then
+                local dirty = doc.editor:CanUndo() and "*" or ""
+                if ig.MenuItem(doc.shrt_name..dirty, nil, i==curr_opendoc) then
                     curr_opendoc = i
                     set_tab = i
                 end
@@ -498,7 +499,16 @@ function win:draw(ig)
     if (ig.BeginTabBar("##Tabs", TRO.flag())) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
+            local dopop = false
+            if v.editor:CanUndo() then 
+                local col =  ig.U32(0.6,0,0,0.8)
+                ig.PushStyleColor(ig.lib.ImGuiCol_TabHovered, ig.U32(0.6,0,0,1));
+                ig.PushStyleColor(ig.lib.ImGuiCol_Tab, col);
+                ig.PushStyleColor(ig.lib.ImGuiCol_TabSelected, ig.U32(0.6,0,0,0.9));
+                dopop = true 
+            end
             local opentab = ig.BeginTabItem(v.shrt_name.."##"..i, opened,(i==set_tab) and ig.lib.ImGuiTabItemFlags_SetSelected or 0)
+            if dopop then ig.PopStyleColor(3) end
             if ig.IsItemHovered() then 
                 ig.SetTooltip(v.file_name) 
                 if ig.IsMouseClicked(0) then 
@@ -546,8 +556,8 @@ function win:draw(ig)
         CloseEditor(close_doc)
     end
     
+    Exec.renderMenuExecute(this, curr_opendoc)
     if (ig.BeginMenuBar()) then
-        Exec.renderMenuExecute(this, curr_opendoc)
         renderMenuDocs()
         if ig.BeginMenu("Help") then
             if (ig.MenuItem("Show")) then
