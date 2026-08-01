@@ -14,15 +14,21 @@ local pathut = require"imgui.libs.path"
 function loader(ig)
     -----------------------YesNo dialog ---------------
 local gui = {pathut = pathut}
-function gui.YesNo(msg)
+function gui.YesNo(msg,args)
+    args = args or {}
+    args.id = args.id or "yesno"
     local D = {}
     function D.open() 
-        ig.OpenPopup("yesno") 
+        local ret = ig.OpenPopup(args.id) 
+        D.openret = ret
+        --print(args.id,"YesNO.open ret",ret)
     end
-    function D.draw(doit)
+    function D.draw(doit, msg2)
+        --if D.openret~=nil then print(args.id,"draw",D.openret) end
+        --if ig.IsPopupOpen(args.id) then print(args.id,"opened") end
         local resp = doit
-        if ig.BeginPopupModal("yesno",nil,ig.lib.ImGuiWindowFlags_AlwaysAutoResize) then
-            ig.Text(msg)
+        if ig.BeginPopupModal(args.id,nil,ig.lib.ImGuiWindowFlags_AlwaysAutoResize) then
+            ig.Text(msg2 or msg)
             if ig.Button("yes") then
                 resp = true
                 ig.CloseCurrentPopup(); 

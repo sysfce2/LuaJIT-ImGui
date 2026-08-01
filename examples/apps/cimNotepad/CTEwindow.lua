@@ -58,7 +58,7 @@ local function renderStatusBar(self)
         ig.Text("%6d/%-6d %6d lines  | %s |", toint(mLine + 1), toint(mColumn + 1), toint(editor:GetLineCount()),
         editor:IsOverwriteEnabled() and "Ovr" or "Ins")
         ig.SameLine()
-        local dirty = editor:CanUndo()
+        local dirty = self:is_dirty() --editor:CanUndo()
         local tcolor = dirty and ig.ImVec4(1,0,0,1) or ig.ImVec4(1,1,1,1)
         ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.shrt_name)
         ig.SameLine()
@@ -306,6 +306,7 @@ local function Render(self)
     
     
 end
+local lfs = require"lfs_ffi"
 local function Save(self,fname)
     local editor = self.editor
     
@@ -322,12 +323,31 @@ local function Save(self,fname)
             --print"fname == self.file_name"
             editor:SetText(str)
         end
+		self.modification = lfs.attributes(fname,"modification")
+		self.dirty = false
         self.is_new = nil
     end
 end
+
+local function ReLoad(self, doit)
+	if doit then
+		local file,err = io.open(self.file_name,"r")
+		assert(file,err)
+		local strtext = file:read"*a"
+		file:close()
+		self.originalText = strtext
+		self.editor:SetText(strtext)
+		self.dirty = false
+	else
+		self.dirty = true
+	end
+	self.modification = lfs.attributes(self.file_name,"modification")
+end
+
 local function CTEwindow(file_name, args)
     local strtext = ""
     local ext shrt_name = "" , ""
+	local modification
     if not args.is_new then
         local file,err = io.open(file_name,"r")
         --assert(file,err)
@@ -337,6 +357,10 @@ local function CTEwindow(file_name, args)
         else
             strtext = file:read"*a"
             file:close()
+			modification = lfs.attributes(file_name,"modification")
+			--print(file_name)
+			--print(os.time(),modification)
+			--for k,v in ipairs({"change","access","modification"}) do print(v,at[v]) end
         end
     end
 
@@ -345,9 +369,10 @@ local function CTEwindow(file_name, args)
     shrt_name = shrt_name.."."..ext
 
 
-    local W = {file_name = file_name or "", shrt_name = shrt_name or "", is_new = args.is_new}
+    local W = {file_name = file_name or "", shrt_name = shrt_name or "", is_new = args.is_new, modification = modification}
     local editor = ig.TextEditor()
-    --W.setStack = args.setStack
+	W.is_dirty = function(self) return self.dirty or self.editor:CanUndo() end
+    W.ReLoad = ReLoad
     W.Log = args.Log
     W.editor = editor
     --editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)

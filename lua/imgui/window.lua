@@ -81,12 +81,11 @@ local function startGLFW(W, postf)
         window:swapBuffers()
         --vsync protects GPU sleep protects CPU
         --uses Sleep, sdl.Delay is much precise
-        if not W.args.dont_sleep then ig.lib.ImGui_ImplGlfw_Sleep(10); end
+        if not W.args.dont_sleep then ig.lib.ImGui_ImplGlfw_Sleep(W.args.sleep); end
         ::continue::
     end
     if postf and not do_quit then 
         local conf,fun = postf() 
-        if conf == "nil" then conf = true end
         if conf == false then
             confirm_quit = fun
             window:setShouldClose(false)
@@ -100,6 +99,8 @@ end
 
 function M:GLFW(w,h,title,args)
     args = args or {}
+    args.fps = args.fps or 144
+    args.sleep = 1000/args.fps 
     local W = {args = args}
     local ffi = require "ffi"
     W.lj_glfw = require"glfw"
@@ -218,14 +219,13 @@ local function startSDL(W, postf)
 
         sdl.gL_SwapWindow(window);
         --vsync protects GPU sleep protects CPU
-        if not W.args.dont_sleep then sdl.Delay(10); end
+        if not W.args.dont_sleep then sdl.Delay(W.args.sleep); end
         ::continue::
     end
 
     -- Cleanup
     if postf and not do_quit then 
         local conf,fun = postf() 
-        if conf == "nil" then conf = true end
         if conf == false then
             confirm_quit = fun
             done = false
@@ -240,6 +240,8 @@ local function startSDL(W, postf)
 end
 function M:SDL(w,h,title,args)
     args = args or {}
+    args.fps = args.fps or 144
+    args.sleep = 1000/args.fps 
     local W = {args = args}
     local ffi = require "ffi"
     W.sdl = require"sdl2_ffi"
@@ -377,14 +379,13 @@ local function startSDL3(W, postf)
 
         sdl.gL_SwapWindow(window);
         --vsync protects GPU sleep protects CPU
-        if not W.args.dont_sleep then sdl.Delay(10); end
+        if not W.args.dont_sleep then sdl.Delay(W.args.sleep); end
         ::continue::
     end
 
     -- Cleanup
     if postf and not do_quit then 
         local conf,fun = postf() 
-        if conf == "nil" then conf = true end
         if conf == false then
             confirm_quit = fun
             done = false
@@ -400,6 +401,8 @@ end
 function M:SDL3(w,h,title,args)
 
     args = args or {}
+    args.fps = args.fps or 144
+    args.sleep = 1000/args.fps 
     local W = {args = args}
     local ffi = require "ffi"
     W.sdl = require"sdl3_ffi"

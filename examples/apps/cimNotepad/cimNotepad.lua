@@ -31,9 +31,9 @@ assert(sing, err)
 sing:close()
 ------------------------------------------
 local igwin = require"imgui.window"
---local win = igwin:SDL(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
-local win = igwin:SDL3(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
---local win = igwin:GLFW(1000,600, "cimNotepad",{vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:SDL(1000,600, "cimNotepad",{fps=10,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:SDL3(1000,600, "cimNotepad",{fps=30,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:GLFW(1000,600, "cimNotepad",{fps=10,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 
 
@@ -201,15 +201,7 @@ local function renderStackVars()
     ig.End()
 end
 
-local confirm_close = gui.YesNo("There are unsaved changes. Do you still want to close?")
-local function CheckCloseEditor(id)
-    local doc = opendocs[id]
-    if doc.editor:CanUndo() then
-        confirm_close.open()
-        return false
-    end
-    return true
-end
+
 
 
 local fb = gui.FileBrowser(nil,{key="loader",pattern=nil},
@@ -221,6 +213,7 @@ local TRO
 local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
     function(fname)
         local doc = opendocs[curr_opendoc]
+		-- save as
         if doc.file_name ~= fname then
             opendocfnames[doc.file_name] = nil
             opendocfnames[fname] = doc
@@ -249,7 +242,7 @@ local function renderMenuDocs()
             end
             ig.Separator()
             for i,doc in ipairs(opendocs) do
-                local dirty = doc.editor:CanUndo() and "*" or ""
+                local dirty = doc:is_dirty() and "*" or ""
                 if ig.MenuItem(doc.shrt_name..dirty, nil, i==curr_opendoc) then
                     curr_opendoc = i
                     set_tab = i
@@ -374,6 +367,82 @@ local function CloseEditor(id)
     opendocfnames[doc.file_name] = nil
 end
 
+local confirm_close_app = gui.YesNo("There are unsaved changes. Do you still want to close?",{id = "closeapp"})
+local confirm_close_file = gui.YesNo("The file has unsaved changes. Do you still want to close?", {id = "closefile"})
+
+local doc_check_close
+local doc_to_close
+local function CheckCloseEditor(id, dodel)
+	if dodel then
+		doc_to_close = id
+		local doc = opendocs[id]
+		if doc:is_dirty() then
+			confirm_close_file.open()
+			doc_check_close = doc
+		else
+			doc_check_close = nil
+		end
+	else
+		if doc_check_close then
+			local conf = confirm_close_file.draw(nil, doc_check_close.shrt_name.." has unsaved changes.\nDo you still want to close?")
+			-- conf == nil do nothing
+			if conf==true then
+				doc_check_close = nil
+				doc_to_close = nil
+				CloseEditor(id)
+			elseif conf == false then
+				curr_opendoc = doc_to_close
+                set_tab = doc_to_close
+				doc_check_close = nil
+				doc_to_close = nil
+			end
+		elseif doc_to_close then
+			doc_to_close = nil
+			CloseEditor(id)
+		end
+	end
+end
+
+
+local lfs = require"lfs_ffi"
+local counterCheck = 0
+local checking
+local load_modification = gui.YesNo("Another program modified"..". Do you want to reload?",{id="modYesNo"})
+local function checkModification()
+	counterCheck = counterCheck + 1
+	if counterCheck == win.args.fps then
+		for i,doc in ipairs(opendocs) do
+			if not doc.is_new then
+				local modification = lfs.attributes(doc.file_name,"modification")
+				if doc.modification < modification then
+					--print(doc.file_name,"modificated")
+					load_modification.open()
+					checking = doc
+					goto draw
+				end
+			end
+		end
+		counterCheck = 0
+	end
+	if not checking then return end
+	::draw::
+	local doit = load_modification.draw(nil,"Another program modified "..checking.shrt_name..".\nDo you want to reload?")
+	if checking then
+		--when doit==nil nothing happens
+		if doit then
+			--print"load file"
+			checking:ReLoad(true)
+			checking = nil
+			counterCheck = 0
+		elseif doit == false then
+			--print"dont load"
+			checking:ReLoad(false)
+			checking = nil
+			counterCheck = 0
+		end
+	end
+end
+
 local serializer = require"imgui.libs.serializer"
 local function PersitenceSave()
     local persist = {curr_opendoc = curr_opendoc}
@@ -447,8 +516,11 @@ local function ContractLog(vSize, ratio)
     ExpandContract_used = true
 end
 
+
 function win:draw(ig)
     --ig.ShowDemoWindow()
+	checkModification()
+
     ----check execute
     ExecutePull(this)
     
@@ -494,13 +566,14 @@ function win:draw(ig)
     ig.Begin("Documents",nil, host_window_flags)
         renderMenuFile(win)
 -- for debug
--- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc).." "..opendocs[curr_opendoc].file_name)
+-- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc).." "..(opendocs[curr_opendoc] and opendocs[curr_opendoc].file_name or ""))
+-- ig.TextUnformatted("close_doc: "..tostring(close_doc).." "..(opendocs[close_doc] and opendocs[close_doc].file_name or ""))
 
     if (ig.BeginTabBar("##Tabs", TRO.flag())) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
             local dopop = false
-            if v.editor:CanUndo() then 
+            if v:is_dirty() then 
                 local col =  ig.U32(0.6,0,0,0.8)
                 ig.PushStyleColor(ig.lib.ImGuiCol_TabHovered, ig.U32(0.6,0,0,1));
                 ig.PushStyleColor(ig.lib.ImGuiCol_Tab, col);
@@ -548,13 +621,8 @@ function win:draw(ig)
         TRO.Update()
         ig.EndTabBar();
     end
-    local doit = false
-    if doclosefile then 
-        doit = CheckCloseEditor(close_doc)
-    end
-    if confirm_close.draw(doit) then
-        CloseEditor(close_doc)
-    end
+	
+	CheckCloseEditor(close_doc, doclosefile)
     
     Exec.renderMenuExecute(this, curr_opendoc)
     if (ig.BeginMenuBar()) then
@@ -621,9 +689,9 @@ function win:draw(ig)
 end
 
 local function check_quit()
-    local needs_confirm
+    local needs_confirm = false
     for i, doc in ipairs(opendocs) do
-        if doc.editor:CanUndo() then
+        if doc:is_dirty() then
             needs_confirm = true
             break
         end
@@ -632,10 +700,10 @@ local function check_quit()
     local function checker()
 
         if needs_confirm then
-            confirm_close.open()
+            confirm_close_app.open()
         end
 
-        local is_confirmed = confirm_close.draw(nil)
+        local is_confirmed = confirm_close_app.draw(nil)
         if is_confirmed then
             -- doclose
             return true
