@@ -23,7 +23,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
     local pathut = require"imgui.libs.path"
     local Thread = require"lj-async.thread"
     local Kmaker = require"lj-async.keeper"
-    FINALIZER = function(ok,val) print("---i am executer finalizer",ok,val) end
+    --FINALIZER = function(ok,val) print("---i am executer finalizer",ok,val) end
     K = Kmaker.KeeperCast(K)
     debuggerlinda = Kmaker.KeeperCast(debuggerlinda)
     local args = {...}
@@ -97,7 +97,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         --ret = err 
         end
 
-        print("executer finishig", ret)
+        --print("executer finishig", ret)
         if ret then return Thread._return(tonumber(ret)) end
     end
 end
@@ -138,13 +138,13 @@ end
 Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel)
     self.Log:Clear()
     self.setStack() -- clear Stack
-    --print("Execute",executable, cmd, inprocess)
+
     local func = os_execute_async
     if coop_cancel then
         func = {os_execute_async}
     end
     local thread = Thread(func, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel)
-    print("Execute thread", thread.thread)
+
     return thread
 end
 

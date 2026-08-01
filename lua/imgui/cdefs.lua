@@ -7716,6 +7716,7 @@ struct Glyph
   ImWchar codepoint;
   Color color;
   BreakOption breakOption;
+  size_t squiggle;
 };
 typedef struct Glyph Glyph;
 struct CodePoint
@@ -7891,6 +7892,11 @@ void TextEditor_FindAll(TextEditor* self);
 void TextEditor_AddMarker(TextEditor* self,size_t line,ImU32 lineNumberColor,ImU32 textColor,const char* lineNumberTooltip,const char* textTooltip);
 void TextEditor_ClearMarkers(TextEditor* self);
 _Bool                TextEditor_HasMarkers(TextEditor* self);
+void TextEditor_AddSquiggle(TextEditor* self,DocPos_c start,DocPos_c end,size_t type,ImU32 color,const char* tooltip);
+void TextEditor_ClearSquiggles_DocPos(TextEditor* self,DocPos_c start,DocPos_c end);
+void TextEditor_ClearSquiggles_size_t(TextEditor* self,size_t type);
+void TextEditor_ClearSquiggles_Nil(TextEditor* self);
+_Bool                TextEditor_HasSquiggles(TextEditor* self);
 void TextEditor_SetChangeCallback(TextEditor* self,void(*cb)(),int delay);
 void TextEditor_SetInsertor(TextEditor* self,void*(*cb)(size_t));
 void TextEditor_SetDeletor(TextEditor* self,void(*cb)(size_t,void*));

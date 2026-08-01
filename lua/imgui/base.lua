@@ -2872,6 +2872,7 @@ local TextEditor= {}
 TextEditor.__index = TextEditor
 TextEditor.AddMarker = lib.TextEditor_AddMarker
 TextEditor.AddNextOccurrence = lib.TextEditor_AddNextOccurrence
+TextEditor.AddSquiggle = lib.TextEditor_AddSquiggle
 TextEditor.AllCursorsHaveSelection = lib.TextEditor_AllCursorsHaveSelection
 TextEditor.AnyCursorHasSelection = lib.TextEditor_AnyCursorHasSelection
 TextEditor.CanRedo = lib.TextEditor_CanRedo
@@ -2880,6 +2881,16 @@ TextEditor.ClearCursors = lib.TextEditor_ClearCursors
 TextEditor.ClearLineDecorator = lib.TextEditor_ClearLineDecorator
 TextEditor.ClearLineNumberContextMenuCallback = lib.TextEditor_ClearLineNumberContextMenuCallback
 TextEditor.ClearMarkers = lib.TextEditor_ClearMarkers
+TextEditor.ClearSquiggles_DocPos = lib.TextEditor_ClearSquiggles_DocPos
+TextEditor.ClearSquiggles_size_t = lib.TextEditor_ClearSquiggles_size_t
+TextEditor.ClearSquiggles_Nil = lib.TextEditor_ClearSquiggles_Nil
+function TextEditor:ClearSquiggles(a2,a3) -- generic version
+    if ffi.istype('DocPos',a2) then return self:ClearSquiggles_DocPos(a2,a3) end
+    if (ffi.istype('uint32_t',a2) or type(a2)=='number') then return self:ClearSquiggles_size_t(a2) end
+    if a2==nil then return self:ClearSquiggles_Nil() end
+    print(a2,a3)
+    error'TextEditor:ClearSquiggles could not find overloaded'
+end
 TextEditor.ClearText = lib.TextEditor_ClearText
 TextEditor.ClearTextContextMenuCallback = lib.TextEditor_ClearTextContextMenuCallback
 TextEditor.ClearTextHoverCallback = lib.TextEditor_ClearTextHoverCallback
@@ -2941,6 +2952,7 @@ TextEditor.HasLanguage = lib.TextEditor_HasLanguage
 TextEditor.HasLineDecorator = lib.TextEditor_HasLineDecorator
 TextEditor.HasLineNumberContextMenuCallback = lib.TextEditor_HasLineNumberContextMenuCallback
 TextEditor.HasMarkers = lib.TextEditor_HasMarkers
+TextEditor.HasSquiggles = lib.TextEditor_HasSquiggles
 TextEditor.HasTextContextMenuCallback = lib.TextEditor_HasTextContextMenuCallback
 TextEditor.HasTextHoverCallback = lib.TextEditor_HasTextHoverCallback
 TextEditor.IndentLines = lib.TextEditor_IndentLines

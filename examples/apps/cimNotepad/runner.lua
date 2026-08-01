@@ -74,7 +74,7 @@ local function load_script(script)
             return fs
         end
 end
-FINALIZER = function(ok,val) print("---i am runner finalizer",ok,val) end
+--FINALIZER = function(ok,val) print("---i am runner finalizer",ok,val) end
 
 --runs from f in loadfile
 if not arg then
@@ -84,7 +84,7 @@ if not arg then
         local old_print2 = print
         _G.old_print2 = old_print2
         print = function(...)
-            old_print2(...)
+            --old_print2(...)
             local args = {}
             for i=1,select("#",...) do
                 args[i] = tostring(select(i,...))

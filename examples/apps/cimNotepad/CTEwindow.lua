@@ -210,7 +210,7 @@ local function renderMenuBar(self)
                 if (ig.MenuItem("Deindent Line(s)", "Ctrl-[", nullptr, not editor:IsEmpty()))  then  editor:DeindentLines();  end 
                 if (ig.MenuItem("Move Line(s) Up", nullptr, nullptr, not editor:IsEmpty()))  then  editor:MoveUpLines();  end 
                 if (ig.MenuItem("Move Line(s) Down", nullptr, nullptr, not editor:IsEmpty()))  then  editor:MoveDownLines();  end 
-                if (ig.MenuItem("Toggle Comments",  "Ctrl-/", nullptr, editor:HasLanguage()))  then  editor:ToggleComments();  end 
+                if (ig.MenuItem("Toggle Comments",  "Ctrl-L", nullptr, editor:HasLanguage()))  then  editor:ToggleComments();  end 
     
                 ig.Separator();
                 if (ig.MenuItem("To Uppercase", nullptr, nullptr, editor:AnyCursorHasSelection()))  then  editor:SelectionToUpperCase();  end 
@@ -279,9 +279,6 @@ local function renderMenuBar(self)
                 ig.EndMenu();
             end
             ig.EndMenuBar();
-        end
-        if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_L)) then
-            editor:ToggleComments()
         end
 end
 
