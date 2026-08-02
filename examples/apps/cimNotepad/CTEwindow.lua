@@ -157,7 +157,17 @@ local function IM_COL32(a,b,c,d)
     return ig.U32(a/255,b/255,c/255,d/255)
 end
 
+local function toggleNavigationMode(self) 
+    local iog = ig.GetIO();
 
+    if bit.band(iog.ConfigFlags, ig.lib.ImGuiConfigFlags_NavEnableKeyboard)~=0 then
+        iog.ConfigFlags = bit.band(iog.ConfigFlags, bit.bnot(ig.lib.ImGuiConfigFlags_NavEnableKeyboard), bit.bnot( ig.lib.ImGuiConfigFlags_NavEnableGamepad))
+        self.notifications:Add(ig.lib.info, "Keyboard/gamepad navigation mode deactivated");
+    else
+        iog.ConfigFlags = bit.bor(iog.ConfigFlags, ig.lib.ImGuiConfigFlags_NavEnableKeyboard, ig.lib.ImGuiConfigFlags_NavEnableGamepad)
+        self.notifications:Add(ig.lib.info, "Keyboard/gamepad navigation mode activated");
+    end
+end
 local function renderMenuBar(self)
         local editor = self.editor
         if (ig.BeginMenuBar()) then
@@ -271,6 +281,8 @@ local function renderMenuBar(self)
                 -- if (ig.MenuItem("Show Line Decorator", nullptr, &showLineDecorator)) { toggleLineDecorator(); }
                 -- if (ig.MenuItem("Show Context Menus", nullptr, &showContextMenus)) { toggleContextMenus(); }
                 ig.Separator();
+                local navigationMode = ffi.new("bool[?]",1,bit.band(ig.GetIO().ConfigFlags, ig.lib.ImGuiConfigFlags_NavEnableKeyboard))
+                if ig.MenuItem("Keyboard/Gamepad Navigation Mode", "Ctrl-Alt-N", navigationMode) then toggleNavigationMode(self); end
                 --ig.MenuItem("Show Debug Information", nullptr, &showDebugInformation);
                 if (ig.MenuItem("iterate")) then
                 --ig.lib.IterateIdentifiers(editor,it_cb)
@@ -280,6 +292,8 @@ local function renderMenuBar(self)
             end
             ig.EndMenuBar();
         end
+        if (ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiMod_Alt, ig.lib.ImGuiKey_N), ig.lib.ImGuiInputFlags_RouteAlways)) then toggleNavigationMode(self); end
+        if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_I)) then showDiff(self) end
 end
 
 local function Render(self)
@@ -320,31 +334,31 @@ local function Save(self,fname)
             --print"fname == self.file_name"
             editor:SetText(str)
         end
-		self.modification = lfs.attributes(fname,"modification")
-		self.dirty = false
+        self.modification = lfs.attributes(fname,"modification")
+        self.dirty = false
         self.is_new = nil
     end
 end
 
 local function ReLoad(self, doit)
-	if doit then
-		local file,err = io.open(self.file_name,"r")
-		assert(file,err)
-		local strtext = file:read"*a"
-		file:close()
-		self.originalText = strtext
-		self.editor:SetText(strtext)
-		self.dirty = false
-	else
-		self.dirty = true
-	end
-	self.modification = lfs.attributes(self.file_name,"modification")
+    if doit then
+        local file,err = io.open(self.file_name,"r")
+        assert(file,err)
+        local strtext = file:read"*a"
+        file:close()
+        self.originalText = strtext
+        self.editor:SetText(strtext)
+        self.dirty = false
+    else
+        self.dirty = true
+    end
+    self.modification = lfs.attributes(self.file_name,"modification")
 end
 
 local function CTEwindow(file_name, args)
     local strtext = ""
     local ext shrt_name = "" , ""
-	local modification
+    local modification
     if not args.is_new then
         local file,err = io.open(file_name,"r")
         --assert(file,err)
@@ -354,10 +368,10 @@ local function CTEwindow(file_name, args)
         else
             strtext = file:read"*a"
             file:close()
-			modification = lfs.attributes(file_name,"modification")
-			--print(file_name)
-			--print(os.time(),modification)
-			--for k,v in ipairs({"change","access","modification"}) do print(v,at[v]) end
+            modification = lfs.attributes(file_name,"modification")
+            --print(file_name)
+            --print(os.time(),modification)
+            --for k,v in ipairs({"change","access","modification"}) do print(v,at[v]) end
         end
     end
 
@@ -368,7 +382,7 @@ local function CTEwindow(file_name, args)
 
     local W = {file_name = file_name or "", shrt_name = shrt_name or "", is_new = args.is_new, modification = modification}
     local editor = ig.TextEditor()
-	W.is_dirty = function(self) return self.dirty or self.editor:CanUndo() end
+    W.is_dirty = function(self) return self.dirty or self.editor:CanUndo() end
     W.ReLoad = ReLoad
     W.Log = args.Log
     W.editor = editor

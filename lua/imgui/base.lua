@@ -2846,7 +2846,7 @@ TextDiff.IsWordWrapEnabled = lib.TextDiff_IsWordWrapEnabled
 function TextDiff:Render(title,size,childFlags,windowFlags)
     childFlags = childFlags or 0
     size = size or ImVec2()
-    windowFlags = windowFlags or 65540
+    windowFlags = windowFlags or 4
     return lib.TextDiff_Render(self,title,size,childFlags,windowFlags)
 end
 TextDiff.SetColors = lib.TextDiff_SetColors
@@ -2991,7 +2991,7 @@ TextEditor.Redo = lib.TextEditor_Redo
 function TextEditor:Render(title,size,childFlags,windowFlags)
     childFlags = childFlags or 0
     size = size or ImVec2()
-    windowFlags = windowFlags or 67588
+    windowFlags = windowFlags or 2052
     return lib.TextEditor_Render(self,title,size,childFlags,windowFlags)
 end
 TextEditor.ReplaceSectionText_DocPos = lib.TextEditor_ReplaceSectionText_DocPos

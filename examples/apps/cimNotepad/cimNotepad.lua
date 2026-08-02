@@ -494,7 +494,7 @@ win.ig.GetIO().IniFilename = nil --"cimNotepad.ini"
 local deja = ffi.new("void*[1]")
 local dejasize = win.ig.lib.GetDejavu(deja)
 local has_freetype =  pcall(function() return win.ig.lib.ImGuiFreeType_GetFontLoader end)
-print("deja",dejasize,deja[0])
+--print("deja",dejasize,deja[0])
 local usedeja = ffi.new("bool[?]",1,true)
 local usefreetype = ffi.new("bool[?]",1,has_freetype)
 local monohinting = ffi.new("bool[?]",1,true)
@@ -502,6 +502,8 @@ local monochrome = ffi.new("bool[?]",1,false)
 local function LoadFont()
     --print("Loadfont", usedeja[0],usefreetype[0])
     local ig = win.ig
+    local style = ig.GetStyle();
+    style.FontSizeBase = 15.0;
     local FontsAt = ig.GetIO().Fonts
     FontsAt:Clear()
     local fnt_cfg = ig.ImFontConfig()
@@ -577,7 +579,7 @@ end
 
 
 function win:draw(ig)
-   -- ig.ShowDemoWindow()
+    --ig.ShowDemoWindow()
     checkModification()
 
     ----check execute
