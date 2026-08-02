@@ -213,7 +213,7 @@ local TRO
 local fbs = gui.FileBrowser(nil,{key="saver",check_existence=true},
     function(fname)
         local doc = opendocs[curr_opendoc]
-		-- save as
+        -- save as
         if doc.file_name ~= fname then
             opendocfnames[doc.file_name] = nil
             opendocfnames[fname] = doc
@@ -373,34 +373,34 @@ local confirm_close_file = gui.YesNo("The file has unsaved changes. Do you still
 local doc_check_close
 local doc_to_close
 local function CheckCloseEditor(id, dodel)
-	if dodel then
-		doc_to_close = id
-		local doc = opendocs[id]
-		if doc:is_dirty() then
-			confirm_close_file.open()
-			doc_check_close = doc
-		else
-			doc_check_close = nil
-		end
-	else
-		if doc_check_close then
-			local conf = confirm_close_file.draw(nil, doc_check_close.shrt_name.." has unsaved changes.\nDo you still want to close?")
-			-- conf == nil do nothing
-			if conf==true then
-				doc_check_close = nil
-				doc_to_close = nil
-				CloseEditor(id)
-			elseif conf == false then
-				curr_opendoc = doc_to_close
+    if dodel then
+        doc_to_close = id
+        local doc = opendocs[id]
+        if doc:is_dirty() then
+            confirm_close_file.open()
+            doc_check_close = doc
+        else
+            doc_check_close = nil
+        end
+    else
+        if doc_check_close then
+            local conf = confirm_close_file.draw(nil, doc_check_close.shrt_name.." has unsaved changes.\nDo you still want to close?")
+            -- conf == nil do nothing
+            if conf==true then
+                doc_check_close = nil
+                doc_to_close = nil
+                CloseEditor(id)
+            elseif conf == false then
+                curr_opendoc = doc_to_close
                 set_tab = doc_to_close
-				doc_check_close = nil
-				doc_to_close = nil
-			end
-		elseif doc_to_close then
-			doc_to_close = nil
-			CloseEditor(id)
-		end
-	end
+                doc_check_close = nil
+                doc_to_close = nil
+            end
+        elseif doc_to_close then
+            doc_to_close = nil
+            CloseEditor(id)
+        end
+    end
 end
 
 
@@ -409,38 +409,38 @@ local counterCheck = 0
 local checking
 local load_modification = gui.YesNo("Another program modified"..". Do you want to reload?",{id="modYesNo"})
 local function checkModification()
-	counterCheck = counterCheck + 1
-	if counterCheck == win.args.fps then
-		for i,doc in ipairs(opendocs) do
-			if not doc.is_new then
-				local modification = lfs.attributes(doc.file_name,"modification")
-				if doc.modification < modification then
-					--print(doc.file_name,"modificated")
-					load_modification.open()
-					checking = doc
-					goto draw
-				end
-			end
-		end
-		counterCheck = 0
-	end
-	if not checking then return end
-	::draw::
-	local doit = load_modification.draw(nil,"Another program modified "..checking.shrt_name..".\nDo you want to reload?")
-	if checking then
-		--when doit==nil nothing happens
-		if doit then
-			--print"load file"
-			checking:ReLoad(true)
-			checking = nil
-			counterCheck = 0
-		elseif doit == false then
-			--print"dont load"
-			checking:ReLoad(false)
-			checking = nil
-			counterCheck = 0
-		end
-	end
+    counterCheck = counterCheck + 1
+    if counterCheck == win.args.fps then
+        for i,doc in ipairs(opendocs) do
+            if not doc.is_new then
+                local modification = lfs.attributes(doc.file_name,"modification")
+                if doc.modification < modification then
+                    --print(doc.file_name,"modificated")
+                    load_modification.open()
+                    checking = doc
+                    goto draw
+                end
+            end
+        end
+        counterCheck = 0
+    end
+    if not checking then return end
+    ::draw::
+    local doit = load_modification.draw(nil,"Another program modified "..checking.shrt_name..".\nDo you want to reload?")
+    if checking then
+        --when doit==nil nothing happens
+        if doit then
+            --print"load file"
+            checking:ReLoad(true)
+            checking = nil
+            counterCheck = 0
+        elseif doit == false then
+            --print"dont load"
+            checking:ReLoad(false)
+            checking = nil
+            counterCheck = 0
+        end
+    end
 end
 
 local serializer = require"imgui.libs.serializer"
@@ -489,8 +489,67 @@ local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs,
  
 win.ig.GetIO().IniFilename = nil --"cimNotepad.ini"
 
+-------------------------Fonts
 --use dejavu font
-win.ig.lib.SetDejavu()
+local deja = ffi.new("void*[1]")
+local dejasize = win.ig.lib.GetDejavu(deja)
+local has_freetype =  pcall(function() return win.ig.lib.ImGuiFreeType_GetFontLoader end)
+print("deja",dejasize,deja[0])
+local usedeja = ffi.new("bool[?]",1,true)
+local usefreetype = ffi.new("bool[?]",1,has_freetype)
+local monohinting = ffi.new("bool[?]",1,true)
+local monochrome = ffi.new("bool[?]",1,false)
+local function LoadFont()
+    --print("Loadfont", usedeja[0],usefreetype[0])
+    local ig = win.ig
+    local FontsAt = ig.GetIO().Fonts
+    FontsAt:Clear()
+    local fnt_cfg = ig.ImFontConfig()
+    if usefreetype[0] then
+        fnt_cfg.FontLoaderFlags = bit.bor(fnt_cfg.FontLoaderFlags, monohinting[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0, monochrome[0] and ffi.C.ImGuiFreeTypeLoaderFlags_Monochrome or 0) 
+    end
+    if usedeja[0] then
+        ffi.copy(fnt_cfg.Name, "DejaVu")
+        fnt_cfg.FontDataOwnedByAtlas = false;
+        local theFONT = FontsAt:AddFontFromMemoryCompressedTTF(deja[0], dejasize, 15.0, fnt_cfg);
+        --print("theFont",theFONT)
+    else
+        FontsAt:AddFontDefault(fnt_cfg)
+    end
+    if usefreetype[0] then
+        FontsAt:SetFontLoader(ig.ImGuiFreeType_GetFontLoader())
+    else
+        FontsAt:SetFontLoader(ig.ImFontAtlasGetFontLoaderForStbTruetype())
+    end
+    -- win.preimgui = nil
+end
+local function renderMenuFonts()
+    if (ig.BeginMenuBar()) then
+        if (ig.BeginMenu("Fonts")) then
+            if ig.MenuItem("Dejavu",nil, usedeja) then
+                --win.preimgui = LoadFont
+                LoadFont()
+            end
+            if ig.MenuItem("freetype",nil, usefreetype, has_freetype) then
+                --win.preimgui = LoadFont
+                LoadFont()
+            end
+            ig.Separator()
+            if ig.MenuItem("MonoHinting", nil, monohinting, usefreetype[0]) then
+                LoadFont()
+            end
+            if ig.MenuItem("Monochrome", nil, monochrome, usefreetype[0]) then
+                LoadFont()
+            end
+            ig.EndMenu();
+        end
+        ig.EndMenuBar()
+    end
+end
+LoadFont()
+--win.ig.lib.SetDejavu()
+
+
 -- load persistence
 PersistenceLoad()
 
@@ -518,8 +577,8 @@ end
 
 
 function win:draw(ig)
-    --ig.ShowDemoWindow()
-	checkModification()
+   -- ig.ShowDemoWindow()
+    checkModification()
 
     ----check execute
     ExecutePull(this)
@@ -621,10 +680,11 @@ function win:draw(ig)
         TRO.Update()
         ig.EndTabBar();
     end
-	
-	CheckCloseEditor(close_doc, doclosefile)
+    
+    CheckCloseEditor(close_doc, doclosefile)
     
     Exec.renderMenuExecute(this, curr_opendoc)
+    renderMenuFonts()
     if (ig.BeginMenuBar()) then
         renderMenuDocs()
         if ig.BeginMenu("Help") then
