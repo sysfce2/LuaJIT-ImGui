@@ -18,7 +18,7 @@ end
 local pathut = require"imgui.libs.path"
 local file_path = pathut.file_path()
 
-local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug , coop_cancel, ...)
+local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug , coop_cancel, jit_on, ...)
     --print("00000os_execute_async",executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel)
     local pathut = require"imgui.libs.path"
     local Thread = require"lj-async.thread"
@@ -35,7 +35,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         --------loadstring bad for same process sdl or glfw
         local f,err = loadfile(pathut.chain(file_path,"runner.lua"))--cmd)
         if f then 
-            jit.off()
+            if not jit_on then jit.off() end
             ret = f()(cmd, K, debuggerlinda, breakpoints, do_debug) 
         else 
             K:send("clave","loadfile error:"..tostring(err)) 
@@ -65,7 +65,7 @@ local os_execute_async = function(executable, cmd, inprocess, K, debuggerlinda, 
         end
         
         --local jitstr = coop_cancel and "-j off" or ""
-        local jitstr = "-j off" 
+        local jitstr = jit_on and "" or "-j off" 
         local pcomand = executable.." "..jitstr.." "..pathut.chain(file_path,"runner.lua").." "..cmd
         --print("==========pcomand",pcomand)
         if jit.os == "Windows" then pcomand = [["]]..pcomand..[["]] end
@@ -135,7 +135,7 @@ function deblindaS:send(key, value)
     self.file:flush()
 end
 
-Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel)
+Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel, jit_on)
     self.Log:Clear()
     self.setStack() -- clear Stack
 
@@ -143,7 +143,7 @@ Execute = function(self, cmd, inprocess, breakpoints, do_debug, coop_cancel)
     if coop_cancel then
         func = {os_execute_async}
     end
-    local thread = Thread(func, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel)
+    local thread = Thread(func, nil,executable, cmd, inprocess, K, debuggerlinda, breakpoints, do_debug, coop_cancel, jit_on)
 
     return thread
 end
@@ -235,6 +235,7 @@ local ffi = require"ffi"
 local do_debug = ffi.new("bool[?]",1,true)
 local inprocess = ffi.new("bool[?]",1,true)
 local coop_cancel = ffi.new("bool[?]",1,false)
+local jit_on = ffi.new("bool[?]",1,false)
 
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
@@ -244,13 +245,13 @@ local function renderMenuExecute(self, curdoc)
         deb_wait = false
         if inprocess[0] then
             deblinda = debuggerlinda
-            local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0], coop_cancel[0])
+            local thread = Execute(self, self.file_name, true, self.getBreakPoints(), do_debug[0], coop_cancel[0], jit_on[0])
             self.runningThread = thread
         else
             deblindaS:close()
             deblindaS:init()
             deblinda = deblindaS
-            local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0], coop_cancel[0])
+            local thread = Execute(self, self.file_name, false, self.getBreakPoints(), do_debug[0], coop_cancel[0], jit_on[0])
             self.runningThread = thread
         end
     end
@@ -273,6 +274,9 @@ local function renderMenuExecute(self, curdoc)
             end
             if ig.MenuItem("In process", nil, inprocess , not is_running()) then
                 if not inprocess[0] then coop_cancel[0] = false end
+            end
+            if ig.MenuItem("Jit on", nil, jit_on , not is_running()) then
+
             end
 
             ig.Separator()
