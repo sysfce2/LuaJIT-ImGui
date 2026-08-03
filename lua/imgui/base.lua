@@ -2796,6 +2796,16 @@ function LinkDetachWithModifierClick.__new(ctype)
     return ffi.gc(ptr,lib.LinkDetachWithModifierClick_destroy)
 end
 M.LinkDetachWithModifierClick = ffi.metatype("LinkDetachWithModifierClick",LinkDetachWithModifierClick)
+--------------------------LinkId----------------------------
+local LinkId= {}
+LinkId.__index = LinkId
+LinkId.destroy = lib.LinkId_destroy
+function LinkId.__new(ctype,val)
+    local ptr = lib.ax_NodeEditor_LinkId(val)
+    return ffi.gc(ptr,lib.LinkId_destroy)
+end
+LinkId.value = lib.ax_NodeEditor_LinkId_value
+M.LinkId = ffi.metatype("LinkId",LinkId)
 --------------------------MultipleSelectModifier----------------------------
 local MultipleSelectModifier= {}
 MultipleSelectModifier.__index = MultipleSelectModifier
@@ -2804,6 +2814,16 @@ function MultipleSelectModifier.__new(ctype)
     return ffi.gc(ptr,lib.MultipleSelectModifier_destroy)
 end
 M.MultipleSelectModifier = ffi.metatype("MultipleSelectModifier",MultipleSelectModifier)
+--------------------------NodeId----------------------------
+local NodeId= {}
+NodeId.__index = NodeId
+NodeId.destroy = lib.NodeId_destroy
+function NodeId.__new(ctype,val)
+    local ptr = lib.ax_NodeEditor_NodeId(val)
+    return ffi.gc(ptr,lib.NodeId_destroy)
+end
+NodeId.value = lib.ax_NodeEditor_NodeId_value
+M.NodeId = ffi.metatype("NodeId",NodeId)
 --------------------------Notifications----------------------------
 local Notifications= {}
 Notifications.__index = Notifications
@@ -2820,8 +2840,25 @@ M.Notifications = ffi.metatype("Notifications",Notifications)
 --------------------------Palette----------------------------
 local Palette= {}
 Palette.__index = Palette
+function Palette.__new(ctype)
+    local ptr = lib.Palette_Palette()
+    return ffi.gc(ptr,lib.Palette_destroy)
+end
+Palette.const_get = lib.Palette_const_get
+Palette.destroy = lib.Palette_destroy
 Palette.get = lib.Palette_get
+Palette.set = lib.Palette_set
 M.Palette = ffi.metatype("Palette",Palette)
+--------------------------PinId----------------------------
+local PinId= {}
+PinId.__index = PinId
+PinId.destroy = lib.PinId_destroy
+function PinId.__new(ctype,val)
+    local ptr = lib.ax_NodeEditor_PinId(val)
+    return ffi.gc(ptr,lib.PinId_destroy)
+end
+PinId.value = lib.ax_NodeEditor_PinId_value
+M.PinId = ffi.metatype("PinId",PinId)
 --------------------------Style----------------------------
 local Style= {}
 Style.__index = Style
@@ -2943,6 +2980,9 @@ end
 TextEditor.GetTabSize = lib.TextEditor_GetTabSize
 TextEditor.GetText = lib.TextEditor_GetText
 TextEditor.GetTextLeftMargin = lib.TextEditor_GetTextLeftMargin
+TextEditor.GetText_alloc = lib.TextEditor_GetText_alloc
+TextEditor.GetText_free = lib.TextEditor_GetText_free
+TextEditor.GetText_static = lib.TextEditor_GetText_static
 TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
 TextEditor.GetUserData = lib.TextEditor_GetUserData
 TextEditor.GetWordAtMousePos = lib.TextEditor_GetWordAtMousePos
@@ -3233,6 +3273,7 @@ function M.imguiGizmo_setSphereColors(a1,a2) -- generic version
 end
 M.imguiGizmo = ffi.metatype("imguiGizmo",imguiGizmo)
 ------------------------------------------------------
+M.GetDejavu = lib.GetDejavu
 M.ImGuiFreeType_DebugEditFontLoaderFlags = lib.ImGuiFreeType_DebugEditFontLoaderFlags
 M.ImGuiFreeType_GetFontLoader = lib.ImGuiFreeType_GetFontLoader
 function M.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)
@@ -6590,6 +6631,7 @@ M.ImPlot_TransformForward_SymLog = lib.ImPlot_TransformForward_SymLog
 M.ImPlot_TransformInverse_Log10 = lib.ImPlot_TransformInverse_Log10
 M.ImPlot_TransformInverse_Logit = lib.ImPlot_TransformInverse_Logit
 M.ImPlot_TransformInverse_SymLog = lib.ImPlot_TransformInverse_SymLog
+M.SetDejavu = lib.SetDejavu
 M.ax_NodeEditor_AcceptCopy = lib.ax_NodeEditor_AcceptCopy
 M.ax_NodeEditor_AcceptCreateNode = lib.ax_NodeEditor_AcceptCreateNode
 M.ax_NodeEditor_AcceptCut = lib.ax_NodeEditor_AcceptCut

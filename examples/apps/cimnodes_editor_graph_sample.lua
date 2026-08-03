@@ -7,38 +7,6 @@ local ffi = require"ffi"
 local serializer = require"imgui.libs.serializer"
 local open_here = require"imgui.libs.path".file_open_here()
 ------------------------------------
-local NodeId= {}
-NodeId.__index = NodeId
-function NodeId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_NodeId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_NodeId_destroy)
-end
-function NodeId:value()
-    return ig.lib.ax_NodeEditor_NodeId_value(self)
-end
-ig.NodeId = ffi.metatype("NodeId",NodeId)
-
-local PinId= {}
-PinId.__index = PinId
-function PinId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_PinId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_PinId_destroy)
-end
-function PinId:value()
-    return ig.lib.ax_NodeEditor_PinId_value(self)
-end
-ig.PinId = ffi.metatype("PinId",PinId)
-
-local LinkId= {}
-LinkId.__index = LinkId
-function LinkId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_LinkId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_LinkId_destroy)
-end
-function LinkId:value()
-    return ig.lib.ax_NodeEditor_LinkId_value(self)
-end
-ig.LinkId = ffi.metatype("LinkId",LinkId)
 
 local function DFS(G,v, editor)
     local is_root =  editor.nodes[v] and editor.nodes[v].is_root

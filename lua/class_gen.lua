@@ -683,7 +683,7 @@ local function class_gen(sources, ft_gen)
 	local skipped = {}
 	for fun,defs in pairs(fundefs) do
 		local stname = defs[1].stname
-		if not defs[1].templated then
+		if not defs[1].templated and not defs[1].isVARG0 then
 			structs[stname] = structs[stname] or {}
 			table.insert(structs[stname],fun)
 		else

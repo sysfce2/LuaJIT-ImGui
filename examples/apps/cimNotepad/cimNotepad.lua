@@ -492,7 +492,7 @@ win.ig.GetIO().IniFilename = nil --"cimNotepad.ini"
 -------------------------Fonts
 --use dejavu font
 local deja = ffi.new("void*[1]")
-local dejasize = win.ig.lib.GetDejavu(deja)
+local dejasize = win.ig.GetDejavu(deja)
 local has_freetype =  pcall(function() return win.ig.lib.ImGuiFreeType_GetFontLoader end)
 --print("deja",dejasize,deja[0])
 local usedeja = ffi.new("bool[?]",1,true)
@@ -549,7 +549,7 @@ local function renderMenuFonts()
     end
 end
 LoadFont()
---win.ig.lib.SetDejavu()
+--win.ig.SetDejavu()
 
 
 -- load persistence

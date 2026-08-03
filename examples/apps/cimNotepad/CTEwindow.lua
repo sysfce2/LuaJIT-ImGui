@@ -550,25 +550,29 @@ end)
         name="count",
         value="22"}}
     --]]
-    W.custom_palette = ig.lib.Palette_Palette()
+    W.custom_palette = ig.Palette()--ig.lib.Palette_Palette()
     local lpal = ig.TextEditor_GetLightPalette()
     --for i,col in ipairs(Colors) do
     for i=0,ig.lib.count-1 do
         if i<23 then
         --print("get color",col.name)
         --local a = ig.lib.Palette_const_get(lpal, col.calc_value)
-        local a = ig.lib.Palette_get(ffi.cast("Palette*",lpal), i)
+        --local a = ig.lib.Palette_get(ffi.cast("Palette*",lpal), i)
+        local a = lpal:const_get(i)
         -- local imcolor = ig.lib.ImColor_ImColor_U32(a);
         -- imcolor.Value.w = 1
         -- a = ig.GetColorU32(imcolor.Value)
         --print("value",a)
-        ig.lib.Palette_set(W.custom_palette, a, i)
+        --ig.lib.Palette_set(W.custom_palette, a, i)
+        W.custom_palette:set(a, i)
         end
     end
     --ig.lib.Palette_set(W.custom_palette,ig.U32(1,0,0,1),ig.lib.knownIdentifier)
     --ig.lib.Palette_set(W.custom_palette,ig.U32(0,0.5,0.8,1),ig.lib.identifier)
-    ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
-    ig.lib.Palette_set(W.custom_palette,ig.U32(0.5,0.5,0.5,1),ig.lib.string)
+    --ig.lib.Palette_set(W.custom_palette,ig.U32(0,0,1,1),ig.lib.keyword)
+    W.custom_palette:set(ig.U32(0,0,1,1),ig.lib.keyword)
+    --ig.lib.Palette_set(W.custom_palette,ig.U32(0.5,0.5,0.5,1),ig.lib.string)
+    W.custom_palette:set(ig.U32(0.5,0.5,0.5,1),ig.lib.string)
     --set palette
     W.editor:SetPalette(ig.TextEditor_GetDarkPalette())
     W.diff:SetPalette(ig.TextEditor_GetDarkPalette())
