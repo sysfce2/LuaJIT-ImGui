@@ -144,6 +144,10 @@ if(IMGUI_WCHAR32)
 	target_compile_definitions(cimgui_base PUBLIC IMGUI_USE_WCHAR32)
 endif(IMGUI_WCHAR32)
 
+if(CIMGUI_VARGS0)
+	target_compile_definitions(cimgui_base PUBLIC CIMGUI_VARGS0)
+endif(CIMGUI_VARGS0)
+
 target_link_libraries(cimgui_base PUBLIC ${IMGUI_ft_LIBRARIES})
 
 if(UNIX)
