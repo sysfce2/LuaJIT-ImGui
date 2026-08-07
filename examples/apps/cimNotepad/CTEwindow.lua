@@ -303,7 +303,7 @@ local function Render(self)
     renderMenuBar(self)
     renderStatusBar(self)
 
-    editor:Render("texteditor"..self.ID)
+    local ret = editor:Render("texteditor"..self.ID)
 
     -- kepped as example
     -- if ig.IsItemClicked() and ig.IsMouseDoubleClicked(0) then 
@@ -315,7 +315,7 @@ local function Render(self)
         RenderDiff(self)
     end
     
-    
+    return ret
 end
 local lfs = require"lfs_ffi"
 local function Save(self,fname)
@@ -386,8 +386,28 @@ local function CTEwindow(file_name, args)
     W.ReLoad = ReLoad
     W.Log = args.Log
     W.editor = editor
-    --editor:SetLineNumberContextMenuCallback(function(pp) print("cbaaaa",pp.pos.line) end)
-    --editor:SetTextContextMenuCallback(function(pp) print("cbaaaa2",pp.pos.line) end)
+	editor:SetLineFoldingEnabled(true);
+	--test some callbacks
+	--[[
+	editor:SetCustomCaretRenderer(function(caret) 
+		if (caret.caretVisible) then
+			local color = ig.GetColorU32_U32(caret.caretColor, 0.5);
+			caret.drawList:AddRectFilled(caret.glyphPos, caret.glyphPos + caret.glyphSize, color);
+		end
+	end);
+	--]]
+	--[[
+    editor:SetLineNumberContextMenuCallback(function(pp)
+		if (ig.MenuItem("Set Breakpoint"))then print"set" end
+		if (ig.MenuItem("Remove Breakpoint"))then print"remove" end
+	end)
+    editor:SetTextContextMenuCallback(function(data)
+		local pos2 = ig.DocPos(data.pos.line+1 ,data.pos.index)
+		ig.Text("Line %zu, index %zu", data.pos.line + 1, data.pos.index + 1);
+		ig.Text("Line %zu, index %zu", pos2.line + 1, pos2.index + 1);
+		ig.Text(editor:GetSectionText(data.pos,pos2[0]))
+	end)
+	--]]
     W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
     editor:SetLineDecorator(1.0, function(decorator) 

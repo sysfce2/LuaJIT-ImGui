@@ -283,6 +283,8 @@ local function show_editor(editor)
     ig.SetNextWindowViewport(viewport.ID);
 
     ig.Begin(editor.name);
+    local ZoomPtr = ffi.cast("float*", ffi.cast("char*",ig.ImNodes_Ez_GetState()) + ffi.offsetof("CanvasState","Zoom"))
+    ig.SliderFloat("Zoom",ZoomPtr,0.25,5)
 
     ig.TextUnformatted("A -- add node");
     ig.TextUnformatted("X -- delete selected node");

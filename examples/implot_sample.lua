@@ -1,6 +1,6 @@
 local igwin = require"imgui.window"
 
---local win = igwin:SDL(800,400, "widgets",{vsync=true,use_implot=true})
+--local win = igwin:SDL(800,400, "widgets",{vsync=true})
 local win = igwin:GLFW(800,400, "widgets",{vsync=true})
 win.ig.ImPlot_CreateContext()
 
@@ -33,9 +33,7 @@ function win:draw(ig)
 	spec_circle.Marker = ig.lib.ImPlotMarker_Circle
     ig.ImPlot_ShowDemoWindow()
     ig.Begin("Ploters")
-    if (ig.ImPlot_BeginPlot("Line Plot", ig.ImVec2(0,0))) then
-       -- ig.ImPlot_PlotLineG("Line Plot",ig.lib.W1(gettercb),nil,1000)
-        -- ig.ImPlot_PlotLineG("Polar Plot",ig.lib.W1(gettercb2),dataplot,1000)
+    if ig.ImPlot_BeginPlot("Line Plot", ig.ImVec2(-1,-1)) then
         ig.ImPlot_PlotLineG("Line Plot",gettercb,nil,1000)
         ig.ImPlot_PlotLineG("Polar Plot",gettercb2,dataplot,1000)
         ig.ImPlot_Annotation(0.25,1.1,ig.ImPlot_GetLastItemColor(),ig.ImVec2(15,15),true,"function %f %s",1,"hello")

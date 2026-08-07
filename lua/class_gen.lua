@@ -30,7 +30,8 @@ local constants = {}
 local opaque_structs = {}
 
 
---[[ tests
+---[[ tests
+local function show_defaults(fundefs)
 require"anima.utils" --gives us prtable
 -- prtable(structs.ImFontConfig)
 -- prtable(fundefs.igCombo)
@@ -44,6 +45,7 @@ for fun,defs in pairs(fundefs) do
 end
 prtable(defaults)
 do return end
+end
 --]]
 
 --test correctness of generated lua code
@@ -60,7 +62,7 @@ local function testcode(codestr)
             lineN = lineN + 1
         end
 		print("error is ",err)
-		print("in line: ", codelines[linenum])
+		print("in line: ", linenum, codelines[linenum])
 		error("error in testcode",2)
 	end
 end
@@ -92,14 +94,18 @@ local function sanitize_reserved(def)
 		--do only if not a c string
 		local is_cstring = v:sub(1,1)=='"' and v:sub(-1,-1) =='"'
 		if not is_cstring then
+			--print("-+-+-+-+-+-+-+default check",k,v,def.ov_cimguiname)
 			if v:match"::" then --could be nested enum
 				local enumname = v:gsub("[%w:]-::([%w]+)","%1")
 				local ok,val = pcall(cpp2ffi.parse_enum_value,enumname,enumsvalues)
+				--print("====parse_enum_value1",k,v,enumname,val,enumsvalues[enumname])
 				if ok then
 					--print("parse_enum_value1",v,enumname,val,enumsvalues[enumname])
 					def.defaults[k] = val
+				elseif v=="std::string_view()" then
+					def.defaults[k] = [[""]]
 				else
-					print("deleting default ",v)
+					print("+-+-+-+-+-+-+-+-+-+-+-+-+-+-\ndeleting default ",k,v, "in", def.ov_cimguiname)
 					def.defaults[k] = nil
 				end
 			elseif enumsvalues[v] then
@@ -134,10 +140,13 @@ local function sanitize_reserved(def)
 					def.defaults[k] = "M."..def.defaults[k].."[0]"
 				end
 				end
+				--print("def default",def.defaults[k])
 				--if def.defaults[k]:match"~" then
 				--	def.defaults[k] = bit.bnot
 				--end
 			end
+		else
+			--print("cstring default",def.defaults[k],k,def.ov_cimguiname)
 		end
 	end
 end
@@ -149,18 +158,20 @@ local function ArgumentType(def,name)
 		end
 	end
 end
-
+require"anima.utils"
 local function make_function(method,def)
 	--if def.old_stname=="Language" then print("make_function",def.stname,def.cimguiname) end
 	if def.skipped then return "" end
 	if def.is_static_function then method = nil end
 	sanitize_reserved(def)
+				--if "TextEditor_AddSquiggle"==def.ov_cimguiname then print("1-----------------TextEditor_AddSquiggle");prtable(def) end
 	local fname = def.ov_cimguiname or def.cimguiname --overloaded or original
 	local fname_m = method and fname:match(def.stname.."_(.*)") or fname:match("^ig(.*)") or fname --drop struct name part
 	fname_m = fname_m:match("(.*)_nonUDT$") or fname_m --drop "_nonUDT" suffix
 	if fname_m == "end" then fname_m = "_end" end
 	--dump function code
 	if def.nonUDTno == 1 or next(def.defaults) then
+			--if "TextEditor_AddSquiggle"==def.ov_cimguiname then print("2-----------------TextEditor_AddSquiggle") end
 		local call_args_old = def.call_args_old:gsub("%*","")
 		local code = {}
 		local args, fname_lua
@@ -307,8 +318,13 @@ local function CHK_types_p2(typ,va)
 	end
 end
 
+
 local badtypes = {}
 local function checktype(typ,va,fname)
+	-- if fname:match"DocPos" then 
+		-- print(fname, typ,va)
+		-- print(CHK_types(typ,va))
+	-- end
 	--if enumnames[typ] then print("==============",typ) end
 	local cond = CHK_types(typ,va)
 	if cond then return cond end
@@ -488,8 +504,11 @@ local function create_generic(code,defs,method)
 
 	table.insert(code2, "function "..fname.."("..args..") -- generic version")
 	---------float and int check
-	--require"anima.utils"
-	--prtable(check)
+	-- if fname:match("DocPos") then
+		-- print(fname)
+		-- require"anima.utils"
+		-- prtable(check)
+	-- end
 	for j=1,maxnargs do
 		local isint,isfloat
 		for i=1,#check do
@@ -507,7 +526,7 @@ local function create_generic(code,defs,method)
 		end
 		if isint and isfloat then
 			print("----------",fname,"int-float in arg",j)
-			print(isint,isfloat)
+			print("isint",isint,"isfloat",isfloat)
 		end
 	end
 	-------------------------------------------
@@ -678,6 +697,8 @@ local function class_gen(sources, ft_gen)
 	--firs get enumsvalues table
 	make_enums(sources)
 	local fundefs = make_funcdefs(sources)
+	--show_defaults(fundefs)
+	--do return end
 	--group them by structs
 	local structs = {}
 	local skipped = {}

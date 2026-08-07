@@ -31,11 +31,9 @@ assert(sing, err)
 sing:close()
 ------------------------------------------
 local igwin = require"imgui.window"
---local win = igwin:SDL(1000,600, "cimNotepad",{fps=10,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
-local win = igwin:SDL3(1000,600, "cimNotepad",{fps=30,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
---local win = igwin:GLFW(1000,600, "cimNotepad",{fps=10,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
-
-
+--local win = igwin:SDL(1000,600, "cimNotepad",{fps=30,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+--local win = igwin:SDL3(1000,600, "cimNotepad",{fps=30,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
+local win = igwin:GLFW(1000,600, "cimNotepad",{fps=30,vsync=true,use_imgui_viewport=false, not_main_dock_space = true})
 
 
 ---------- locals ---------------------------------
@@ -615,22 +613,23 @@ function win:draw(ig)
     end
 
     
-    local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, --ig.lib.ImGuiWindowFlags_NoResize ,
+    local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize ,
     --ig.lib.ImGuiWindowFlags_NoMove , 
-    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, ig.lib.ImGuiWindowFlags_NoNavFocus,ig.lib.ImGuiWindowFlags_MenuBar)
+    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, --ig.lib.ImGuiWindowFlags_NoNavFocus,
+	ig.lib.ImGuiWindowFlags_MenuBar)
     
     openfilepopup = false
     savefilepopup = false
     doclosefile = false
 
     -- main menu
-    ig.Begin("Documents",nil, host_window_flags)
+    if ig.Begin("Documents",nil, host_window_flags) then
         renderMenuFile(win)
 -- for debug
 -- ig.TextUnformatted("curr_opendoc: "..tostring(curr_opendoc).." "..(opendocs[curr_opendoc] and opendocs[curr_opendoc].file_name or ""))
 -- ig.TextUnformatted("close_doc: "..tostring(close_doc).." "..(opendocs[close_doc] and opendocs[close_doc].file_name or ""))
 
-    if (ig.BeginTabBar("##Tabs", TRO.flag())) then
+    if ig.BeginTabBar("##Tabs", bit.bor(TRO.flag(),ig.lib.ImGuiTabBarFlags_DrawSelectedOverline)) then
         local opened =  ffi.new("bool[?]",1,true)
         for i,v in ipairs(opendocs) do
             local dopop = false
@@ -646,8 +645,8 @@ function win:draw(ig)
             if ig.IsItemHovered() then 
                 ig.SetTooltip(v.file_name) 
                 if ig.IsMouseClicked(0) then 
-                    --print"click";
-                    v.editor:SetFocus() 
+                     --print"click";
+                     v.editor:SetFocus() 
                 end
             end
             if opentab then
@@ -667,7 +666,15 @@ function win:draw(ig)
                     set_tab = -1
                     curr_opendoc = i
                     --if ig.Button("showTabBar") then showTabBar() end
-                    v:Render()
+                    local ret = v:Render()
+					if ret then
+						print("changed")
+					end
+					-- if v.editor:MainCursorHasSelection() then
+						-- local dp= v.editor:GetMainCursorSelection()
+						-- local txt = v.editor:GetSectionText(dp)
+						-- print(ffi.string(txt or ""))
+					-- end
                 else 
                     --print("going to change tab from", i,"to",set_tab)
                 end
@@ -697,7 +704,7 @@ function win:draw(ig)
         end
         ig.EndMenuBar()
     end
-
+	end
     ig.End() --documents
     
     ig.Begin("comments")

@@ -7674,6 +7674,16 @@ struct Decorator
   void* userData;
 };
 typedef struct Decorator Decorator;
+struct CustomCaret
+{
+  ImDrawList* drawList;
+  ImVec2_c glyphPos;
+  ImVec2_c glyphSize;
+ _Bool       caretVisible;
+  ImU32 caretColor;
+  size_t cursorIndex;
+};
+typedef struct CustomCaret CustomCaret;
 struct PopupData
 {
   DocPos_c pos;
@@ -7731,6 +7741,7 @@ typedef struct DocSelection_c DocSelection_c;
 typedef struct VisPos_c VisPos_c;
 typedef struct Change Change;
 typedef struct Decorator Decorator;
+typedef struct CustomCaret CustomCaret;
 typedef struct PopupData PopupData;
 typedef struct Palette Palette;
 typedef struct Glyph Glyph;
@@ -7830,7 +7841,7 @@ void TextEditor_ReplaceSectionText_DocSelection(TextEditor* self,const DocSelect
 void TextEditor_ClearText(TextEditor* self);
 _Bool                TextEditor_IsEmpty(TextEditor* self);
 size_t TextEditor_GetLineCount(TextEditor* self);
-void TextEditor_Render(TextEditor* self,const char* title,const ImVec2_c size,ImGuiChildFlags childFlags,ImGuiWindowFlags windowFlags);
+_Bool                TextEditor_Render(TextEditor* self,const char* title,const ImVec2_c size,ImGuiChildFlags childFlags,ImGuiWindowFlags windowFlags);
 void TextEditor_SetFocus(TextEditor* self);
 void TextEditor_Cut(TextEditor* self);
 void TextEditor_Copy(TextEditor* self);
@@ -7851,6 +7862,8 @@ void TextEditor_AddNextOccurrence(TextEditor* self);
 void TextEditor_SelectAllOccurrences(TextEditor* self);
 _Bool                TextEditor_AnyCursorHasSelection(TextEditor* self);
 _Bool                TextEditor_AllCursorsHaveSelection(TextEditor* self);
+_Bool                TextEditor_CursorHasSelection(TextEditor* self,size_t cursor);
+_Bool                TextEditor_MainCursorHasSelection(TextEditor* self);
 _Bool                TextEditor_CurrentCursorHasSelection(TextEditor* self);
 void TextEditor_ClearCursors(TextEditor* self);
 size_t TextEditor_GetNumberOfCursors(TextEditor* self);
@@ -7906,6 +7919,9 @@ void TextEditor_IterateUserData(TextEditor* self,void(*cb)(size_t,void*));
 void TextEditor_SetLineDecorator(TextEditor* self,size_t width,void(*cb)(Decorator*));
 void TextEditor_ClearLineDecorator(TextEditor* self);
 _Bool                TextEditor_HasLineDecorator(TextEditor* self);
+void TextEditor_SetCustomCaretRenderer(TextEditor* self,void(*cb)(const CustomCaret*));
+void TextEditor_ClearCustomCaretRenderer(TextEditor* self);
+_Bool                TextEditor_HasCustomCaretRenderer(TextEditor* self);
 void TextEditor_SetLineNumberContextMenuCallback(TextEditor* self,void(*cb)(PopupData*));
 void TextEditor_ClearLineNumberContextMenuCallback(TextEditor* self);
 _Bool                TextEditor_HasLineNumberContextMenuCallback(TextEditor* self);

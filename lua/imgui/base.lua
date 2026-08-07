@@ -657,7 +657,7 @@ function DocPos.DocPos_size_t(line,index)
 end
 function DocPos.__new(ctype,a1,a2) -- generic version
     if a1==nil then return DocPos.DocPos_Nil() end
-    if (ffi.istype('uint32_t',a1) or type(a1)=='number') then return DocPos.DocPos_size_t(a1,a2) end
+    if (ffi.istype('uint64_t',a1) or type(a1)=='number') then return DocPos.DocPos_size_t(a1,a2) end
     print(ctype,a1,a2)
     error'DocPos.__new could not find overloaded'
 end
@@ -2579,7 +2579,7 @@ function ImPlotTime.ImPlotTime_time_t(s,us)
 end
 function ImPlotTime.__new(ctype,a1,a2) -- generic version
     if a1==nil then return ImPlotTime.ImPlotTime_Nil() end
-    if (ffi.istype('int32_t',a1) or type(a1)=='number') then return ImPlotTime.ImPlotTime_time_t(a1,a2) end
+    if (ffi.istype('int64_t',a1) or type(a1)=='number') then return ImPlotTime.ImPlotTime_time_t(a1,a2) end
     print(ctype,a1,a2)
     error'ImPlotTime.__new could not find overloaded'
 end
@@ -2909,12 +2909,16 @@ local TextEditor= {}
 TextEditor.__index = TextEditor
 TextEditor.AddMarker = lib.TextEditor_AddMarker
 TextEditor.AddNextOccurrence = lib.TextEditor_AddNextOccurrence
-TextEditor.AddSquiggle = lib.TextEditor_AddSquiggle
+function TextEditor:AddSquiggle(start,_end,type,color,tooltip)
+    tooltip = tooltip or ""
+    return lib.TextEditor_AddSquiggle(self,start,_end,type,color,tooltip)
+end
 TextEditor.AllCursorsHaveSelection = lib.TextEditor_AllCursorsHaveSelection
 TextEditor.AnyCursorHasSelection = lib.TextEditor_AnyCursorHasSelection
 TextEditor.CanRedo = lib.TextEditor_CanRedo
 TextEditor.CanUndo = lib.TextEditor_CanUndo
 TextEditor.ClearCursors = lib.TextEditor_ClearCursors
+TextEditor.ClearCustomCaretRenderer = lib.TextEditor_ClearCustomCaretRenderer
 TextEditor.ClearLineDecorator = lib.TextEditor_ClearLineDecorator
 TextEditor.ClearLineNumberContextMenuCallback = lib.TextEditor_ClearLineNumberContextMenuCallback
 TextEditor.ClearMarkers = lib.TextEditor_ClearMarkers
@@ -2923,7 +2927,7 @@ TextEditor.ClearSquiggles_size_t = lib.TextEditor_ClearSquiggles_size_t
 TextEditor.ClearSquiggles_Nil = lib.TextEditor_ClearSquiggles_Nil
 function TextEditor:ClearSquiggles(a2,a3) -- generic version
     if ffi.istype('DocPos',a2) then return self:ClearSquiggles_DocPos(a2,a3) end
-    if (ffi.istype('uint32_t',a2) or type(a2)=='number') then return self:ClearSquiggles_size_t(a2) end
+    if (ffi.istype('uint64_t',a2) or type(a2)=='number') then return self:ClearSquiggles_size_t(a2) end
     if a2==nil then return self:ClearSquiggles_Nil() end
     print(a2,a3)
     error'TextEditor:ClearSquiggles could not find overloaded'
@@ -2934,6 +2938,7 @@ TextEditor.ClearTextHoverCallback = lib.TextEditor_ClearTextHoverCallback
 TextEditor.CloseFindReplaceWindow = lib.TextEditor_CloseFindReplaceWindow
 TextEditor.Copy = lib.TextEditor_Copy
 TextEditor.CurrentCursorHasSelection = lib.TextEditor_CurrentCursorHasSelection
+TextEditor.CursorHasSelection = lib.TextEditor_CursorHasSelection
 TextEditor.Cut = lib.TextEditor_Cut
 TextEditor.DeindentLines = lib.TextEditor_DeindentLines
 TextEditor.DocPos2VisPos = lib.TextEditor_DocPos2VisPos
@@ -2987,6 +2992,7 @@ TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
 TextEditor.GetUserData = lib.TextEditor_GetUserData
 TextEditor.GetWordAtMousePos = lib.TextEditor_GetWordAtMousePos
 TextEditor.GrowSelections = lib.TextEditor_GrowSelections
+TextEditor.HasCustomCaretRenderer = lib.TextEditor_HasCustomCaretRenderer
 TextEditor.HasFindString = lib.TextEditor_HasFindString
 TextEditor.HasLanguage = lib.TextEditor_HasLanguage
 TextEditor.HasLineDecorator = lib.TextEditor_HasLineDecorator
@@ -3023,6 +3029,7 @@ TextEditor.IsVisPosOverGlyph = lib.TextEditor_IsVisPosOverGlyph
 TextEditor.IsWordWrapEnabled = lib.TextEditor_IsWordWrapEnabled
 TextEditor.IterateIdentifiers = lib.TextEditor_IterateIdentifiers
 TextEditor.IterateUserData = lib.TextEditor_IterateUserData
+TextEditor.MainCursorHasSelection = lib.TextEditor_MainCursorHasSelection
 TextEditor.MoveDownLines = lib.TextEditor_MoveDownLines
 TextEditor.MoveUpLines = lib.TextEditor_MoveUpLines
 TextEditor.OpenFindReplaceWindow = lib.TextEditor_OpenFindReplaceWindow
@@ -3081,6 +3088,7 @@ function TextEditor:SetChangeCallback(callback,delay)
 end
 TextEditor.SetCompletePairedGlyphs = lib.TextEditor_SetCompletePairedGlyphs
 TextEditor.SetCursor = lib.TextEditor_SetCursor
+TextEditor.SetCustomCaretRenderer = lib.TextEditor_SetCustomCaretRenderer
 TextEditor.SetDecorationLeftMargin = lib.TextEditor_SetDecorationLeftMargin
 M.TextEditor_SetDefaultPalette = lib.TextEditor_SetDefaultPalette
 TextEditor.SetDeletor = lib.TextEditor_SetDeletor
@@ -3161,7 +3169,7 @@ function VisPos.VisPos_size_t(row,column)
 end
 function VisPos.__new(ctype,a1,a2) -- generic version
     if a1==nil then return VisPos.VisPos_Nil() end
-    if (ffi.istype('uint32_t',a1) or type(a1)=='number') then return VisPos.VisPos_size_t(a1,a2) end
+    if (ffi.istype('uint64_t',a1) or type(a1)=='number') then return VisPos.VisPos_size_t(a1,a2) end
     print(ctype,a1,a2)
     error'VisPos.__new could not find overloaded'
 end

@@ -1,6 +1,6 @@
 local igwin = require"imgui.window"
 
---local win = igwin:SDL(800,400, "cimplot3d",{vsync=true,use_implot=true})
+--local win = igwin:SDL(800,400, "cimplot3d",{vsync=true})
 local win = igwin:GLFW(800,400, "cimplot3d",{vsync=true})
 
 win.ig.ImPlot3D_CreateContext()
@@ -32,11 +32,11 @@ function win:draw(ig)
     end
     ig.ImPlot3D_ShowDemoWindow()
     ig.Begin("Ploters")
-    if (ig.ImPlot3D_BeginPlot("Plot Line", ig.ImVec2(0,0))) then
+    if (ig.ImPlot3D_BeginPlot("Plot Line", ig.ImVec2(-1,0))) then
         ig.ImPlot3D_PlotLine("f(x)", xs1, ys1, zs1, 1001);
         ig.ImPlot3D_EndPlot();
     end
-    if (ig.ImPlot3D_BeginPlot("Plot surface", ig.ImVec2(0,0))) then
+    if (ig.ImPlot3D_BeginPlot("Plot surface", ig.ImVec2(-1,0))) then
         ig.ImPlot3D_PlotSurface("g(x,y)", xs, ys, shapevals, size_x, size_y);
         ig.ImPlot3D_EndPlot();
     end
