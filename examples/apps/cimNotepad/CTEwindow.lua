@@ -170,7 +170,7 @@ local function toggleNavigationMode(self)
 end
 local function renderMenuBar(self)
         local editor = self.editor
-        if (ig.BeginMenuBar()) then
+        if (ig.BeginMainMenuBar()) then
             if (ig.BeginMenu("Edit")) then
                 local ro = ffi.new("bool[?]",1,editor:IsReadOnlyEnabled());
                 if (ig.MenuItem("Read-only mode", nil, ro)) then
@@ -290,12 +290,37 @@ local function renderMenuBar(self)
                 end
                 ig.EndMenu();
             end
-            ig.EndMenuBar();
+            ig.EndMainMenuBar();
         end
         if (ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiMod_Alt, ig.lib.ImGuiKey_N), ig.lib.ImGuiInputFlags_RouteAlways)) then toggleNavigationMode(self); end
         if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_I)) then showDiff(self) end
 end
 
+local sorted_functions = ffi.new("bool[?]",1,sorted)
+local function renderFunctionList(self)
+
+    if self.function_list then
+
+        ig.BeginChild("funtion list",nil, nil, ig.lib.ImGuiWindowFlags_MenuBar)
+        --hack for having a window bar
+        if ig.BeginMenuBar() then
+            if ig.BeginMenu("funtion list") then
+                if ig.MenuItem("sort", nil, sorted_functions) then
+                end
+               ig.EndMenu();
+            end
+            ig.EndMenuBar();
+        end
+        local funcs = sorted_functions[0] and self.function_list.funcs_sorted or self.function_list.funcs
+        for i,v in ipairs(funcs) do
+            if ig.Selectable(v.name.."##"..tostring(i) ) then
+                self.editor:ScrollToLine(v.line-1, ig.lib.alignTop)
+            end
+        end
+        ig.EndChild()
+
+    end
+end
 local function Render(self)
     local editor = self.editor
     
@@ -304,6 +329,7 @@ local function Render(self)
     renderStatusBar(self)
 
     local ret = editor:Render("texteditor"..self.ID)
+    ig.SameLine()
 
     -- kepped as example
     -- if ig.IsItemClicked() and ig.IsMouseDoubleClicked(0) then 
@@ -380,34 +406,36 @@ local function CTEwindow(file_name, args)
     shrt_name = shrt_name.."."..ext
 
 
-    local W = {file_name = file_name or "", shrt_name = shrt_name or "", is_new = args.is_new, modification = modification}
+    local W = {file_name = file_name or "", shrt_name = shrt_name or "", ext = ext or "", is_new = args.is_new, modification = modification}
     local editor = ig.TextEditor()
     W.is_dirty = function(self) return self.dirty or self.editor:CanUndo() end
     W.ReLoad = ReLoad
     W.Log = args.Log
     W.editor = editor
-	editor:SetLineFoldingEnabled(true);
-	--test some callbacks
-	--[[
-	editor:SetCustomCaretRenderer(function(caret) 
-		if (caret.caretVisible) then
-			local color = ig.GetColorU32_U32(caret.caretColor, 0.5);
-			caret.drawList:AddRectFilled(caret.glyphPos, caret.glyphPos + caret.glyphSize, color);
-		end
-	end);
-	--]]
-	--[[
+    W.function_list = args.function_list.find_functions(strtext,ext)
+    W.render_functions = renderFunctionList
+    editor:SetLineFoldingEnabled(true);
+    --test some callbacks
+    --[[
+    editor:SetCustomCaretRenderer(function(caret) 
+        if (caret.caretVisible) then
+            local color = ig.GetColorU32_U32(caret.caretColor, 0.5);
+            caret.drawList:AddRectFilled(caret.glyphPos, caret.glyphPos + caret.glyphSize, color);
+        end
+    end);
+    --]]
+    --[[
     editor:SetLineNumberContextMenuCallback(function(pp)
-		if (ig.MenuItem("Set Breakpoint"))then print"set" end
-		if (ig.MenuItem("Remove Breakpoint"))then print"remove" end
-	end)
+        if (ig.MenuItem("Set Breakpoint"))then print"set" end
+        if (ig.MenuItem("Remove Breakpoint"))then print"remove" end
+    end)
     editor:SetTextContextMenuCallback(function(data)
-		local pos2 = ig.DocPos(data.pos.line+1 ,data.pos.index)
-		ig.Text("Line %zu, index %zu", data.pos.line + 1, data.pos.index + 1);
-		ig.Text("Line %zu, index %zu", pos2.line + 1, pos2.index + 1);
-		ig.Text(editor:GetSectionText(data.pos,pos2[0]))
-	end)
-	--]]
+        local pos2 = ig.DocPos(data.pos.line+1 ,data.pos.index)
+        ig.Text("Line %zu, index %zu", data.pos.line + 1, data.pos.index + 1);
+        ig.Text("Line %zu, index %zu", pos2.line + 1, pos2.index + 1);
+        ig.Text(editor:GetSectionText(data.pos,pos2[0]))
+    end)
+    --]]
     W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
     editor:SetLineDecorator(1.0, function(decorator) 

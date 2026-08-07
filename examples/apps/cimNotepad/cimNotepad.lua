@@ -45,6 +45,8 @@ local ffi = require"ffi"
 --local Exec = require"executer"
 local Exec = dofile(pathut.chain(currpath,"executer.lua"))
 local ExecutePull, send_breakpoint = Exec.ExecutePull, Exec.send_breakpoint
+-----function list
+local function_list = dofile(pathut.chain(currpath,"functions_list.lua"))
 ------------------------------------------------------------------
 
 local Log = gui.CLog() -- app Log
@@ -251,7 +253,7 @@ local function renderMenuDocs()
 end
 
 local function renderMenuFile(win)
-    if (ig.BeginMenuBar()) then
+    if (ig.BeginMainMenuBar()) then
             if (ig.BeginMenu("File")) then
                 if (ig.MenuItem("New")) then
                     local fname = "new1.lua"
@@ -283,7 +285,7 @@ local function renderMenuFile(win)
                 end
                 ig.EndMenu();
             end
-            ig.EndMenuBar()
+            ig.EndMainMenuBar()
         end
 
     if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_S)) then
@@ -345,7 +347,7 @@ addEditor = function(fullname, line, is_new, breakpoints)
             return -- to avoid reopening
         end 
         
-        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints})
+        local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints, function_list = function_list})
         -- set line
         if line then
             doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
@@ -524,7 +526,7 @@ local function LoadFont()
     -- win.preimgui = nil
 end
 local function renderMenuFonts()
-    if (ig.BeginMenuBar()) then
+    if (ig.BeginMainMenuBar()) then
         if (ig.BeginMenu("Fonts")) then
             if ig.MenuItem("Dejavu",nil, usedeja) then
                 --win.preimgui = LoadFont
@@ -543,7 +545,7 @@ local function renderMenuFonts()
             end
             ig.EndMenu();
         end
-        ig.EndMenuBar()
+        ig.EndMainMenuBar()
     end
 end
 LoadFont()
@@ -598,7 +600,11 @@ function win:draw(ig)
         local dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
         ig.DockBuilderSplitNode(dock_id_main[0], lib.ImGuiDir_Up, 0.80, dock_id_top, dock_id_bottom);
         ig.DockBuilderSplitNode(dock_id_bottom[0], lib.ImGuiDir_Left, 0.50, dock_id_bottom_left, dock_id_bottom_right);
-        ig.DockBuilderDockWindow("Documents", dock_id_top[0]);
+        dock_id_top_left = ffi.new("ImGuiID[?]",1,0);
+        dock_id_top_right = ffi.new("ImGuiID[?]",1,0);
+        ig.DockBuilderSplitNode(dock_id_top[0], lib.ImGuiDir_Left, 0.90, dock_id_top_left, dock_id_top_right);
+        ig.DockBuilderDockWindow("functions", dock_id_top_right[0]);
+        ig.DockBuilderDockWindow("Documents", dock_id_top_left[0]);
         ig.DockBuilderDockWindow("comments", dock_id_bottom_left[0]);
         ig.DockBuilderDockWindow("StackVars", dock_id_bottom_right[0]);
         ig.DockBuilderFinish(dockspace_id[0]);
@@ -615,14 +621,17 @@ function win:draw(ig)
     
     local host_window_flags = bit.bor( ig.lib.ImGuiWindowFlags_NoTitleBar , ig.lib.ImGuiWindowFlags_NoCollapse, ig.lib.ImGuiWindowFlags_NoResize ,
     --ig.lib.ImGuiWindowFlags_NoMove , 
-    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus, --ig.lib.ImGuiWindowFlags_NoNavFocus,
-	ig.lib.ImGuiWindowFlags_MenuBar)
+    ig.lib.ImGuiWindowFlags_NoBringToFrontOnFocus)--, --ig.lib.ImGuiWindowFlags_NoNavFocus,
+    --ig.lib.ImGuiWindowFlags_MenuBar)
     
     openfilepopup = false
     savefilepopup = false
     doclosefile = false
 
     -- main menu
+
+    
+    
     if ig.Begin("Documents",nil, host_window_flags) then
         renderMenuFile(win)
 -- for debug
@@ -667,14 +676,14 @@ function win:draw(ig)
                     curr_opendoc = i
                     --if ig.Button("showTabBar") then showTabBar() end
                     local ret = v:Render()
-					if ret then
-						print("changed")
-					end
-					-- if v.editor:MainCursorHasSelection() then
-						-- local dp= v.editor:GetMainCursorSelection()
-						-- local txt = v.editor:GetSectionText(dp)
-						-- print(ffi.string(txt or ""))
-					-- end
+                    if ret then
+                        print("changed")
+                    end
+                    -- if v.editor:MainCursorHasSelection() then
+                        -- local dp= v.editor:GetMainCursorSelection()
+                        -- local txt = v.editor:GetSectionText(dp)
+                        -- print(ffi.string(txt or ""))
+                    -- end
                 else 
                     --print("going to change tab from", i,"to",set_tab)
                 end
@@ -694,7 +703,7 @@ function win:draw(ig)
     
     Exec.renderMenuExecute(this, curr_opendoc)
     renderMenuFonts()
-    if (ig.BeginMenuBar()) then
+    if (ig.BeginMainMenuBar()) then
         renderMenuDocs()
         if ig.BeginMenu("Help") then
             if (ig.MenuItem("Show")) then
@@ -702,10 +711,14 @@ function win:draw(ig)
             end
             ig.EndMenu()
         end
-        ig.EndMenuBar()
+        ig.EndMainMenuBar()
     end
-	end
+    end
     ig.End() --documents
+    
+    ig.Begin("functions")
+        opendocs[curr_opendoc]:render_functions()
+    ig.End()
     
     ig.Begin("comments")
         if comments_size ~= ig.GetWindowSize() then
