@@ -231,7 +231,7 @@ local function make_function(method,def)
 end
 
 --struct constructor generator
-local function constructor_gen(code,def)
+local function constructor_gen(code,def,fundefs)
 	sanitize_reserved(def)
 	--dump function code
 	if def.cimguiname == def.ov_cimguiname then --default constructor
@@ -248,8 +248,12 @@ local function constructor_gen(code,def)
 	--end
 	end)
 	local fname = def.ov_cimguiname or def.cimguiname
-	table.insert(code,"    local ptr = lib."..fname..def.call_args_old)
-	table.insert(code,"    return ffi.gc(ptr,lib."..def.stname.."_destroy)")
+	if fundefs[def.stname.."_destroy"] then
+		table.insert(code,"    local ptr = lib."..fname..def.call_args_old)
+		table.insert(code,"    return ffi.gc(ptr,lib."..def.stname.."_destroy)")
+	else
+		table.insert(code,"    return lib."..fname..def.call_args_old)
+	end
 	table.insert(code,"end")
 end
 
@@ -592,7 +596,7 @@ local function code_for_struct(st,fundefs,structs)
 		for _,def in ipairs(defs) do
 			if not def.destructor then
 				if def.constructor then
-					constructor_gen(code,def)
+					constructor_gen(code,def,fundefs)
 				else
 					struct_function_gen(code,def)
 				end
