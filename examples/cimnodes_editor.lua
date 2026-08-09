@@ -3,7 +3,7 @@ local win = igwin:SDL(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=
 --local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false})
 local ig = win.ig
 local ffi = require"ffi"
-
+--[[
 local NodeId= {}
 NodeId.__index = NodeId
 function NodeId.__new(ctype,val)
@@ -36,6 +36,7 @@ function LinkId:value()
 	return ig.lib.ax_NodeEditor_LinkId_value(self)
 end
 ig.LinkId = ffi.metatype("LinkId",LinkId)
+--]]
 ---------------------------
 
 local function ImGuiEx_BeginColumn()
@@ -101,6 +102,32 @@ function win:draw(ig)
                 ig.Text("Out ->");
             ig.ax_NodeEditor_EndPin();
         ig.ax_NodeEditor_EndNode();
+		
+		--------------------
+		 -- // Submit Node A2
+        local nodeA2_Id = ig.NodeId(uniqueId)
+		uniqueId = uniqueId + 1
+		local nodeA2_InputPinId = ig.PinId(uniqueId)
+		uniqueId = uniqueId + 1
+		local nodeA2_OutputPinId = ig.PinId(uniqueId)
+		uniqueId = uniqueId + 1
+
+        if (m_FirstFrame) then
+            ig.ax_NodeEditor_SetNodePosition(nodeA2_Id, ig.ImVec2(30, 40));
+		end
+        ig.ax_NodeEditor_BeginNode(nodeA2_Id);
+            ig.Text("Node A2");
+            ig.ax_NodeEditor_BeginPin(nodeA2_InputPinId, ig.lib.Input);
+			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
+                ig.Text("-> In");
+            ig.ax_NodeEditor_EndPin();
+            ig.SameLine();
+            ig.ax_NodeEditor_BeginPin(nodeA2_OutputPinId, ig.lib.Output);
+			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
+                ig.Text("Out ->");
+            ig.ax_NodeEditor_EndPin();
+        ig.ax_NodeEditor_EndNode();
+		-----------------------
 
 
         -- Submit Node B
@@ -212,9 +239,40 @@ function win:draw(ig)
         if (m_FirstFrame) then
             ig.ax_NodeEditor_NavigateToContent(0.0);
 		end
-		local sel_nodes = ig.NodeId(0)
-		--print("selected",ig.ax_NodeEditor_GetSelectedObjectCount())
-		print("selected",ig.ax_NodeEditor_GetSelectedNodes(sel_nodes,1))
+
+		local sel_objects = ig.ax_NodeEditor_GetSelectedObjectCount()
+		ig.TextUnformatted("selected objects: "..tostring(sel_objects))
+		
+		-- local sel_nodes = ig.NodeId(0)
+		-- ig.TextUnformatted("selected node: "..tostring(sel_nodes:value()).." "..tostring(sel_nodes))
+		-- ig.ax_NodeEditor_GetSelectedNodes(sel_nodes,1)
+		-- ig.TextUnformatted("selected node: "..tostring(sel_nodes:value()).." "..tostring(sel_nodes))
+		
+		--[[
+		if sel_objects > 0 then
+		ig.Separator()
+		--sel_objects = 1
+		local anchor = {}
+		local sel_nodes = ffi.new("NodeId*[?]", sel_objects)
+		for i=0,sel_objects-1 do 
+			anchor[i] = ig.NodeId(0); 
+			sel_nodes[i]=anchor[i] 
+			--ig.TextUnformatted("sel node: "..tostring(sel_nodes[i]))
+		end
+		--local sel_nodes_count = ig.ax_NodeEditor_GetSelectedNodes(ffi.cast("NodeId*",sel_nodes),sel_objects)
+		local sel_nodes_count = ig.ax_NodeEditor_GetSelectedNodes(sel_nodes[0],sel_objects)
+		ig.Separator()
+		--sel_nodes_count = math.min(1,sel_nodes_count)
+		for i=0,sel_nodes_count-1 do
+			local sel_node = sel_nodes[i]
+			ig.TextUnformatted("sel node: "..tostring(sel_nodes[i]:value()))
+		end
+		end
+		--]]
+		
+		local hov_node = ig.ax_NodeEditor_GetHoveredNode()
+		ig.TextUnformatted("hovered node: "..tostring(hov_node:value()))
+		--print("hov_node", hov_node, hov_node:value())
         ig.ax_NodeEditor_SetCurrentEditor(nil);
 
         m_FirstFrame = false;
