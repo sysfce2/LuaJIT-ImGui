@@ -296,7 +296,7 @@ local function renderMenuBar(self)
         if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_I)) then showDiff(self) end
 end
 
-local sorted_functions = ffi.new("bool[?]",1,sorted)
+local sorted_functions = ffi.new("bool[?]",1,true)
 local function renderFunctionList(self)
 
     if self.function_list then
