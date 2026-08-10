@@ -5,41 +5,7 @@ local ig = win.ig
 local ffi = require"ffi"
 
 win.ig.GetIO().IniFilename = nil
---[[
-local NodeId= {}
-NodeId.__index = NodeId
-function NodeId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_NodeId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_NodeId_destroy)
-end
-function NodeId:value()
-    return ig.lib.ax_NodeEditor_NodeId_value(self)
-end
-ig.NodeId = ffi.metatype("NodeId",NodeId)
 
-local PinId= {}
-PinId.__index = PinId
-function PinId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_PinId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_PinId_destroy)
-end
-function PinId:value()
-    return ig.lib.ax_NodeEditor_PinId_value(self)
-end
-ig.PinId = ffi.metatype("PinId",PinId)
-
-local LinkId= {}
-LinkId.__index = LinkId
-function LinkId.__new(ctype,val)
-    local ptr = ig.lib.ax_NodeEditor_LinkId(val)
-    return ffi.gc(ptr,ig.lib.ax_NodeEditor_LinkId_destroy)
-end
-function LinkId:value()
-    return ig.lib.ax_NodeEditor_LinkId_value(self)
-end
-ig.LinkId = ffi.metatype("LinkId",LinkId)
---]]
----------------------------
 
 local function ImGuiEx_BeginColumn()
         ig.BeginGroup();
@@ -76,6 +42,12 @@ function win:draw(ig)
     ig.Begin("Editor")
         ig.ax_NodeEditor_SetCurrentEditor(m_Context);
         if ig.Button("Zoom to Content") then ig.ax_NodeEditor_NavigateToContent(); end
+    ig.SameLine()
+    if ig.Button("Show Flow") then
+        for i,link in pairs(m_Links) do
+            ig.ax_NodeEditor_Flow(link.Id)
+        end
+    end
 
     ig.BeginChild("canvas", ig.ImVec2(viewport.WorkSize.x*0.8, 0), ig.lib.ImGuiChildFlags_Borders + ig.lib.ImGuiChildFlags_ResizeX);
 
