@@ -3,6 +3,8 @@ local win = igwin:SDL(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=
 --local win = igwin:GLFW(800,600, "ColorTextEditor",{vsync=true,use_imgui_viewport=false})
 local ig = win.ig
 local ffi = require"ffi"
+
+win.ig.GetIO().IniFilename = nil
 --[[
 local NodeId= {}
 NodeId.__index = NodeId
@@ -11,7 +13,7 @@ function NodeId.__new(ctype,val)
     return ffi.gc(ptr,ig.lib.ax_NodeEditor_NodeId_destroy)
 end
 function NodeId:value()
-	return ig.lib.ax_NodeEditor_NodeId_value(self)
+    return ig.lib.ax_NodeEditor_NodeId_value(self)
 end
 ig.NodeId = ffi.metatype("NodeId",NodeId)
 
@@ -22,7 +24,7 @@ function PinId.__new(ctype,val)
     return ffi.gc(ptr,ig.lib.ax_NodeEditor_PinId_destroy)
 end
 function PinId:value()
-	return ig.lib.ax_NodeEditor_PinId_value(self)
+    return ig.lib.ax_NodeEditor_PinId_value(self)
 end
 ig.PinId = ffi.metatype("PinId",PinId)
 
@@ -33,7 +35,7 @@ function LinkId.__new(ctype,val)
     return ffi.gc(ptr,ig.lib.ax_NodeEditor_LinkId_destroy)
 end
 function LinkId:value()
-	return ig.lib.ax_NodeEditor_LinkId_value(self)
+    return ig.lib.ax_NodeEditor_LinkId_value(self)
 end
 ig.LinkId = ffi.metatype("LinkId",LinkId)
 --]]
@@ -54,21 +56,28 @@ local function ImGuiEx_EndColumn()
 end
 
 local config = ig.Config()
-config.SettingsFile = "BasicInteraction.json";
+config.SettingsFile = nil --"BasicInteraction.json";
 local m_Context = ig.ax_NodeEditor_CreateEditor(config)
-local m_FirstFrame = true
+local m_FirstFrame = 0
 local m_Links = {}
 local m_NextLinkId = 100
 --require"anima.utils"
 function win:draw(ig)
 ---[[
-	local io = ig.GetIO();
+    local io = ig.GetIO();
 
         --ig.Text("FPS: %.2f (%.2gms)", io.Framerate, io.Framerate ? 1000.0f / io.Framerate : 0.0f);
 
-        --ig.Separator();
-
+    local viewport = ig.GetMainViewport();
+    ig.SetNextWindowPos(viewport.WorkPos);
+    ig.SetNextWindowSize(viewport.WorkSize);
+    ig.SetNextWindowViewport(viewport.ID);
+    
+    ig.Begin("Editor")
         ig.ax_NodeEditor_SetCurrentEditor(m_Context);
+        if ig.Button("Zoom to Content") then ig.ax_NodeEditor_NavigateToContent(); end
+
+    ig.BeginChild("canvas", ig.ImVec2(viewport.WorkSize.x*0.8, 0), ig.lib.ImGuiChildFlags_Borders + ig.lib.ImGuiChildFlags_ResizeX);
 
         -- Start interaction with editor.
         ig.ax_NodeEditor_Begin("My Editor", ig.ImVec2(0.0, 0.0));
@@ -81,90 +90,90 @@ function win:draw(ig)
 
         -- // Submit Node A
         local nodeA_Id = ig.NodeId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeA_InputPinId = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeA_OutputPinId = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
+        uniqueId = uniqueId + 1
+        local nodeA_InputPinId = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
+        local nodeA_OutputPinId = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
 
-        if (m_FirstFrame) then
+        if (m_FirstFrame==1) then
             ig.ax_NodeEditor_SetNodePosition(nodeA_Id, ig.ImVec2(10, 10));
-		end
+        end
         ig.ax_NodeEditor_BeginNode(nodeA_Id);
             ig.Text("Node A");
             ig.ax_NodeEditor_BeginPin(nodeA_InputPinId, ig.lib.Input);
-			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
+            ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
                 ig.Text("-> In");
             ig.ax_NodeEditor_EndPin();
             ig.SameLine();
             ig.ax_NodeEditor_BeginPin(nodeA_OutputPinId, ig.lib.Output);
-			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
+            ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
                 ig.Text("Out ->");
             ig.ax_NodeEditor_EndPin();
         ig.ax_NodeEditor_EndNode();
-		
-		--------------------
-		 -- // Submit Node A2
+        
+        --------------------
+         -- // Submit Node A2
         local nodeA2_Id = ig.NodeId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeA2_InputPinId = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeA2_OutputPinId = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
+        uniqueId = uniqueId + 1
+        local nodeA2_InputPinId = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
+        local nodeA2_OutputPinId = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
 
-        if (m_FirstFrame) then
+        if (m_FirstFrame==1) then
             ig.ax_NodeEditor_SetNodePosition(nodeA2_Id, ig.ImVec2(30, 40));
-		end
+        end
         ig.ax_NodeEditor_BeginNode(nodeA2_Id);
             ig.Text("Node A2");
             ig.ax_NodeEditor_BeginPin(nodeA2_InputPinId, ig.lib.Input);
-			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
+            ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
                 ig.Text("-> In");
             ig.ax_NodeEditor_EndPin();
             ig.SameLine();
             ig.ax_NodeEditor_BeginPin(nodeA2_OutputPinId, ig.lib.Output);
-			ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
+            ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
                 ig.Text("Out ->");
             ig.ax_NodeEditor_EndPin();
         ig.ax_NodeEditor_EndNode();
-		-----------------------
+        -----------------------
 
 
         -- Submit Node B
-		local nodeB_Id = ig.NodeId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeB_InputPinId1 = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeB_InputPinId2 = ig.PinId(uniqueId)
-		uniqueId = uniqueId + 1
-		local nodeB_OutputPinId = ig.PinId(uniqueId)
+        local nodeB_Id = ig.NodeId(uniqueId)
+        uniqueId = uniqueId + 1
+        local nodeB_InputPinId1 = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
+        local nodeB_InputPinId2 = ig.PinId(uniqueId)
+        uniqueId = uniqueId + 1
+        local nodeB_OutputPinId = ig.PinId(uniqueId)
 
-        if (m_FirstFrame) then
+        if (m_FirstFrame==1) then
             ig.ax_NodeEditor_SetNodePosition(nodeB_Id, ig.ImVec2(210, 60));
-		end
+        end
         ig.ax_NodeEditor_BeginNode(nodeB_Id);
             ig.Text("Node B");
             ImGuiEx_BeginColumn();
                ig.ax_NodeEditor_BeginPin(nodeB_InputPinId1,ig.lib.Input);
-					ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
+                    ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
                     ig.Text("-> In1");
                 ig.ax_NodeEditor_EndPin();
                 ig.ax_NodeEditor_BeginPin(nodeB_InputPinId2, ig.lib.Input);
-					ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
+                    ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(0.0, 0.5));
                     ig.Text("-> In2");
                 ig.ax_NodeEditor_EndPin();
             ImGuiEx_NextColumn();
                 ig.ax_NodeEditor_BeginPin(nodeB_OutputPinId, ig.lib.Output);
-					ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
+                    ig.ax_NodeEditor_PinPivotAlignment(ig.ImVec2(1.0, 0.5));
                     ig.Text("Out ->");
                 ig.ax_NodeEditor_EndPin();
             ImGuiEx_EndColumn();
         ig.ax_NodeEditor_EndNode();
 
         --// Submit Links
-		for i,linkInfo in ipairs(m_Links) do
-			ig.ax_NodeEditor_Link(linkInfo.Id, linkInfo.InputId, linkInfo.OutputId);
-		end
+        for i,linkInfo in ipairs(m_Links) do
+            ig.ax_NodeEditor_Link(linkInfo.Id, linkInfo.InputId, linkInfo.OutputId);
+        end
 
         -- //
         -- // 2) Handle interactions
@@ -174,7 +183,7 @@ function win:draw(ig)
         if (ig.ax_NodeEditor_BeginCreate()) then
             local inputPinId, outputPinId = ig.PinId(0),ig.PinId(0)
             if (ig.ax_NodeEditor_QueryNewLink(inputPinId, outputPinId)) then
-				print(inputPinId:value() , outputPinId:value())
+                --print(inputPinId:value() , outputPinId:value())
                 -- // QueryNewLink returns true if editor want to create new link between pins.
                 -- //
                 -- // Link can be created only for two valid pins, it is up to you to
@@ -194,11 +203,11 @@ function win:draw(ig)
                     
                         --// Since we accepted new link, lets add one to our list of links.
                         --m_Links.push_back({ ed::LinkId(m_NextLinkId++), inputPinId, outputPinId });
-						table.insert(m_Links,{Id=ig.LinkId(m_NextLinkId), InputId=inputPinId, OutputId=outputPinId})
-						--prtable(m_Links)
-						m_NextLinkId = m_NextLinkId + 1
+                        table.insert(m_Links,{Id=ig.LinkId(m_NextLinkId), InputId=inputPinId, OutputId=outputPinId})
+                        --prtable(m_Links)
+                        m_NextLinkId = m_NextLinkId + 1
                         --// Draw new link.
-						local ll = m_Links[#m_Links]
+                        local ll = m_Links[#m_Links]
                         ig.ax_NodeEditor_Link(ll.Id, ll.InputId, ll.OutputId);
                     end
 
@@ -218,13 +227,13 @@ function win:draw(ig)
                -- // If you agree that link can be deleted, accept deletion.
                 if (ig.ax_NodeEditor_AcceptDeletedItem()) then
                     --// Then remove link from your data.
-					for i,linkInfo in ipairs(m_Links) do
-						print(linkInfo.Id)--,linkInfo.Id:value())
-						if linkInfo.Id:value()==deletedLinkId:value() then
-							table.remove(m_Links,i)
-							break
-						end
-					end
+                    for i,linkInfo in ipairs(m_Links) do
+                        --print(linkInfo.Id)--,linkInfo.Id:value())
+                        if linkInfo.Id:value()==deletedLinkId:value() then
+                            table.remove(m_Links,i)
+                            break
+                        end
+                    end
                 end
                 --// You may reject link deletion by calling:
                 --// ed::RejectDeletedItem();
@@ -235,47 +244,54 @@ function win:draw(ig)
 
         --// End of interaction with editor.
         ig.ax_NodeEditor_End()
-
-        if (m_FirstFrame) then
+        if (m_FirstFrame==2) then
             ig.ax_NodeEditor_NavigateToContent(0.0);
-		end
+        end
 
-		local sel_objects = ig.ax_NodeEditor_GetSelectedObjectCount()
-		ig.TextUnformatted("selected objects: "..tostring(sel_objects))
-		
-		-- local sel_nodes = ig.NodeId(0)
-		-- ig.TextUnformatted("selected node: "..tostring(sel_nodes:value()).." "..tostring(sel_nodes))
-		-- ig.ax_NodeEditor_GetSelectedNodes(sel_nodes,1)
-		-- ig.TextUnformatted("selected node: "..tostring(sel_nodes:value()).." "..tostring(sel_nodes))
-		
-		--[[
-		if sel_objects > 0 then
-		ig.Separator()
-		--sel_objects = 1
-		local anchor = {}
-		local sel_nodes = ffi.new("NodeId*[?]", sel_objects)
-		for i=0,sel_objects-1 do 
-			anchor[i] = ig.NodeId(0); 
-			sel_nodes[i]=anchor[i] 
-			--ig.TextUnformatted("sel node: "..tostring(sel_nodes[i]))
-		end
-		--local sel_nodes_count = ig.ax_NodeEditor_GetSelectedNodes(ffi.cast("NodeId*",sel_nodes),sel_objects)
-		local sel_nodes_count = ig.ax_NodeEditor_GetSelectedNodes(sel_nodes[0],sel_objects)
-		ig.Separator()
-		--sel_nodes_count = math.min(1,sel_nodes_count)
-		for i=0,sel_nodes_count-1 do
-			local sel_node = sel_nodes[i]
-			ig.TextUnformatted("sel node: "..tostring(sel_nodes[i]:value()))
-		end
-		end
-		--]]
-		
-		local hov_node = ig.ax_NodeEditor_GetHoveredNode()
-		ig.TextUnformatted("hovered node: "..tostring(hov_node:value()))
-		--print("hov_node", hov_node, hov_node:value())
+        ig.EndChild()
+        
+    ---Tests
+    ig.SameLine()
+    ig.BeginGroup();
+    ig.BeginChild("Tests")--, ig.ImVec2(0, -ig.GetFrameHeightWithSpacing())); --// Leave room for 1 line below us
+        local hov_node = ig.ax_NodeEditor_GetHoveredNode()
+        ig.TextUnformatted("hovered node: "..tostring(hov_node:value()))
+        local hov_link = ig.ax_NodeEditor_GetHoveredLink()
+        ig.TextUnformatted("hovered link: "..tostring(hov_link:value()))
+        local hov_pin = ig.ax_NodeEditor_GetHoveredPin()
+        ig.TextUnformatted("hovered pin: "..tostring(hov_pin:value()))
+        
+        local sel_objects = ig.ax_NodeEditor_GetSelectedObjectCount()
+        ig.TextUnformatted("selected objects: "..tostring(sel_objects))
+        
+        if sel_objects > 0 then
+            local sel_nodes = ffi.new("NodeId[?]", sel_objects)
+            local sel_nodes_count = ig.ax_NodeEditor_GetSelectedNodes(sel_nodes,sel_objects)
+            ig.Separator()
+            for i=0,sel_nodes_count-1 do
+                ig.TextUnformatted("sel node: "..tostring(sel_nodes[i]:value()))
+            end
+            local sel_links = ffi.new("LinkId[?]", sel_objects)
+            local sel_links_count = ig.ax_NodeEditor_GetSelectedLinks(sel_links,sel_objects)
+            ig.Separator()
+            for i=0,sel_links_count-1 do
+                ig.TextUnformatted("sel link: "..tostring(sel_links[i]:value()))
+                local start, endp = ig.PinId(0),ig.PinId(0)
+                ig.ax_NodeEditor_GetLinkPins(sel_links[i], start,endp); 
+                ig.Indent()
+                ig.TextUnformatted("start: "..tostring(start:value()))
+                ig.TextUnformatted("end: "..tostring(endp:value()))
+                ig.Unindent()
+            end
+        end
+        
+    ig.EndChild()
+    ig.EndGroup()
+
+    ig.End()
         ig.ax_NodeEditor_SetCurrentEditor(nil);
 
-        m_FirstFrame = false;
+        m_FirstFrame = m_FirstFrame + 1;
 
 end
 

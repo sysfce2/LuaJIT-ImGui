@@ -2799,10 +2799,8 @@ M.LinkDetachWithModifierClick = ffi.metatype("LinkDetachWithModifierClick",LinkD
 --------------------------LinkId----------------------------
 local LinkId= {}
 LinkId.__index = LinkId
-LinkId.destroy = lib.LinkId_destroy
 function LinkId.__new(ctype,val)
-    local ptr = lib.ax_NodeEditor_LinkId(val)
-    return ffi.gc(ptr,lib.LinkId_destroy)
+    return lib.ax_NodeEditor_LinkId(val)
 end
 LinkId.value = lib.ax_NodeEditor_LinkId_value
 M.LinkId = ffi.metatype("LinkId",LinkId)
@@ -2817,10 +2815,8 @@ M.MultipleSelectModifier = ffi.metatype("MultipleSelectModifier",MultipleSelectM
 --------------------------NodeId----------------------------
 local NodeId= {}
 NodeId.__index = NodeId
-NodeId.destroy = lib.NodeId_destroy
 function NodeId.__new(ctype,val)
-    local ptr = lib.ax_NodeEditor_NodeId(val)
-    return ffi.gc(ptr,lib.NodeId_destroy)
+    return lib.ax_NodeEditor_NodeId(val)
 end
 NodeId.value = lib.ax_NodeEditor_NodeId_value
 M.NodeId = ffi.metatype("NodeId",NodeId)
@@ -2852,10 +2848,8 @@ M.Palette = ffi.metatype("Palette",Palette)
 --------------------------PinId----------------------------
 local PinId= {}
 PinId.__index = PinId
-PinId.destroy = lib.PinId_destroy
 function PinId.__new(ctype,val)
-    local ptr = lib.ax_NodeEditor_PinId(val)
-    return ffi.gc(ptr,lib.PinId_destroy)
+    return lib.ax_NodeEditor_PinId(val)
 end
 PinId.value = lib.ax_NodeEditor_PinId_value
 M.PinId = ffi.metatype("PinId",PinId)
@@ -6678,8 +6672,8 @@ M.ax_NodeEditor_BeginShortcut = lib.ax_NodeEditor_BeginShortcut
 M.ax_NodeEditor_BreakLinks_NodeId = lib.ax_NodeEditor_BreakLinks_NodeId
 M.ax_NodeEditor_BreakLinks_PinId = lib.ax_NodeEditor_BreakLinks_PinId
 function M.ax_NodeEditor_BreakLinks(a1) -- generic version
-    if (ffi.istype('NodeId*',a1) or ffi.istype('NodeId',a1) or ffi.istype('NodeId[]',a1)) then return M.ax_NodeEditor_BreakLinks_NodeId(a1) end
-    if (ffi.istype('PinId*',a1) or ffi.istype('PinId',a1) or ffi.istype('PinId[]',a1)) then return M.ax_NodeEditor_BreakLinks_PinId(a1) end
+    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_BreakLinks_NodeId(a1) end
+    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_BreakLinks_PinId(a1) end
     print(a1)
     error'M.ax_NodeEditor_BreakLinks could not find overloaded'
 end
@@ -6745,8 +6739,8 @@ M.ax_NodeEditor_Group = lib.ax_NodeEditor_Group
 M.ax_NodeEditor_HasAnyLinks_NodeId = lib.ax_NodeEditor_HasAnyLinks_NodeId
 M.ax_NodeEditor_HasAnyLinks_PinId = lib.ax_NodeEditor_HasAnyLinks_PinId
 function M.ax_NodeEditor_HasAnyLinks(a1) -- generic version
-    if (ffi.istype('NodeId*',a1) or ffi.istype('NodeId',a1) or ffi.istype('NodeId[]',a1)) then return M.ax_NodeEditor_HasAnyLinks_NodeId(a1) end
-    if (ffi.istype('PinId*',a1) or ffi.istype('PinId',a1) or ffi.istype('PinId[]',a1)) then return M.ax_NodeEditor_HasAnyLinks_PinId(a1) end
+    if ffi.istype('NodeId',a1) then return M.ax_NodeEditor_HasAnyLinks_NodeId(a1) end
+    if ffi.istype('PinId',a1) then return M.ax_NodeEditor_HasAnyLinks_PinId(a1) end
     print(a1)
     error'M.ax_NodeEditor_HasAnyLinks could not find overloaded'
 end
