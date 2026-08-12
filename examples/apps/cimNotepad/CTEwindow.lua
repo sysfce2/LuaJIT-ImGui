@@ -296,7 +296,7 @@ local function renderMenuBar(self)
         if ig.Shortcut(bit.bor(ig.lib.ImGuiMod_Ctrl, ig.lib.ImGuiKey_I)) then showDiff(self) end
 end
 
-local sorted_functions = ffi.new("bool[?]",1,true)
+local show_mode = ffi.new("int[?]",1,0)
 local function renderFunctionList(self)
 
     if self.function_list then
@@ -305,16 +305,56 @@ local function renderFunctionList(self)
         --hack for having a window bar
         if ig.BeginMenuBar() then
             if ig.BeginMenu("funtion list") then
-                if ig.MenuItem("sort", nil, sorted_functions) then
-                end
+                ig.RadioButton("line sorted", show_mode , 0)
+                ig.RadioButton("name sorted", show_mode , 1)
+                ig.RadioButton("object sorted", show_mode , 2)
                ig.EndMenu();
             end
             ig.EndMenuBar();
         end
-        local funcs = sorted_functions[0] and self.function_list.funcs_sorted or self.function_list.funcs
-        for i,v in ipairs(funcs) do
-            if ig.Selectable(v.name.."##"..tostring(i) ) then
-                self.editor:ScrollToLine(v.line-1, ig.lib.alignTop)
+        
+        if show_mode[0] ~= 2 then --line or name sorted
+            local funcs = (show_mode[0]==1) and self.function_list.funcs_sorted or self.function_list.funcs
+            for i,v in ipairs(funcs) do
+                if ig.Selectable(v.name.."##"..tostring(i) ) then
+                    self.editor:SetCursor(ig.DocPos(v.line-1,0)[0])
+                    self.editor:ScrollToLine(v.line-1, ig.lib.alignMiddle)
+                    self.editor:SetFocus()
+                end
+            end
+        else --object sorted
+        --[[
+            local objs = self.function_list.tables
+            for i, obj in ipairs(objs) do
+                if ig.Selectable(obj.name.."##"..tostring(i) ) then
+                    self.editor:ScrollToLine(obj.line-1, ig.lib.alignMiddle)
+                end
+                ig.Indent()
+                for j, fun in ipairs(obj.child_f) do
+                    if ig.Selectable(fun.name.."##"..tostring(j) ) then
+                        self.editor:ScrollToLine(fun.line-1, ig.lib.alignMiddle)
+                    end
+                end
+                ig.Unindent()
+            end
+        --]]
+            local objs = self.function_list.tables
+            for i, obj in ipairs(objs) do
+                if ig.TreeNode(obj.name.."##tree"..tostring(i) ) then
+                    if ig.Selectable("def.".."##"..tostring(i) ) then
+                        self.editor:SetCursor(ig.DocPos(obj.line-1,0)[0])
+                        self.editor:ScrollToLine(obj.line-1, ig.lib.alignMiddle)
+                        self.editor:SetFocus()
+                    end
+                    for j, fun in ipairs(obj.child_f) do
+                        if ig.Selectable(fun.name.."##"..tostring(j) ) then
+                            self.editor:SetCursor(ig.DocPos(fun.line-1,0)[0])
+                            self.editor:ScrollToLine(fun.line-1, ig.lib.alignMiddle)
+                            self.editor:SetFocus()
+                        end
+                    end
+                    ig.TreePop()
+                end
             end
         end
         ig.EndChild()
@@ -383,7 +423,7 @@ end
 
 local function CTEwindow(file_name, args)
     local strtext = ""
-    local ext shrt_name = "" , ""
+    local ext, shrt_name = "" , ""
     local modification
     if not args.is_new then
         local file,err = io.open(file_name,"r")
@@ -401,9 +441,15 @@ local function CTEwindow(file_name, args)
         end
     end
 
-    ext = file_name:match("[^%.]+$")
-    shrt_name = file_name:match("[^/\\]+%."..ext.."$")
-    shrt_name = shrt_name.."."..ext
+    ext = file_name:match("%.([^%.]+)$")
+    if ext then
+        shrt_name = file_name:match("[^/\\]+%."..ext.."$")
+        shrt_name = shrt_name.."."..ext
+    else
+        shrt_name = file_name:match("[^/\\]+$")
+        ext = ""
+    end
+   
 
 
     local W = {file_name = file_name or "", shrt_name = shrt_name or "", ext = ext or "", is_new = args.is_new, modification = modification}

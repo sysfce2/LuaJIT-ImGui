@@ -240,6 +240,7 @@ local jit_on = ffi.new("bool[?]",1,false)
 local function renderMenuExecute(self, curdoc)
     self.file_name = self.opendocs[curdoc] and self.opendocs[curdoc].file_name or nil
     self.shrt_name = self.opendocs[curdoc] and self.opendocs[curdoc].shrt_name or nil
+    self.ext = self.opendocs[curdoc] and self.opendocs[curdoc].ext or nil
     
     local function MenuExecute()
         deb_wait = false
@@ -261,7 +262,7 @@ local function renderMenuExecute(self, curdoc)
     end
     
     if (ig.BeginMainMenuBar()) then
-    if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread ))  then 
+    if (ig.BeginMenu("Execute", self.file_name~=nil and executable and hasThread and self.ext=="lua"))  then 
             --print(deb_wait, self.runningThread,do_debug[0], deb_wait and self.runningThread and (do_debug[0] or false))
             if (ig.MenuItem("Execute", "F6", nil, not is_running()))  then
                 MenuExecute()
