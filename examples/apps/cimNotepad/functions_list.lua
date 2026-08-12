@@ -1,6 +1,6 @@
 local M = {}
 local insert = table.insert
-			--require"anima.utils"
+--require"anima.utils"
 local function findFunctionsLua(str)
     local funre = "([%w_%.]*) *=? *function( *)([%w_%.:]*)%s*%b()"
 
@@ -148,6 +148,7 @@ local function getRE()
 	functypedef_re = "^\n*%s*(typedef[%w%s%*_]+%([^*]*%*?%s*[%w_]+%s*%)%s*%b()%s*;)",
 	vardef_re = "^\n*([^;#]+;)",
 	functionD_re = "^([^;{}]-%b()[\n%s%w]*%b{}%s-;*)",
+	operatorD_re = "^([^;{}]+operator[^;{}]+%b()[\n%s%w%(%)_]*%b{}%s-;*)",
 	functype_re = "^%s*[%w%s%*]+%(%*[%w_]+%)%([^%(%)]*%)%s*;",
 	comment_re = "^\n*%s*//[^\n]*\n",
 	comment2_re = "^%s*/%*.-%*/\n",
@@ -157,13 +158,13 @@ local function getRE()
 	}
 	
 	local resN = {"preproc_re","comment2_re","comment_re","emptyline_re",
-	"functypedef_re","functype_re","function_re","functionD_re","operator_re","typedef_st_re","struct_re","enum_re","union_re","namespace_re","class_re","typedef_re","vardef_re","unknown_re"}
+	"functypedef_re","functype_re","operator_re","operatorD_re","function_re","functionD_re","typedef_st_re","struct_re","enum_re","union_re","namespace_re","class_re","typedef_re","vardef_re","unknown_re"}
 	
 	return res,resN
 end
 local function findTxtPartition(txt,getRE,lineg,founded_f, ...)
-	--print("===========findTxtPartition")
-	--local dumpit = true
+	-- print("===========findTxtPartition")
+	-- local dumpit = true
 	local res,resN = getRE()
 	local ini = 1
 	local last_e = 0
@@ -186,7 +187,9 @@ local function findTxtPartition(txt,getRE,lineg,founded_f, ...)
 				if dumpit then
 					print(lineg,i,e,re_name,"------------------------------------------------------")
 					--print(clean_spaces(txt:sub(i,i+30)))
-					print(string.format("%q",txt:sub(i,e):sub(1,30)))
+					--print(string.format("%q",txt:sub(i,e):sub(1,30)))
+					print(string.format("%q",txt:sub(i,e)))
+					--if lineg > 40 then error"degug" end
 					--print(string.format("item:%q pre:%q",txt:sub(i,e),pre))
 				end
 				found = true
@@ -287,11 +290,24 @@ local function parseFunction(it)
 	line = line:gsub("constexpr","")
 	line = clean_spaces(line)
 	
-	local funcname, args, extraconst = line:match("(~?[_%w%[%]=%*/%+%-]+)%s*(%b())(.*)")
+	local funcname, args, extraconst
+	funcname, args, extraconst = line:match("(~?operator%s?[_%w%[%]=%*/%+%-<>!]+)%s*(%b())(.*)")
+	if not funcname then
+		funcname, args, extraconst = line:match("(~?[_%w%[%]=%*/%+%-<>!]+)%s*(%b())(.*)")
+	end
 	it.name = funcname
 end
+local function get_parents_name(it)
+	local parnam = ""
+	while it.parent do
+		parnam = it.parent.name.."::"..parnam
+		it = it.parent
+	end
+	return parnam
+end
 
-local par = {forced_opaque={}}
+local function Cparser()
+local par = {forced_opaque={},opaque_structs={}}
 --recursive item parsing
 	function par:parseItemsR2(txt, itparent,lineg)
 		lineg = lineg or 1
@@ -315,23 +331,21 @@ local par = {forced_opaque={}}
 		for i,it in ipairs(itsarr) do
 			--clean class and get name
 			if it.re_name == "class_re" then
-				it.name = it.item:match("class%s+(%S+)")
-				if not it.name then prtable(it) end
-				print("cleaning class",it.name,"-------------------------------------")
-				--it.item = it.item:gsub("private:.+};$","};")
-				--it.item = it.item:gsub("private:","")
+				--it.name = it.item:match("^[^{]*class%s+([^%s{]+)%s*{")
+				--it.name = it.item:match("class%s+(%S+)")
+				it.name = it.item:match("^[^{]*class%s+(%S+)")
+				--if not it.name then prtable(it) end
+				assert(it.name)
+				--print("cleaning class",it.name,"-------------------------------------")
 				it.item = it.item:gsub("public:","")
 				it.item = it.item:gsub("enum%s*class","enum")
 			elseif it.re_name == "struct_re" then
 				it.name = it.item:match("struct%s+([^%s{]+)")
 				assert(it.name)
-				if self.name_conversion and self.name_conversion[it.name] then
-					it.name = self.name_conversion[it.name]
-					print("=========conversion",it.name)
-				end
 			elseif it.re_name == "namespace_re" then
 				it.name = it.item:match("namespace%s+(%S+)")
-			elseif it.re_name == "function_re" or it.re_name == "functionD_re" then
+			elseif it.re_name == "function_re" or it.re_name == "functionD_re" or  
+			it.re_name == "operator_re" or it.re_name == "operatorD_re" then
 				parseFunction(it)
 			end
 
@@ -343,76 +357,13 @@ local par = {forced_opaque={}}
 				end
 				
 				inner = strip_end_cr(inner:sub(2,-2))
-				--print("=====parseItemsR2",it.name,it.re_name,it.lineg,lineginner)
 				it.childs = par:parseItemsR2(inner, it,lineginner)
-				
-				if it.re_name == "struct_re" then
-					local typename = it.item:match("^%s*template%s*<%s*typename%s*(%S+)%s*>")
-					--local stname = it.item:match("struct%s+(%S+)")
-					--local stname = it.item:match("struct%s+([^%s{]+)") --unamed
-					local stname = it.name
-					
-					--local templa1,templa2 = it.item:match("^%s*template%s*<%s*(%S+)%s*(%S+)%s*>")
-					local templa2 = it.item:match("^%s*template%s*<%s*([^<>]+)%s*>")
-					if templa1 or templa2 then print("template found",stname,templa1,templa2,"typename",typename) end
-					
-					if typename or templa2 then -- it is a struct template
-						self.typenames = self.typenames or {}
-						self.typenames[stname] = typename or templa2
-					end
-				elseif it.re_name == "namespace_re" then
-
-				elseif it.re_name == "class_re" then
-
-				end
-				
-				--create opaque_struct
-				if it.re_name == "struct_re" or it.re_name == "class_re" then
-					local stname,derived = derived_check(it)
-						if derived then
-							local derived2 = derived:gsub("%b<>","") 
-							derived2 = derived2:gsub("%w+::","")
-							print("    --derived check",stname, derived, derived2)
-							--M.prtable(self.opaque_structs)
-							if self.opaque_structs[derived2] then
-								print("    --make opaque opaque derived",it.name,derived,derived2)
-								it.opaque_struct = get_parents_name(it)..it.name
-								self.opaque_structs[it.name] = it.opaque_struct
-							end
-						end
-					if derived and derived:match"std::" then
-						print("    --make opaque std::derived",it.name,derived)
-						--it.opaque_struct = (itparent and itparent.name .."::" or "")..it.name
-						it.opaque_struct = get_parents_name(it)..it.name
-						self.opaque_structs[it.name] = it.opaque_struct
-					end
-					if self.forced_opaque[it.name] then
-						print("    --make forced opaque opaque derived",it.name)
-						it.opaque_struct = get_parents_name(it)..it.name
-						self.opaque_structs[it.name] = it.opaque_struct
-					end
-					for j,child in ipairs(it.childs) do
-						-- if child.re_name == "vardef_re" and child.item:match"using" then
-							-- print("=====using",child.item)
-						-- end
-						if (child.re_name == "vardef_re") and child.item:match"std::" then
-							print("    --make opaque with child std::",it.name,child.item)
-							--M.prtable(itparent)
-							--it.opaque_struct = (itparent and itparent.name .."::" or "")..it.name
-							it.opaque_struct = get_parents_name(it)..it.name
-							print("    ===parents1",get_parents_name(it),"===parents2",(itparent and itparent.name .."::" or ""))
-							print("    ===",it.opaque_struct)
-							--cant do that as function is recursive
-							--self.opaque_structs[it.name] = get_parents_name(it)..it.name--(itparent and itparent.name .."::" or "")..it.name
-							self.opaque_structs[it.name] = it.opaque_struct
-							break
-						end
-					end
-				end
 			end
 		end
 		return itsarr
 	end
+	return par
+end
 local function Listing(arr,ff)
 	for i,it in ipairs(arr) do
 		ff(it)
@@ -421,28 +372,49 @@ local function Listing(arr,ff)
 		end
 	end
 end
-
+local function count_lines(txt)
+	local lineg = 0
+	for _ in txt:gmatch("\n") do
+		lineg = lineg + 1
+	end
+	return lineg
+end
+--clean '' and "" in case they have {]( inside
+local function str_clean(str)
+	--iterate lines
+	local linest = {}
+	for line, n in str:gmatch("[^\n]*\n") do
+		line = line:gsub([[%b'']],'')
+		line = line:gsub([[%b""]],"")
+		insert(linest, line)
+	end
+	return table.concat(linest)
+end
 
 local function findFunctionsCpp(str)
-
+	local par = Cparser()
+	str = str_clean(str)
 	local itarr = par:parseItemsR2(str)
-	
 	local tab_names = {}
 	local func_t = {}
 	-- we keep here functions not in struct or class
 	local main_child_f = {}
 	Listing(itarr, function(it)
-		if it.re_name == "function_re" or it.re_name == "functionD_re" then
+		if it.re_name == "function_re" or it.re_name == "functionD_re" or 
+		it.re_name == "operator_re" or it.re_name == "operatorD_re" then
+			--if not it.name then prtable(it) end
 			assert(it.name)
 			insert(func_t, {name = it.name, line = it.lineg})
 			if not it.parent or (it.parent.re_name~="struct_re" and it.parent.re_name~="class_re") then 
-				--if it.parent then print(it.parent.re_name) end
+				--if it.parent then print("parent for",it.name,it.parent.re_name) end
 				insert(main_child_f,{name = it.name, line = it.lineg})
 			end
 		elseif it.re_name == "struct_re" or it.re_name == "class_re" then
 			local child_f = {}
 			for i,child in ipairs(it.childs) do
-				if child.re_name == "function_re" or child.re_name == "functionD_re" then
+				if child.re_name == "function_re" or child.re_name == "functionD_re" or 
+				child.re_name == "operator_re" or child.re_name == "operatorD_re" then
+					--print(it.name,child.re_name,child.name)
 					insert(child_f,{name = child.name, line = child.lineg})
 				end
 			end
@@ -480,9 +452,11 @@ function M.find_functions(txt, ext)
 	end
 end
 --[=[
+
 local doc = [[C:\LuaGL\gitsources\anima\LuaJIT-ImGui\cimgui\imgui\imgui.h]] 
 --local doc = [[C:\LuaGL\gitsources\anima\LuaJIT-ImGui\examples\apps\cimNotepad\scripts\ImVec2.h]] 
 --local doc = [[C:\LuaGL\gitsources\anima\LuaJIT-ImGui\cimgui\generator\cpp2ffi.lua]]
+--local doc = [[C:\LuaGL\gitsources\anima\LuaJIT-ImGui\cimCTE\ImGuiColorTextEdit\TextEditor.h]] 
 
 local f,err = io.open(doc)
 assert(f, err)
@@ -491,6 +465,6 @@ f:close()
 local rrr = findFunctionsCpp(str)
 -- local rrr = findFunctionsLua(str)
 require"anima.utils"
-prtable(rrr)
+--prtable(rrr)
 ---]=]
 return M

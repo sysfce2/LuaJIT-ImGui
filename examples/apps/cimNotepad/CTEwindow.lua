@@ -461,7 +461,9 @@ local function CTEwindow(file_name, args)
     W.function_list = args.function_list.find_functions(strtext,ext)
     W.render_functions = renderFunctionList
     editor:SetLineFoldingEnabled(true);
+    editor:SetWordWrapEnabled(true)
     --test some callbacks
+    --editor:SetChangeCallback(function() print"change" end,0)
     --[[
     editor:SetCustomCaretRenderer(function(caret) 
         if (caret.caretVisible) then
@@ -484,38 +486,37 @@ local function CTEwindow(file_name, args)
     --]]
     W.breakpoints = args.breakpoints or {}
     W.send_breakpoint = args.send_breakpoint
+    -- decorator for breakpoint
     editor:SetLineDecorator(1.0, function(decorator) 
-
-    local size = decorator.height - 1.0;
-    local pos = ig.GetCursorScreenPos();
-    local drawlist = ig.GetWindowDrawList();
-
-    ig.InvisibleButton("Invisible", ig.ImVec2(size, size))
-
-    if W.breakpoints[tonumber(decorator.line+1)] then
-        drawlist:AddCircleFilled(
-        ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
-        (size - 6.0) * 0.5,
-        ig.U32(128/255, 0, 0, 255/255));
-
-    elseif ig.IsItemHovered() then
-        drawlist:AddCircle(
-        ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
-        (size - 6.0) * 0.5,
-        ig.U32(128/255, 0, 0, 255/255));
-    end
-
-    if ig.IsItemHovered() and ig.IsMouseClicked(0) then 
+        local size = decorator.height - 1.0;
+        local pos = ig.GetCursorScreenPos();
+        local drawlist = ig.GetWindowDrawList();
+    
+        ig.InvisibleButton("Invisible", ig.ImVec2(size, size))
+    
         if W.breakpoints[tonumber(decorator.line+1)] then
-            W.breakpoints[tonumber(decorator.line+1)] = nil
-            W.send_breakpoint({"delete", "@"..W.file_name, tonumber(decorator.line+1)})
-        else
-            W.breakpoints[tonumber(decorator.line+1)] = true
-            W.send_breakpoint({"add", "@"..W.file_name, tonumber(decorator.line+1)})
+            drawlist:AddCircleFilled(
+            ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
+            (size - 6.0) * 0.5,
+            ig.U32(128/255, 0, 0, 255/255));
+    
+        elseif ig.IsItemHovered() then
+            drawlist:AddCircle(
+            ig.ImVec2(pos.x + size * 0.5, pos.y + size * 0.5),
+            (size - 6.0) * 0.5,
+            ig.U32(128/255, 0, 0, 255/255));
         end
-    end
-
-end)
+    
+        if ig.IsItemHovered() and ig.IsMouseClicked(0) then 
+            if W.breakpoints[tonumber(decorator.line+1)] then
+                W.breakpoints[tonumber(decorator.line+1)] = nil
+                W.send_breakpoint({"delete", "@"..W.file_name, tonumber(decorator.line+1)})
+            else
+                W.breakpoints[tonumber(decorator.line+1)] = true
+                W.send_breakpoint({"add", "@"..W.file_name, tonumber(decorator.line+1)})
+            end
+        end
+    end)
 
     W.diff = ig.TextDiff()
     W.trieAutoComplete = ig.TrieAutoComplete()
@@ -527,7 +528,6 @@ end)
     W.originalText = strtext
     editor:SetText( strtext)
 
-    --editor:SetChangeCallback(function() print"change" end,0)
     W.lang_combo = ig.LuaCombo("Lang",langNames,
                 function(name,ind)
                     if name=="None" then
