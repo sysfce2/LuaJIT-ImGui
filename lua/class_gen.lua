@@ -72,10 +72,10 @@ local function sanitize_reserved(def)
 	local words = {["in"]="_in",["repeat"]="_repeat",["end"]="_end"}
 	for k,w in pairs(words) do
 		local pat = "([%(,])("..k..")([,%)])"
-		if def.call_args_old:match(pat) then
-			--print("found",def.cimguiname,def.call_args_old,def.call_args_old:match(pat))
-			def.call_args_old = def.call_args_old:gsub(pat,"%1"..w.."%3")
-			--print(def.call_args_old)
+		if def.call_args:match(pat) then
+			--print("found",def.cimguiname,def.call_args,def.call_args:match(pat))
+			def.call_args = def.call_args:gsub(pat,"%1"..w.."%3")
+			--print(def.call_args)
 			--sanitize defaults
 			if def.defaults[k]~=nil then
 				def.defaults[w] = def.defaults[k]
@@ -172,19 +172,19 @@ local function make_function(method,def)
 	--dump function code
 	if def.nonUDTno == 1 or next(def.defaults) then
 			--if "TextEditor_AddSquiggle"==def.ov_cimguiname then print("2-----------------TextEditor_AddSquiggle") end
-		local call_args_old = def.call_args_old:gsub("%*","")
+		local call_args = def.call_args:gsub("%*","")
 		local code = {}
 		local args, fname_lua
-		local empty = call_args_old:match("^%(%)") --no args
+		local empty = call_args:match("^%(%)") --no args
 		if method and not def.is_static_function then
-			args = call_args_old:gsub("^%(","(self"..(empty and "" or ","))
+			args = call_args:gsub("^%(","(self"..(empty and "" or ","))
 			fname_lua = def.stname..":"..fname_m
 			empty = false
 		else
-			args = call_args_old
+			args = call_args
 			fname_lua = "M."..fname_m
 		end
-		table.insert(code,"function "..fname_lua..call_args_old)
+		table.insert(code,"function "..fname_lua..call_args)
 		--set defaults
 		cpp2ffi.table_do_sorted(def.defaults, function(k,v)
 		--for k,v in pairs(def.defaults) do
@@ -235,11 +235,11 @@ local function constructor_gen(code,def,fundefs)
 	sanitize_reserved(def)
 	--dump function code
 	if def.cimguiname == def.ov_cimguiname then --default constructor
-		local args = (def.call_args_old == "()") and "(ctype)" or "(ctype,"..def.call_args_old:sub(2)
+		local args = (def.call_args == "()") and "(ctype)" or "(ctype,"..def.call_args:sub(2)
 		table.insert(code,"function "..def.stname..".__new"..args)
 	else
 		local name = def.ov_cimguiname:match(def.stname.."_(.*)") --drop struct name part
-		table.insert(code,"function "..def.stname.."."..name..def.call_args_old)
+		table.insert(code,"function "..def.stname.."."..name..def.call_args)
 	end
 	--set defaults
 	cpp2ffi.table_do_sorted(def.defaults, function(k,v)
@@ -249,10 +249,10 @@ local function constructor_gen(code,def,fundefs)
 	end)
 	local fname = def.ov_cimguiname or def.cimguiname
 	if fundefs[def.stname.."_destroy"] then
-		table.insert(code,"    local ptr = lib."..fname..def.call_args_old)
+		table.insert(code,"    local ptr = lib."..fname..def.call_args)
 		table.insert(code,"    return ffi.gc(ptr,lib."..def.stname.."_destroy)")
 	else
-		table.insert(code,"    return lib."..fname..def.call_args_old)
+		table.insert(code,"    return lib."..fname..def.call_args)
 	end
 	table.insert(code,"end")
 end

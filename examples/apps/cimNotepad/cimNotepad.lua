@@ -365,6 +365,9 @@ local function CloseEditor(id)
     --print("CloseEditor",id, opendocs[id].shrt_name)
     local doc = table.remove(opendocs,id)
     opendocfnames[doc.file_name] = nil
+    if #opendocs == 0 then
+        addEditor("new1.lua", nil, true)
+    end
 end
 
 local confirm_close_app = gui.YesNo("There are unsaved changes. Do you still want to close?",{id = "closeapp"})
