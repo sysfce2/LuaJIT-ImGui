@@ -63,10 +63,6 @@ local function renderStatusBar(self)
         ig.TextColored(tcolor," %s | %s ",dirty and "*" or " ", self.shrt_name)
         ig.SameLine()
         self.lang_combo:draw()
-        ig.SameLine()
-        ig.SetNextItemWidth(100)
-        local FontScaleMain = ffi.cast("float*", ffi.cast("char*",ig.GetStyle()) + ffi.offsetof("ImGuiStyle","FontScaleMain"))
-        ig.DragFloat("window scale", FontScaleMain, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)
 end
 
 -- should be global options?

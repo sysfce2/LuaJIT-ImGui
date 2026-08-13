@@ -502,7 +502,7 @@ local usedeja = ffi.new("bool[?]",1,true)
 local usefreetype = ffi.new("bool[?]",1,has_freetype)
 local monohinting = ffi.new("bool[?]",1,true)
 local monochrome = ffi.new("bool[?]",1,false)
-local function LoadFont()
+local function LoadFont(file)
     --print("Loadfont", usedeja[0],usefreetype[0])
     local ig = win.ig
     local style = ig.GetStyle();
@@ -513,13 +513,20 @@ local function LoadFont()
     if usefreetype[0] then
         fnt_cfg.FontLoaderFlags = bit.bor(fnt_cfg.FontLoaderFlags, monohinting[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0, monochrome[0] and ffi.C.ImGuiFreeTypeLoaderFlags_Monochrome or 0) 
     end
-    if usedeja[0] then
+    if file then
+        local theFont = FontsAt:AddFontFromFileTTF(file, 0, fnt_cfg)
+        if theFont~=nil then
+            usedeja[0] = false
+        else
+            print("failed loading font",file); 
+            local theFont = FontsAt:AddFontDefault(fnt_cfg) 
+        end
+    elseif usedeja[0] then
         ffi.copy(fnt_cfg.Name, "DejaVu")
         fnt_cfg.FontDataOwnedByAtlas = false;
-        local theFONT = FontsAt:AddFontFromMemoryCompressedTTF(deja[0], dejasize, 15.0, fnt_cfg);
-        --print("theFont",theFONT)
+        local theFont = FontsAt:AddFontFromMemoryCompressedTTF(deja[0], dejasize, 15.0, fnt_cfg);
     else
-        FontsAt:AddFontDefault(fnt_cfg)
+        local theFont = FontsAt:AddFontDefault(fnt_cfg)
     end
     if usefreetype[0] then
         FontsAt:SetFontLoader(ig.ImGuiFreeType_GetFontLoader())
@@ -528,15 +535,27 @@ local function LoadFont()
     end
     -- win.preimgui = nil
 end
+
+local init_dir = jit.os=="Windows" and [[c:/windows/Fonts]] or "/"
+local fB = gui.FileBrowser(nil,{curr_dir=init_dir,pattern=[[%.tt[cf]$]]},function(f)
+    LoadFont(f)
+end)
+
 local function renderMenuFonts()
     if (ig.BeginMainMenuBar()) then
         if (ig.BeginMenu("Fonts")) then
+            if ig.Button("Load") then
+                fB.open()
+            end
+            fB.draw()
+            ig.SameLine()
+            local font0 = ig.GetIO().Fonts.Fonts.Data[0]
+            local loaded_font = ffi.string(font0:GetDebugName() or "")
+            ig.TextUnformatted(loaded_font)
             if ig.MenuItem("Dejavu",nil, usedeja) then
-                --win.preimgui = LoadFont
                 LoadFont()
             end
             if ig.MenuItem("freetype",nil, usefreetype, has_freetype) then
-                --win.preimgui = LoadFont
                 LoadFont()
             end
             ig.Separator()
@@ -546,6 +565,10 @@ local function renderMenuFonts()
             if ig.MenuItem("Monochrome", nil, monochrome, usefreetype[0]) then
                 LoadFont()
             end
+            ig.Separator()
+            local FontScaleMain = ffi.cast("float*", ffi.cast("char*",ig.GetStyle()) + ffi.offsetof("ImGuiStyle","FontScaleMain"))
+            ig.SetNextItemWidth(75)
+            ig.DragFloat("font scale", FontScaleMain, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)
             ig.EndMenu();
         end
         ig.EndMainMenuBar()
