@@ -11,12 +11,27 @@ local function codepoint_to_utf8(c)
         return                                                          string.char(c)
     elseif c < 2048 then
         return                                     string.char(192 + c/64, 128 + c%64)
-    elseif c < 55296 or 57343 < c and c < 65536 then
+    --elseif c < 55296 or (57343 < c and c < 65536) then
+    elseif c < 65536 then
         return                    string.char(224 + c/4096, 128 + c/64%64, 128 + c%64)
     elseif c < 1114112 then
         return string.char(240 + c/262144, 128 + c/4096%64, 128 + c/64%64, 128 + c%64)
     end
 end
+
+--[[
+local buf = ffi.new("char[5]")
+for c=0,1114112-1 do
+	win.ig.ImTextCharToUtf8(buf, c)
+	local str = ffi.string(buf)
+	local str2 = codepoint_to_utf8(c)
+	if(str~=str2) then
+		print("failed for",c,string.format("%q %q",str,str2))
+	end
+end
+print"done"
+do return end
+--]]
 
 --table with choosed characters-icons
 local cps = {}

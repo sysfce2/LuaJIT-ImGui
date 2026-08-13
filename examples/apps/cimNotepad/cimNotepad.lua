@@ -605,7 +605,7 @@ function win:draw(ig)
         ig.DockBuilderSplitNode(dock_id_bottom[0], lib.ImGuiDir_Left, 0.50, dock_id_bottom_left, dock_id_bottom_right);
         dock_id_top_left = ffi.new("ImGuiID[?]",1,0);
         dock_id_top_right = ffi.new("ImGuiID[?]",1,0);
-        ig.DockBuilderSplitNode(dock_id_top[0], lib.ImGuiDir_Left, 0.90, dock_id_top_left, dock_id_top_right);
+        ig.DockBuilderSplitNode(dock_id_top[0], lib.ImGuiDir_Left, 0.85, dock_id_top_left, dock_id_top_right);
         ig.DockBuilderDockWindow("functions", dock_id_top_right[0]);
         ig.DockBuilderDockWindow("Documents", dock_id_top_left[0]);
         ig.DockBuilderDockWindow("comments", dock_id_bottom_left[0]);

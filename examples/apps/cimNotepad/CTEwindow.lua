@@ -65,10 +65,8 @@ local function renderStatusBar(self)
         self.lang_combo:draw()
         ig.SameLine()
         ig.SetNextItemWidth(100)
-        if (ig.DragFloat("window scale", self.window_scale, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)) then
-            --ig.SetWindowFontScale(self.window_scale[0]);
-             ig.GetStyle().FontScaleMain = self.window_scale[0]
-        end 
+        local FontScaleMain = ffi.cast("float*", ffi.cast("char*",ig.GetStyle()) + ffi.offsetof("ImGuiStyle","FontScaleMain"))
+        ig.DragFloat("window scale", FontScaleMain, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)
 end
 
 -- should be global options?
@@ -297,22 +295,28 @@ local function renderMenuBar(self)
 end
 
 local show_mode = ffi.new("int[?]",1,0)
+local modes = {"line sorted","name sorted","object sorted"}
+local com_mode
 local function renderFunctionList(self)
 
     if self.function_list then
 
-        ig.BeginChild("funtion list",nil, nil, ig.lib.ImGuiWindowFlags_MenuBar)
+        ig.BeginChild("funtion list")--,nil, nil, ig.lib.ImGuiWindowFlags_MenuBar)
         --hack for having a window bar
-        if ig.BeginMenuBar() then
-            if ig.BeginMenu("funtion list") then
-                ig.RadioButton("line sorted", show_mode , 0)
-                ig.RadioButton("name sorted", show_mode , 1)
-                ig.RadioButton("object sorted", show_mode , 2)
-               ig.EndMenu();
-            end
-            ig.EndMenuBar();
+        -- if ig.BeginMenuBar() then
+            -- if ig.BeginMenu("funtion list") then
+                -- ig.RadioButton("line sorted", show_mode , 0)
+                -- ig.RadioButton("name sorted", show_mode , 1)
+                -- ig.RadioButton("object sorted", show_mode , 2)
+               -- ig.EndMenu();
+            -- end
+            -- ig.EndMenuBar();
+        -- end
+        if not com_mode then
+            com_mode = ig.LuaCombo("###mode", modes, function(it,id) show_mode[0] = id-1 end, {calcwidth = true})
+            com_mode:set_index(3)
         end
-        
+        com_mode:draw()
         if show_mode[0] ~= 2 then --line or name sorted
             local funcs = (show_mode[0]==1) and self.function_list.funcs_sorted or self.function_list.funcs
             for i,v in ipairs(funcs) do
@@ -672,7 +676,6 @@ local function CTEwindow(file_name, args)
     W.diff:SetPalette(ig.TextEditor_GetDarkPalette())
     ig.StyleColorsDark()
     --------------------------------
-    W.window_scale = ffi.new("float[?]",1,1)
     W.Render = Render
     W.notifications = args.notifications
     W.ID = "CTE##"..tostring(W)
