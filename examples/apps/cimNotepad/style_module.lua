@@ -7,6 +7,7 @@ local pathut = require"imgui.libs.path"
 local current_ig_style = ffi.new("int[?]",1)
 local current_palette
 local custom_palette = ig.Palette()
+local custom_ig_style
 
 --use dejavu font
 local deja = ffi.new("void*[1]")
@@ -90,6 +91,7 @@ local function initStyle()
 			current_ig_style[0] = 2
 			local style = ig.GetStyle()
 			if ok and styletab then
+				custom_ig_style = styletab.style
 				ffi.copy(style,styletab.style,ffi.sizeof(styletab.style))
 				print("style loaded",styletab.style,ffi.sizeof(styletab.style))
 				--custom_palette
@@ -121,6 +123,9 @@ local function SetDocsStyle()
         ig.StyleColorsDark()
     elseif current_ig_style[0] == 1 then
         ig.StyleColorsLight()
+    elseif current_ig_style[0] == 2 then
+        local style = ig.GetStyle()
+        ffi.copy(style,custom_ig_style,ffi.sizeof(custom_ig_style))
     end
 end
 

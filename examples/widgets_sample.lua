@@ -29,7 +29,8 @@ function win:draw(ig)
 		end
 		if ig.TreeNode"curve" then
 			if curve:draw(ig.ImVec2(400,300)) then
-			--do something with curve.LUT array of 100 floats
+					--do something with curve.LUT array of 100 floats
+				print"curve is used"
 			end
 			ig.InputFloat2("first two",curve.LUT, nil, ig.lib.ImGuiInputTextFlags_ReadOnly)
 			ig.TreePop();

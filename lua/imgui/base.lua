@@ -339,6 +339,7 @@ function M.LuaCombo(label,strs,action,args)
         end
         if M.Combo(label,self.currItem,Items,#strings,-1) then
             action(ffi.string(Items[self.currItem[0]]),self.currItem[0]+1)
+            return true
         end
     end
     function combo:get()
@@ -476,8 +477,9 @@ function M.LuaCurve(name,LUTsize)
     LC.LUTsize = LUTsize
     LC.LUT = ffi.new("float[?]",LUTsize)
     local is_active = nil
+    local delete_point
     local function ControlPoint(ID,graph,points,i,r)
-        r = r or 3
+        r = r or 5
         local pos = points[i]
         local origin = graph.origin
         local size = graph.size
@@ -492,13 +494,15 @@ function M.LuaCurve(name,LUTsize)
             color = M.U32(1,1,0,1)
             if M.IsMouseDown(0) then
                 is_active = i
+            elseif M.IsMouseClicked(1) then
+                delete_point = i
+                return true
             end
         end
     
         local draw_list = M.GetWindowDrawList()
         draw_list:AddCircleFilled(M.ImVec2(origin.x + xpos,origin.y - ypos), r, color)
         if is_active == i then
-            --print"active"
             local m = M.GetIO().MousePos
             local xval = (m.x - origin.x)/size.x
             local yval = (-m.y + origin.y)/size.y
@@ -522,6 +526,8 @@ end
 function LC:get_data()
     CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
 end
+--initial
+LC:get_data()
 function LC:plotter_draw(size)
 
         local desiredY = size.y
@@ -549,6 +555,13 @@ function LC:plotter_draw(size)
         end
         
 end
+local combo_presets = M.LuaCombo("presets",{"identity","inversion"},function(it,id) 
+    if it=="identity" then
+        LC:setpoints({[0]={x=0,y=0},{x=1,y=1}})
+    elseif it == "inversion" then
+        LC:setpoints({[0]={x=0,y=1},{x=1,y=0}})
+    end
+end)
 function LC:draw(size)
     size = size or {x=200,y=200}
     M.PushID(name)
@@ -584,16 +597,15 @@ function LC:draw(size)
             used = true
         end
     end
-
+    --point 0 never removed
+    if delete_point then table.remove(points, delete_point); delete_point = nil; used = true end
     M.SetCursorScreenPos(self.origin)
     M.SetNextItemAllowOverlap()
-    if M.Button"Reset" then
-        used = true
-        LC:setpoints({[0]={x=0,y=0},{x=1,y=1}})
-    end
 
+    if combo_presets:draw() then used = true end
     M.PopID()
 
+    if used then CalcCurvesGimp(points, #points+1, self.LUT, LUTsize ) end
     return used
 end
     return LC
