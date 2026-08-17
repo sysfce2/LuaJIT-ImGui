@@ -33,8 +33,9 @@ local function findFunctionsLua(str)
     local func_t_sorted = {}
     for i,fun in ipairs(func_t) do
         func_t_sorted[i] = fun
-        local tnam = fun.name:match("([^%.:]+)[%.:]")
+        local tnam, fname = fun.name:match("([^%.:]+)[%.:](.+)$")
         if tnam then 
+			fun.name = fname
 			tab_nam[tnam] = tab_nam[tnam] or {name = tnam, line = fun.line, child_f = {}}
 			insert(tab_nam[tnam].child_f, fun)
 		else 
@@ -44,6 +45,7 @@ local function findFunctionsLua(str)
     end
     table.sort(func_t_sorted, function(a,b) return a.name < b.name end)
 	for k,tab in pairs(tab_nam) do
+		table.sort(tab.child_f,function(a,b) return string.upper(a.name) < string.upper(b.name) end)
 		insert(tabs,tab)
 	end
 	table.sort(tabs, function(a,b) return a.name < b.name end)
@@ -420,6 +422,7 @@ local function findFunctionsCpp(str)
 			end
 
 			if not(it.name) then prtable(it) end
+			table.sort(child_f , function(a,b) return a.name < b.name end)
 			insert(tab_names, {name = it.name, line = it.lineg, child_f = child_f})
 		end
 	end)
@@ -428,6 +431,7 @@ local function findFunctionsCpp(str)
         func_t_sorted[i] = v
     end
     table.sort(func_t_sorted, function(a,b) return a.name < b.name end)
+	table.sort(main_child_f , function(a,b) return a.name < b.name end)
 	insert(tab_names,{name="main", line = 1, child_f = main_child_f})
 	table.sort(tab_names, function(a,b) return a.name < b.name end)
 	return {funcs=func_t, funcs_sorted=func_t_sorted, tables = tab_names}

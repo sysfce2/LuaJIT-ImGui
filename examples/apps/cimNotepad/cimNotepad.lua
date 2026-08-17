@@ -47,6 +47,7 @@ local Exec = dofile(pathut.chain(currpath,"executer.lua"))
 local ExecutePull, send_breakpoint = Exec.ExecutePull, Exec.send_breakpoint
 -----function list
 local function_list = dofile(pathut.chain(currpath,"functions_list.lua"))
+
 ------------------------------------------------------------------
 
 local Log = gui.CLog() -- app Log
@@ -57,6 +58,8 @@ local opendocfnames = {}
 local set_tab = -1
 local curr_opendoc = 1
 local close_doc
+
+local style_module = dofile(pathut.chain(currpath,"style_module.lua"))(win.ig, opendocs)
 
 local notifications = ig.Notifications()
 local showhelp = false
@@ -329,6 +332,7 @@ end
 
 TRO = gui.TabReorder(do_reorder)
 ---------------------------------
+
 addEditor = function(fullname, line, is_new, breakpoints)
 --print("---addEditor",fullname, line, is_new)
         if opendocfnames[fullname] then
@@ -348,6 +352,9 @@ addEditor = function(fullname, line, is_new, breakpoints)
         end 
         
         local doc = CTE.CTEwindow(fullname,{Log = Log, is_new = is_new, notifications = notifications, send_breakpoint = send_breakpoint, breakpoints = breakpoints, function_list = function_list})
+        --style
+        doc.editor:SetPalette(style_module.current_palette)
+        doc.diff:SetPalette(style_module.current_palette)
         -- set line
         if line then
             doc.editor:SetCursor(ig.DocPos(line-1,0)[0])
@@ -492,92 +499,7 @@ local this = {ig = ig, Log = Log, setStack = setStack, opendocs = opendocs,
  
 win.ig.GetIO().IniFilename = nil --"cimNotepad.ini"
 
--------------------------Fonts
---use dejavu font
-local deja = ffi.new("void*[1]")
-local dejasize = win.ig.GetDejavu(deja)
-local has_freetype =  pcall(function() return win.ig.lib.ImGuiFreeType_GetFontLoader end)
---print("deja",dejasize,deja[0])
-local usedeja = ffi.new("bool[?]",1,true)
-local usefreetype = ffi.new("bool[?]",1,has_freetype)
-local monohinting = ffi.new("bool[?]",1,true)
-local monochrome = ffi.new("bool[?]",1,false)
-local function LoadFont(file)
-    --print("Loadfont", usedeja[0],usefreetype[0])
-    local ig = win.ig
-    local style = ig.GetStyle();
-    style.FontSizeBase = 15.0;
-    local FontsAt = ig.GetIO().Fonts
-    FontsAt:Clear()
-    local fnt_cfg = ig.ImFontConfig()
-    if usefreetype[0] then
-        fnt_cfg.FontLoaderFlags = bit.bor(fnt_cfg.FontLoaderFlags, monohinting[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0, monochrome[0] and ffi.C.ImGuiFreeTypeLoaderFlags_Monochrome or 0) 
-    end
-    if file then
-        local theFont = FontsAt:AddFontFromFileTTF(file, 0, fnt_cfg)
-        if theFont~=nil then
-            usedeja[0] = false
-        else
-            print("failed loading font",file); 
-            local theFont = FontsAt:AddFontDefault(fnt_cfg) 
-        end
-    elseif usedeja[0] then
-        ffi.copy(fnt_cfg.Name, "DejaVu")
-        fnt_cfg.FontDataOwnedByAtlas = false;
-        local theFont = FontsAt:AddFontFromMemoryCompressedTTF(deja[0], dejasize, 15.0, fnt_cfg);
-    else
-        local theFont = FontsAt:AddFontDefault(fnt_cfg)
-    end
-    if usefreetype[0] then
-        FontsAt:SetFontLoader(ig.ImGuiFreeType_GetFontLoader())
-    else
-        FontsAt:SetFontLoader(ig.ImFontAtlasGetFontLoaderForStbTruetype())
-    end
-    -- win.preimgui = nil
-end
-
-local init_dir = jit.os=="Windows" and [[c:/windows/Fonts]] or "/"
-local fB = gui.FileBrowser(nil,{curr_dir=init_dir,pattern=[[%.tt[cf]$]]},function(f)
-    LoadFont(f)
-end)
-
-local function renderMenuFonts()
-    if (ig.BeginMainMenuBar()) then
-        if (ig.BeginMenu("Fonts")) then
-            if ig.Button("Load") then
-                fB.open()
-            end
-            fB.draw()
-            ig.SameLine()
-            local font0 = ig.GetIO().Fonts.Fonts.Data[0]
-            local loaded_font = ffi.string(font0:GetDebugName() or "")
-            ig.TextUnformatted(loaded_font)
-            if ig.MenuItem("Dejavu",nil, usedeja) then
-                LoadFont()
-            end
-            if ig.MenuItem("freetype",nil, usefreetype, has_freetype) then
-                LoadFont()
-            end
-            ig.Separator()
-            if ig.MenuItem("MonoHinting", nil, monohinting, usefreetype[0]) then
-                LoadFont()
-            end
-            if ig.MenuItem("Monochrome", nil, monochrome, usefreetype[0]) then
-                LoadFont()
-            end
-            ig.Separator()
-            local FontScaleMain = ffi.cast("float*", ffi.cast("char*",ig.GetStyle()) + ffi.offsetof("ImGuiStyle","FontScaleMain"))
-            ig.SetNextItemWidth(75)
-            ig.DragFloat("font scale", FontScaleMain, 0.005, 0.3, 2 , "%.2f", ig.lib.ImGuiSliderFlags_AlwaysClamp)
-            ig.EndMenu();
-        end
-        ig.EndMainMenuBar()
-    end
-end
-LoadFont()
---win.ig.SetDejavu()
-
-
+style_module.LoadFont()
 -- load persistence
 PersistenceLoad()
 
@@ -603,7 +525,7 @@ local function ContractLog(vSize, ratio)
     ExpandContract_used = true
 end
 
-
+local selected_text
 function win:draw(ig)
     --ig.ShowDemoWindow()
     checkModification()
@@ -702,14 +624,19 @@ function win:draw(ig)
                     curr_opendoc = i
                     --if ig.Button("showTabBar") then showTabBar() end
                     local ret = v:Render()
-                    if ret then
-                        print("changed")
+                    --if ret then print("changed") end
+                    ---[[
+                    if v.editor:MainCursorHasSelection() then
+                        local dp= v.editor:GetMainCursorSelection()
+                        local txt = v.editor:GetSectionText(dp)
+                        if txt ~= selected_text then
+                            selected_text = txt
+                            v.editor:SelectAllOccurrencesOf(txt, true, true)
+                        end
+                    else
+                        selected_text = nil
                     end
-                    -- if v.editor:MainCursorHasSelection() then
-                        -- local dp= v.editor:GetMainCursorSelection()
-                        -- local txt = v.editor:GetSectionText(dp)
-                        -- print(ffi.string(txt or ""))
-                    -- end
+                    --]]
                 else 
                     --print("going to change tab from", i,"to",set_tab)
                 end
@@ -728,7 +655,8 @@ function win:draw(ig)
     CheckCloseEditor(close_doc, doclosefile)
     
     Exec.renderMenuExecute(this, curr_opendoc)
-    renderMenuFonts()
+    style_module.renderMenuFonts()
+	
     if (ig.BeginMainMenuBar()) then
         renderMenuDocs()
         if ig.BeginMenu("Help") then

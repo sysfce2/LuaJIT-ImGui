@@ -57,6 +57,7 @@ local function cdataSerialize(cd)
     end
 end
 
+local cdataSerialize = require"imgui.libs.cdataser0"
 local function basicSerialize (o)
     if type(o) == "number" then
         return string.format("%.17g", o)

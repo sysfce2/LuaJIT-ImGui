@@ -2902,7 +2902,10 @@ M.TextDiff = ffi.metatype("TextDiff",TextDiff)
 local TextEditor= {}
 TextEditor.__index = TextEditor
 TextEditor.AddMarker = lib.TextEditor_AddMarker
-TextEditor.AddNextOccurrence = lib.TextEditor_AddNextOccurrence
+function TextEditor:AddNextOccurrence(wholeWord)
+    wholeWord = wholeWord or false
+    return lib.TextEditor_AddNextOccurrence(self,wholeWord)
+end
 function TextEditor:AddSquiggle(start,_end,type,color,tooltip)
     tooltip = tooltip or ""
     return lib.TextEditor_AddSquiggle(self,start,_end,type,color,tooltip)
@@ -2940,8 +2943,14 @@ TextEditor.FilterLines = lib.TextEditor_FilterLines
 TextEditor.FilterSelections = lib.TextEditor_FilterSelections
 TextEditor.FindAll = lib.TextEditor_FindAll
 TextEditor.FindNext = lib.TextEditor_FindNext
-TextEditor.FindWordEnd = lib.TextEditor_FindWordEnd
-TextEditor.FindWordStart = lib.TextEditor_FindWordStart
+function TextEditor:FindWordEnd(pos,wholeWord)
+    wholeWord = wholeWord or false
+    return lib.TextEditor_FindWordEnd(self,pos,wholeWord)
+end
+function TextEditor:FindWordStart(pos,wholeWord)
+    wholeWord = wholeWord or false
+    return lib.TextEditor_FindWordStart(self,pos,wholeWord)
+end
 TextEditor.FoldAroundLine = lib.TextEditor_FoldAroundLine
 TextEditor.GetCurrentCursorPosition = lib.TextEditor_GetCurrentCursorPosition
 TextEditor.GetCurrentCursorSelection = lib.TextEditor_GetCurrentCursorSelection
@@ -3050,7 +3059,10 @@ TextEditor.ReplaceTextInAllCursors = lib.TextEditor_ReplaceTextInAllCursors
 TextEditor.ReplaceTextInCurrentCursor = lib.TextEditor_ReplaceTextInCurrentCursor
 TextEditor.ScrollToLine = lib.TextEditor_ScrollToLine
 TextEditor.SelectAll = lib.TextEditor_SelectAll
-TextEditor.SelectAllOccurrences = lib.TextEditor_SelectAllOccurrences
+function TextEditor:SelectAllOccurrences(wholeWord)
+    wholeWord = wholeWord or false
+    return lib.TextEditor_SelectAllOccurrences(self,wholeWord)
+end
 function TextEditor:SelectAllOccurrencesOf(text,caseSensitive,wholeWord)
     if caseSensitive == nil then caseSensitive = true end
     wholeWord = wholeWord or false

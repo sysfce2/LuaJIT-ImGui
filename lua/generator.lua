@@ -95,8 +95,11 @@ local hstrfile = read_data"./imgui_base_cdefs.lua"
 save_data("./imgui/cdefs.lua",table.concat(cdefs,"\n"), hstrfile)
 print"generate classes"
 local class_gen = require"class_gen"
-local classes = class_gen(sources, FREETYPE_GENERATION)
+local classes, enums_for_save = class_gen(sources, FREETYPE_GENERATION)
 
+----- generate enums_for_save
+print"save base.lua"
+save_data("./imgui/enums.lua", cpp2ffi.serializeTableF(enums_for_save))
 
 ----- generate imgui/base.lua
 print"save base.lua"
