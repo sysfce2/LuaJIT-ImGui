@@ -18,6 +18,7 @@ local usedeja = ffi.new("bool[?]",1,true)
 local usefreetype = ffi.new("bool[?]",1,has_freetype)
 local monohinting = ffi.new("bool[?]",1,true)
 local monochrome = ffi.new("bool[?]",1,false)
+local bold = ffi.new("bool[?]",1,false)
 
 local Colors = require"imgui.enums".Color
 
@@ -269,7 +270,7 @@ local function LoadFont(file)
     FontsAt:Clear()
     local fnt_cfg = ig.ImFontConfig()
     if usefreetype[0] then
-        fnt_cfg.FontLoaderFlags = bit.bor(fnt_cfg.FontLoaderFlags, monohinting[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0, monochrome[0] and ffi.C.ImGuiFreeTypeLoaderFlags_Monochrome or 0) 
+        fnt_cfg.FontLoaderFlags = bit.bor(fnt_cfg.FontLoaderFlags, monohinting[0] and ffi.C.ImGuiFreeTypeLoaderFlags_MonoHinting or 0, monochrome[0] and ffi.C.ImGuiFreeTypeLoaderFlags_Monochrome or 0,bold[0] and ig.lib.ImGuiFreeTypeLoaderFlags_Bold or 0) 
     end
     if file then
         local theFont = FontsAt:AddFontFromFileTTF(file, 0, fnt_cfg)
@@ -470,6 +471,9 @@ local function renderMenuFonts()
                 LoadFont()
             end
             if ig.MenuItem("Monochrome", nil, monochrome, usefreetype[0]) then
+                LoadFont()
+            end
+            if ig.MenuItem("Bold", nil, bold, usefreetype[0]) then
                 LoadFont()
             end
             ig.Separator()
