@@ -1,6 +1,7 @@
 
 local ffi = require"ffi"
 ----------------------------serialization
+local cdataSerialize0 = require"imgui.libs.cdataser0"
 local function cdataSerialize(cd)
     if ffi.istype("float[1]", cd) then
         return table.concat{[[ffi.new('float[1]',]],cd[0],[[)]]}
@@ -47,17 +48,19 @@ local function cdataSerialize(cd)
             elseif ffi.istype("ImVec2",cd) then
                 return table.concat{[[ig.ImVec2(]],cd.x,",",cd.y,")"}
             else
-                print(cd,"not serialized")
-                error"serialization error"
+                -- print(cd,"not serialized")
+                -- error"serialization error"
+                return cdataSerialize0(cd)
             end
         else
-            print(cd,"not serialized")
-            error"serialization error"
+            -- print(cd,"not serialized")
+            -- error"serialization error"
+            return cdataSerialize0(cd)
         end
     end
 end
 
-local cdataSerialize = require"imgui.libs.cdataser0"
+
 local function basicSerialize (o)
     if type(o) == "number" then
         return string.format("%.17g", o)
