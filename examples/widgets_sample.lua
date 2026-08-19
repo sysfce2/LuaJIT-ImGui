@@ -10,7 +10,7 @@ local curve = win.ig.LuaCurve("mycurve",100)
 local Quat = ffi.new("quat",{1,0,0,0})
 local v3 = ffi.new("vec3",{1,0,0})
 local mat4 = win.ig.mat4_cast(Quat)
-
+local x = ffi.new("float[?]",1)
 function win:draw(ig)
 
 	if ig.Begin("widgets",nil, ig.lib.ImGuiWindowFlags_AlwaysAutoResize) then
@@ -32,8 +32,12 @@ function win:draw(ig)
 					--do something with curve.LUT array of 100 floats
 				print"curve is used"
 			end
+			
+			ig.DragFloat("x",x,0.001,0,1)
+			ig.TextUnformatted(tostring(curve:calc(x[0])))
 			ig.InputFloat2("first two",curve.LUT, nil, ig.lib.ImGuiInputTextFlags_ReadOnly)
 			ig.TreePop();
+			if ig.Button("init") then curve:preset_init() end
 			ig.Separator();
 		end
 		if ig.TreeNode"gizmoquat" then

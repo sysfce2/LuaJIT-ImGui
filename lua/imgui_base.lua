@@ -488,9 +488,9 @@ function M.LuaCurve(name,LUTsize)
         local b_pos = M.ImVec2(origin.x + xpos - r,origin.y - ypos - r)
         M.SetCursorScreenPos(b_pos)
         M.InvisibleButton("pp"..i,M.ImVec2(r*2, r*2))
-        local color = M.U32(1,0,0,1)
+        local color = M.GetColorU32(M.lib.ImGuiCol_Button)
         if M.IsItemHovered() then
-            color = M.U32(1,1,0,1)
+            color = M.GetColorU32(M.lib.ImGuiCol_ButtonHovered)
             if M.IsMouseDown(0) then
                 is_active = i
             elseif M.IsMouseClicked(1) then
@@ -525,6 +525,16 @@ end
 function LC:get_data()
     CalcCurvesGimp(points, #points+1, self.LUT, LUTsize )
 end
+function LC:calc(x)
+	--value to bin
+	x = math.min(1,math.max(0,x))
+	local bin, frac = math.modf(x*(LUTsize-1))
+	if frac > 0 then
+		return self.LUT[bin]+frac*(self.LUT[bin+1]-self.LUT[bin])
+	else
+		return self.LUT[bin]
+	end
+end
 --initial
 LC:get_data()
 function LC:plotter_draw(size)
@@ -554,13 +564,22 @@ function LC:plotter_draw(size)
         end
         
 end
-local combo_presets = M.LuaCombo("presets",{"identity","inversion"},function(it,id) 
+local combo_presets = M.LuaCombo("presets",{"identity","inversion"},function(it,id)
     if it=="identity" then
         LC:setpoints({[0]={x=0,y=0},{x=1,y=1}})
     elseif it == "inversion" then
         LC:setpoints({[0]={x=0,y=1},{x=1,y=0}})
     end
 end)
+function LC:preset_init()
+	combo_presets:set_index(1)
+	self:get_data()
+end
+function LC:preset_set(strs,i,action)
+	combo_presets:set(strs,1,action)
+	--combo_presets:set_index(1)
+	self:get_data()
+end
 function LC:draw(size)
     size = size or {x=200,y=200}
     M.PushID(name)

@@ -18,6 +18,7 @@ end)
 function win:draw(ig)
     com_foods:draw()
     com_food1:draw()
+	if ig.Button("init") then com_foods:set_index(1) end
 end
 
 win:start()
