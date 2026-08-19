@@ -64,11 +64,11 @@ local function ChangeFont(font,fontsize,merge)
 	
 	local FontsAt = ig.GetIO().Fonts
 	------destroy old
-	FontsAt:Clear()
+	if not merge then FontsAt:Clear() end
 	------reconstruct
 	--load default
 	local fnt_cfg_def
-	if merge then
+	if false and merge then
 		local fnt_cfg_def = ig.ImFontConfig()
 		--fnt_cfg_def.SizePixels = fontsize
 		--fnt_cfg_def.PixelSnapH = true
@@ -78,7 +78,7 @@ local function ChangeFont(font,fontsize,merge)
 		--fnt_cfg_def.GlyphMinAdvanceX = fontsize 
 		--fnt_cfg_def.GlyphMaxAdvanceX = fontsize 
 	end
-	FontsAt:AddFontDefault(fnt_cfg_def)
+	if not merge then FontsAt:AddFontDefault(fnt_cfg_def) end
 	
 	--prepare config for extra font
 	local fnt_cfg = ig.ImFontConfig()
@@ -96,9 +96,9 @@ local function ChangeFont(font,fontsize,merge)
 	fnt_cfg.FontLoaderFlags = use_freetype[0] and bit.bor(fnt_cfg.FontLoaderFlags, ffi.C.ImGuiFreeTypeLoaderFlags_LoadColor) or fnt_cfg.FontLoaderFlags
 	
 	--maximal range allowed with ImWchar32
-	--local ranges = ffi.new("ImWchar[3]",{0x0001,0x10FFFF,0})
+	local ranges = ffi.new("ImWchar[3]",{0x0001,0x10FFFF,0})
 	if font then
-		local theFONT= FontsAt:AddFontFromFileTTF(font, 0, fnt_cfg)--,ranges)
+		local theFONT= FontsAt:AddFontFromFileTTF(font, 0, fnt_cfg,ranges)
 		if (theFONT == nil) then return false end
 	end
 	if use_freetype[0] then
