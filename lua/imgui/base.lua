@@ -490,7 +490,7 @@ function M.LuaCurve(name,LUTsize)
         M.SetCursorScreenPos(b_pos)
         M.InvisibleButton("pp"..i,M.ImVec2(r*2, r*2))
         local color = M.GetColorU32(M.lib.ImGuiCol_Button)
-        if M.IsItemHovered() then
+        if M.IsItemHovered(M.lib.ImGuiHoveredFlags_AllowWhenBlockedByActiveItem) then
             color = M.GetColorU32(M.lib.ImGuiCol_ButtonHovered)
             if M.IsMouseDown(0) then
                 is_active = i
