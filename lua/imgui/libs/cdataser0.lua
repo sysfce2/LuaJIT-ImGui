@@ -92,7 +92,7 @@ local function save_ptr(cd, ti)
         return s
     else
         print("cdataser WARNING: saving nil ptr!!",cd,el_size,const)
-		error"nil ptr"
+        error"nil ptr"
         return nilval
     end
 end
