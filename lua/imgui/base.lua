@@ -644,6 +644,7 @@ M.CanvasState = ffi.metatype("CanvasState",CanvasState)
 --------------------------CodePoint----------------------------
 local CodePoint= {}
 CodePoint.__index = CodePoint
+M.CodePoint_getGlyphWidth = lib.CodePoint_getGlyphWidth
 M.CodePoint_isBracketCloser = lib.CodePoint_isBracketCloser
 M.CodePoint_isBracketOpener = lib.CodePoint_isBracketOpener
 M.CodePoint_isEastAsian = lib.CodePoint_isEastAsian
@@ -2365,12 +2366,14 @@ ImPlotPlot.SetTitle = lib.ImPlotPlot_SetTitle
 ImPlotPlot.XAxis_Nil = lib.ImPlotPlot_XAxis_Nil
 ImPlotPlot.XAxis__const = lib.ImPlotPlot_XAxis__const
 function ImPlotPlot:XAxis(a2) -- generic version
+    do return self:XAxis_Nil(a2) end
     print(a2)
     error'ImPlotPlot:XAxis could not find overloaded'
 end
 ImPlotPlot.YAxis_Nil = lib.ImPlotPlot_YAxis_Nil
 ImPlotPlot.YAxis__const = lib.ImPlotPlot_YAxis__const
 function ImPlotPlot:YAxis(a2) -- generic version
+    do return self:YAxis_Nil(a2) end
     print(a2)
     error'ImPlotPlot:YAxis could not find overloaded'
 end
@@ -2945,8 +2948,12 @@ TextEditor.AllCursorsHaveSelection = lib.TextEditor_AllCursorsHaveSelection
 TextEditor.AnyCursorHasSelection = lib.TextEditor_AnyCursorHasSelection
 TextEditor.CanRedo = lib.TextEditor_CanRedo
 TextEditor.CanUndo = lib.TextEditor_CanUndo
+TextEditor.ClearChangeCallback = lib.TextEditor_ClearChangeCallback
 TextEditor.ClearCursors = lib.TextEditor_ClearCursors
 TextEditor.ClearCustomCaretRenderer = lib.TextEditor_ClearCustomCaretRenderer
+TextEditor.ClearCustomLineNumberRenderer = lib.TextEditor_ClearCustomLineNumberRenderer
+TextEditor.ClearDeletor = lib.TextEditor_ClearDeletor
+TextEditor.ClearInsertor = lib.TextEditor_ClearInsertor
 TextEditor.ClearLineDecorator = lib.TextEditor_ClearLineDecorator
 TextEditor.ClearLineNumberContextMenuCallback = lib.TextEditor_ClearLineNumberContextMenuCallback
 TextEditor.ClearMarkers = lib.TextEditor_ClearMarkers
@@ -2963,6 +2970,7 @@ end
 TextEditor.ClearText = lib.TextEditor_ClearText
 TextEditor.ClearTextContextMenuCallback = lib.TextEditor_ClearTextContextMenuCallback
 TextEditor.ClearTextHoverCallback = lib.TextEditor_ClearTextHoverCallback
+TextEditor.ClearTransactionCallback = lib.TextEditor_ClearTransactionCallback
 TextEditor.CloseFindReplaceWindow = lib.TextEditor_CloseFindReplaceWindow
 TextEditor.Copy = lib.TextEditor_Copy
 TextEditor.CurrentCursorHasSelection = lib.TextEditor_CurrentCursorHasSelection
@@ -3020,6 +3028,8 @@ function TextEditor:GetSectionText(a2,a3) -- generic version
 end
 TextEditor.GetTabSize = lib.TextEditor_GetTabSize
 TextEditor.GetText = lib.TextEditor_GetText
+
+
 TextEditor.GetTextLeftMargin = lib.TextEditor_GetTextLeftMargin
 TextEditor.GetText_alloc = lib.TextEditor_GetText_alloc
 TextEditor.GetText_free = lib.TextEditor_GetText_free
@@ -3028,8 +3038,12 @@ TextEditor.GetUndoIndex = lib.TextEditor_GetUndoIndex
 TextEditor.GetUserData = lib.TextEditor_GetUserData
 TextEditor.GetWordAtMousePos = lib.TextEditor_GetWordAtMousePos
 TextEditor.GrowSelections = lib.TextEditor_GrowSelections
+TextEditor.HasChangeCallback = lib.TextEditor_HasChangeCallback
 TextEditor.HasCustomCaretRenderer = lib.TextEditor_HasCustomCaretRenderer
+TextEditor.HasCustomLineNumberRenderer = lib.TextEditor_HasCustomLineNumberRenderer
+TextEditor.HasDeletor = lib.TextEditor_HasDeletor
 TextEditor.HasFindString = lib.TextEditor_HasFindString
+TextEditor.HasInsertor = lib.TextEditor_HasInsertor
 TextEditor.HasLanguage = lib.TextEditor_HasLanguage
 TextEditor.HasLineDecorator = lib.TextEditor_HasLineDecorator
 TextEditor.HasLineNumberContextMenuCallback = lib.TextEditor_HasLineNumberContextMenuCallback
@@ -3037,6 +3051,7 @@ TextEditor.HasMarkers = lib.TextEditor_HasMarkers
 TextEditor.HasSquiggles = lib.TextEditor_HasSquiggles
 TextEditor.HasTextContextMenuCallback = lib.TextEditor_HasTextContextMenuCallback
 TextEditor.HasTextHoverCallback = lib.TextEditor_HasTextHoverCallback
+TextEditor.HasTransactionCallback = lib.TextEditor_HasTransactionCallback
 TextEditor.IndentLines = lib.TextEditor_IndentLines
 TextEditor.IsAutoIndentEnabled = lib.TextEditor_IsAutoIndentEnabled
 TextEditor.IsCaretsVisible = lib.TextEditor_IsCaretsVisible
@@ -3088,7 +3103,10 @@ function TextEditor:ReplaceSectionText(a2,a3,a4) -- generic version
 end
 TextEditor.ReplaceTextInAllCursors = lib.TextEditor_ReplaceTextInAllCursors
 TextEditor.ReplaceTextInCurrentCursor = lib.TextEditor_ReplaceTextInCurrentCursor
-TextEditor.ScrollToLine = lib.TextEditor_ScrollToLine
+function TextEditor:ScrollToLine(line,alignment)
+    alignment = alignment or 1
+    return lib.TextEditor_ScrollToLine(self,line,alignment)
+end
 TextEditor.SelectAll = lib.TextEditor_SelectAll
 function TextEditor:SelectAllOccurrences(wholeWord)
     wholeWord = wholeWord or false
@@ -3129,6 +3147,7 @@ end
 TextEditor.SetCompletePairedGlyphs = lib.TextEditor_SetCompletePairedGlyphs
 TextEditor.SetCursor = lib.TextEditor_SetCursor
 TextEditor.SetCustomCaretRenderer = lib.TextEditor_SetCustomCaretRenderer
+TextEditor.SetCustomLineNumberRenderer = lib.TextEditor_SetCustomLineNumberRenderer
 TextEditor.SetDecorationLeftMargin = lib.TextEditor_SetDecorationLeftMargin
 M.TextEditor_SetDefaultPalette = lib.TextEditor_SetDefaultPalette
 TextEditor.SetDeletor = lib.TextEditor_SetDeletor
@@ -3163,7 +3182,17 @@ TextEditor.SetShowSpacesEnabled = lib.TextEditor_SetShowSpacesEnabled
 TextEditor.SetShowTabsEnabled = lib.TextEditor_SetShowTabsEnabled
 TextEditor.SetShowWhitespacesEnabled = lib.TextEditor_SetShowWhitespacesEnabled
 TextEditor.SetTabSize = lib.TextEditor_SetTabSize
-TextEditor.SetText = lib.TextEditor_SetText
+TextEditor.SetText_std_string_view = lib.TextEditor_SetText_std_string_view
+
+
+
+
+
+function TextEditor:SetText(a2) -- generic version
+    do return self:SetText_std_string_view(a2) end
+    print(a2)
+    error'TextEditor:SetText could not find overloaded'
+end
 TextEditor.SetTextContextMenuCallback = lib.TextEditor_SetTextContextMenuCallback
 TextEditor.SetTextHoverCallback = lib.TextEditor_SetTextHoverCallback
 TextEditor.SetTextLeftMargin = lib.TextEditor_SetTextLeftMargin
@@ -3322,6 +3351,7 @@ end
 M.imguiGizmo = ffi.metatype("imguiGizmo",imguiGizmo)
 ------------------------------------------------------
 M.GetDejavu = lib.GetDejavu
+M.Getnotosans = lib.Getnotosans
 M.ImGuiFreeType_DebugEditFontLoaderFlags = lib.ImGuiFreeType_DebugEditFontLoaderFlags
 M.ImGuiFreeType_GetFontLoader = lib.ImGuiFreeType_GetFontLoader
 function M.ImGuiFreeType_SetAllocatorFunctions(alloc_func,free_func,user_data)

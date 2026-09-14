@@ -12,6 +12,8 @@ local custom_ig_style
 --use dejavu font
 local deja = ffi.new("void*[1]")
 local dejasize = ig.GetDejavu(deja)
+local noto = ffi.new("void*[1]")
+local notosize = ig.Getnotosans(noto)
 local has_freetype =  pcall(function() return ig.lib.ImGuiFreeType_GetFontLoader end)
 --print("deja",dejasize,deja[0])
 
@@ -292,7 +294,11 @@ LoadFont = function()
         ffi.copy(fnt_cfg.Name, "DejaVu")
         fnt_cfg.FontDataOwnedByAtlas = false;
         local theFont = FontsAt:AddFontFromMemoryCompressedTTF(deja[0], dejasize, 15.0, fnt_cfg);
-    else --which_font[0] == 2 or not font_file
+	elseif which_font[0] == 2 then
+        ffi.copy(fnt_cfg.Name, "NotoSans")
+        fnt_cfg.FontDataOwnedByAtlas = false;
+        local theFont = FontsAt:AddFontFromMemoryCompressedTTF(noto[0], notosize, 15.0, fnt_cfg);
+    else --which_font[0] == 3 or not font_file
         local theFont = FontsAt:AddFontDefault(fnt_cfg)
     end
     if usefreetype[0] then
@@ -471,7 +477,10 @@ local function renderMenuFonts()
             if ig.RadioButton("Dejavu", which_font , 1) then
                 LoadFont()
             end
-            if ig.RadioButton("Default", which_font , 2) then
+			if ig.RadioButton("Notosans", which_font , 2) then
+                LoadFont()
+            end
+            if ig.RadioButton("Default", which_font , 3) then
                 LoadFont()
             end
             if ig.MenuItem("freetype",nil, usefreetype, has_freetype) then

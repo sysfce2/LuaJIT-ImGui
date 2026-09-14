@@ -380,7 +380,19 @@ local function gen_args(method,def,minvararg)
 end
 
 --require"anima.utils" --gives us prtable
-local function create_generic(code,defs,method)
+local function create_generic(code,defsor,method)
+	local defs = cpp2ffi.deepcopy(defsor)
+	local delete = {}
+	for i,def in ipairs(defs) do
+		if def.skipped then
+			delete[#delete+1] = i
+		end
+	end
+	for i=#delete,1,-1 do
+		table.remove(defs,delete[i])
+	end
+	--print("create_generic",defs[1].cimguiname)
+	-- if defs[1].cimguiname == "TextEditor_SetText" then prtable(defs) end
 	if defs[1].skipped then return end
 	if defs[1].is_static_function then
 		method = nil
@@ -424,6 +436,7 @@ local function create_generic(code,defs,method)
 	local maxnargs2 = is_vararg and minvararg-1 or maxnargs
 	local ini_i= methodnotconst and 2 or 1
 	ini_i= defs[1].nonUDTno and ini_i + 1 or ini_i
+	--if defs[1].cimguiname == "TextEditor_SetText" then print("find check",ini_i,maxnargs2) end
 	for i=ini_i,maxnargs2 do
 		keys[i] = {}
 		for j=1,#defs do
@@ -438,6 +451,7 @@ local function create_generic(code,defs,method)
 		for k,v in pairs(keys[i]) do keycount = keycount + 1 end
 		--print("keycount",i,keycount,#defs)
 		for j=1,#defs do
+			--if defs[1].cimguiname == "TextEditor_SetText" then print("find check2",j,done[j],keycount) end
 			if not done[j] then
 				local tt = defs[j].argsT[i] and defs[j].argsT[i].type or "nil"
 				if keycount > 1 then  -- if more than one posible type then keep check
@@ -536,6 +550,7 @@ local function create_generic(code,defs,method)
 		end
 	end
 	-------------------------------------------
+	--if defs[1].cimguiname == "TextEditor_SetText" then print("use check",#check) end
 	for i=1,#check do
 		local chk = check[i]
 		table.insert(code2,"\n    if ")
@@ -570,6 +585,7 @@ local function create_generic(code,defs,method)
 			end
 			addand = true
 		end
+
 		local fname2 = defs[i].ov_cimguiname 
 		local fname2_e = method and fname2:match(defs[1].stname.."_(.*)") or fname2:match("^ig(.*)") or fname2 --drop struct name part
 		fname2 = method and (methodnotconst and "self:"..fname2_e or defs[1].stname.."."..fname2_e) or "M."..fname2_e
@@ -578,6 +594,15 @@ local function create_generic(code,defs,method)
 			print("--------error cimguiname equals ov_cimguiname in overloaded function",fname)
 			--error"cimguiname equals ov_cimguiname"
 		end
+	end
+	--#check == 0 is only one alive after removing skipped
+	if #check==0 then
+		print("-----------------#check==0",defs[1].cimguiname,#defs)
+		--assert(#defs==1)
+		local fname2 = defs[1].ov_cimguiname 
+		local fname2_e = method and fname2:match(defs[1].stname.."_(.*)") or fname2:match("^ig(.*)") or fname2 --drop struct name part
+		fname2 = method and (methodnotconst and "self:"..fname2_e or defs[1].stname.."."..fname2_e) or "M."..fname2_e
+		table.insert(code2,"\n    do return "..fname2.."("..gen_args(methodnotconst,defs[1],minvararg)..") end")
 	end
 	table.insert(code2,"\n    print("..args..")")
 	table.insert(code2,"\n    error'"..fname.." could not find overloaded'\nend")
