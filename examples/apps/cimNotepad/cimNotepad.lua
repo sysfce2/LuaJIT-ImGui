@@ -545,7 +545,7 @@ function win:draw(ig)
         dock_id_top = ffi.new("ImGuiID[?]",1,0);
         dock_id_bottom = ffi.new("ImGuiID[?]",1,0);
         dock_id_bottom_left = ffi.new("ImGuiID[?]",1,0);
-        local dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
+        dock_id_bottom_right = ffi.new("ImGuiID[?]",1,0);
         ig.DockBuilderSplitNode(dock_id_main[0], lib.ImGuiDir_Up, 0.80, dock_id_top, dock_id_bottom);
         ig.DockBuilderSplitNode(dock_id_bottom[0], lib.ImGuiDir_Left, 0.50, dock_id_bottom_left, dock_id_bottom_right);
         dock_id_top_left = ffi.new("ImGuiID[?]",1,0);
